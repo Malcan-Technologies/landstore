@@ -1,0 +1,134 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Button from "@/components/common/Button";
+import Register from "@/components/auth/Register";
+import Arrow from "@/components/svg/Arrow";
+import EyeClose from "@/components/svg/EyeClose";
+import EyeOpen from "@/components/svg/EyeOpen";
+
+const LoginModal = ({ open, onClose, initialTab = "login" }) => {
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab(initialTab);
+      setShowPassword(false);
+    }
+  }, [open, initialTab]);
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/35 px-4 py-6 md:py-10">
+      <div className="relative mt-2 flex w-full max-w-165 flex-col rounded-3xl bg-white px-5 py-6 shadow-2xl md:mt-0 md:px-7 md:py-7">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-5 top-4 cursor-pointer text-[30px] leading-none text-[#A3A3A3] transition hover:text-[#6B6B6B]"
+          aria-label="Close login modal"
+        >
+          ×
+        </button>
+
+        <div className="text-center">
+          <h2 className="text-[24px] font-bold text-black md:text-[28px]">
+            {activeTab === "login" ? "Welcome back" : "Join Landstore"}
+          </h2>
+          <p className="mt-1.5 text-[16px] text-[#6B6B6B] md:text-[17px]">
+            {activeTab === "login"
+              ? "Log in securely to manage your profile"
+              : "Create an account to get started"}
+          </p>
+        </div>
+
+        <div className="mt-5 rounded-2xl bg-[#F2F2F2] p-1.5">
+          <div className="grid grid-cols-2 gap-1.5 text-center text-[15px] font-medium text-[#262626] md:text-[16px]">
+            <button
+              type="button"
+              onClick={() => setActiveTab("login")}
+              className={`cursor-pointer rounded-xl px-4 py-2 ${activeTab === "login" ? "bg-white shadow-sm" : ""}`}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("register")}
+              className={`cursor-pointer rounded-xl px-4 py-2 ${activeTab === "register" ? "bg-white shadow-sm" : ""}`}
+            >
+              Register
+            </button>
+          </div>
+        </div>
+
+        {activeTab === "login" ? (
+          <form className="mt-5 space-y-4">
+            <div>
+              <label htmlFor="email" className="mb-2 block text-[15px] font-medium text-[#4A4A4A] md:text-[16px]">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="Enter email"
+                className="h-11 w-full rounded-xl border border-[#D7DEE7] px-4 text-[15px] text-[#1A1A1A] outline-none placeholder:text-[#B3B3B3] focus:border-green-primary"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="mb-2 block text-[15px] font-medium text-[#4A4A4A] md:text-[16px]">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="**********"
+                  className="h-11 w-full rounded-xl border border-[#D7DEE7] px-4 pr-11 text-[15px] text-[#1A1A1A] outline-none placeholder:text-[#B3B3B3] focus:border-green-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-[#6B6B6B]"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOpen size={16} /> : <EyeClose size={16} />}
+                </button>
+              </div>
+              <button
+                type="button"
+                className="mt-2 cursor-pointer text-[14px] font-medium text-[#7A7A7A] underline underline-offset-2"
+              >
+                Forgot password?
+              </button>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                type="submit"
+                className="h-11 w-full justify-center rounded-xl text-[16px] font-medium"
+              >
+                <span className="flex items-center gap-2">
+                  <span>Sign in</span>
+                  <Arrow size={14} color="white" />
+                </span>
+              </Button>
+              <p className="mx-auto mt-3 max-w-[520px] text-center text-[14px] leading-5 text-[#8A8A8A]">
+                By continuing, you agree to Landstore's Professional Standards and Anti-Bypass Policy.
+              </p>
+            </div>
+          </form>
+        ) : (
+          <div className="mt-4 h-full pr-1">
+            <Register />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LoginModal;
