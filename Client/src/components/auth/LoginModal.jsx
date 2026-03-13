@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Button from "@/components/common/Button";
+import Modal from "@/components/common/Modal";
 import Register from "@/components/auth/Register";
 import Arrow from "@/components/svg/Arrow";
 import EyeClose from "@/components/svg/EyeClose";
@@ -18,32 +19,18 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
     }
   }, [open, initialTab]);
 
-  if (!open) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/35 px-4 py-6 md:py-10">
-      <div className="relative mt-2 flex w-full max-w-165 flex-col rounded-3xl bg-white px-5 py-6 shadow-2xl md:mt-0 md:px-7 md:py-7">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-5 top-4 cursor-pointer text-[30px] leading-none text-[#A3A3A3] transition hover:text-[#6B6B6B]"
-          aria-label="Close login modal"
-        >
-          ×
-        </button>
-
-        <div className="text-center">
-          <h2 className="text-[24px] font-bold text-black md:text-[28px]">
-            {activeTab === "login" ? "Welcome back" : "Join Landstore"}
-          </h2>
-          <p className="mt-1.5 text-[16px] text-[#6B6B6B] md:text-[17px]">
-            {activeTab === "login"
-              ? "Log in securely to manage your profile"
-              : "Create an account to get started"}
-          </p>
-        </div>
+    <Modal open={open} onClose={onClose} showCloseButton>
+      <div className="text-center">
+        <h2 className="text-[24px] font-bold text-black md:text-[28px]">
+          {activeTab === "login" ? "Welcome back" : "Join Landstore"}
+        </h2>
+        <p className="mt-1.5 text-[16px] text-[#6B6B6B] md:text-[17px]">
+          {activeTab === "login"
+            ? "Log in securely to manage your profile"
+            : "Create an account to get started"}
+        </p>
+      </div>
 
         <div className="mt-5 rounded-2xl bg-[#F2F2F2] p-1.5">
           <div className="grid grid-cols-2 gap-1.5 text-center text-[15px] font-medium text-[#262626] md:text-[16px]">
@@ -64,8 +51,8 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
           </div>
         </div>
 
-        {activeTab === "login" ? (
-          <form className="mt-5 space-y-4">
+      {activeTab === "login" ? (
+        <form className="mt-5 space-y-4">
             <div>
               <label htmlFor="email" className="mb-2 block text-[15px] font-medium text-[#4A4A4A] md:text-[16px]">
                 Email address
@@ -120,14 +107,13 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
                 By continuing, you agree to Landstore's Professional Standards and Anti-Bypass Policy.
               </p>
             </div>
-          </form>
-        ) : (
-          <div className="mt-4 h-full pr-1">
-            <Register />
-          </div>
-        )}
-      </div>
-    </div>
+        </form>
+      ) : (
+        <div className="mt-4 h-full pr-1">
+          <Register />
+        </div>
+      )}
+    </Modal>
   );
 };
 

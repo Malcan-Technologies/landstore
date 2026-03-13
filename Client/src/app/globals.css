@@ -32,5 +32,56 @@ body {
   --color-green-secondary: #298064;
   --color-font-green: #7fbfa33d;
   --color-border-green: #29806459;
+  --color-background-primary: #f8f8f8;
+  --color-gray1: #767676;
+  --color-gray2: #1a1a1a;
+  --color-gray5: #838383;
+  --color-gray7: #545454;
+  --color-activebg: #ECFDF2;
+  --color-active: #15803D;
+}
 
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: check-draw 0.65s ease forwards;
+  animation-fill-mode: forwards;
+}
+
+/* Google Maps InfoWindow custom styling */
+.gm-style .gm-style-iw-c {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  /* height: auto; */
+}
+
+.gm-style .gm-style-iw-d {
+  overflow: visible !important;
+}
+.gm-style-iw-tc{
+  display: none;
+}
+.gm-style .gm-style-iw-tc::after {
+  display: none;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.gm-style .gm-style-iw button.gm-ui-hover-effect {
+  display: none !important;
+}
+
+.gm-style .gm-style-iw button.gm-ui-hover-effect span {
+  margin-top: -2px;
 }

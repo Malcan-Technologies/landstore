@@ -13,8 +13,8 @@ const Header = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-white shadow-sm">
-        <div className="flex w-full items-center justify-between px-4 py-3 md:px-6">
+      <div className="shadow-sm bg-white">
+        <div className="mx-auto flex w-full max-w-[95vw] items-center justify-between gap-6 px-4 py-3 md:px-6">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-10 w-10 md:h-12 md:w-12">
               <Image
@@ -31,6 +31,18 @@ const Header = () => {
             </span>
           </Link>
 
+          <nav className="hidden flex-1 items-center justify-center gap-6 text-sm font-medium text-[#1A1A1A] lg:flex">
+            <Link href="/explore" className="transition hover:text-green-primary">
+              Explore Map
+            </Link>
+            <Link href="#" className="transition hover:text-green-primary">
+              Shortlists
+            </Link>
+            <Link href="#" className="transition hover:text-green-primary">
+              My Enquiries
+            </Link>
+          </nav>
+
           <div className="flex items-center gap-3 text-sm font-medium">
             <Button href="#" className="rounded-lg" label="List a land">
               <span className="flex h-6 w-6 items-center justify-center text-white">
@@ -44,7 +56,7 @@ const Header = () => {
                 setIsLoginOpen(true);
               }}
               colorClass="bg-white text-green-primary border border-border-green hover:bg-font-green"
-              className="rounded-md"
+              className="h-10 rounded-md"
               label="Login"
             />
             <Button
@@ -52,13 +64,13 @@ const Header = () => {
                 setAuthTab("register");
                 setIsLoginOpen(true);
               }}
-              colorClass="bg-font-green text-green-primary border border-border-green hover:bg-font-green"
-              className="rounded-md"
+              colorClass="bg-font-green text-green-primary focus:ring-1 focus:ring-border-green hover:bg-font-green"
+              className="h-10 rounded-md"
               label="Register"
             />
           </div>
         </div>
-      </header>
+      </div>
 
       <LoginModal open={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialTab={authTab} />
     </>

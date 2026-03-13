@@ -2,13 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Button from "@/components/common/Button";
+import EmailConfirmationModal from "@/components/auth/modals/EmailConfirmationModal";
+import PillCheckbox from "@/components/common/PillCheckbox";
 import Arrow from "@/components/svg/Arrow";
 import EyeClose from "@/components/svg/EyeClose";
 import EyeOpen from "@/components/svg/EyeOpen";
 import Building from "@/components/svg/Building";
 import Person from "@/components/svg/Person";
 import Persons from "@/components/svg/Persons";
-import Tick from "@/components/svg/Tick";
 
 const entityOptions = [
   { key: "koperasi", label: "Koperasi", Icon: Persons },
@@ -35,6 +36,7 @@ const Register = () => {
     "Landowner",
     "Interested to sell/rent/JV",
   ]);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   const fields = useMemo(() => {
     if (entityType === "company") {
@@ -71,8 +73,19 @@ const Register = () => {
     );
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setIsEmailModalOpen(true);
+  };
+
+  const handleCloseEmailModal = () => setIsEmailModalOpen(false);
+  const handleResendEmail = () => {
+    console.info("Resend verification email clicked");
+  };
+
   return (
-    <form className="mt-4 space-y-3.5">
+    <>
+      <form className="mt-4 space-y-3.5" onSubmit={handleSubmit}>
       <div>
         <p className="mb-2 block text-[14px] font-medium text-[#4A4A4A] md:text-[15px]">Entity Type</p>
         <div className="grid grid-cols-3 gap-2">
@@ -217,43 +230,40 @@ const Register = () => {
         <div className="flex flex-wrap gap-2">
           {interestOptions.map((option) => {
             const isSelected = selectedInterests.includes(option);
-
             return (
-              <button
+              <PillCheckbox
                 key={option}
-                type="button"
-                onClick={() => toggleInterest(option)}
-                className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
-                  isSelected
-                    ? "border-[#B7D7C8] bg-[#F3FBF7] text-green-primary"
-                    : "border-[#D8DDE3] bg-white text-[#262626]"
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  {isSelected ? <Tick /> : null}
-                  <span>{option}</span>
-                </span>
-              </button>
+                checked={isSelected}
+                label={option}
+                onChange={() => toggleInterest(option)}
+              />
             );
           })}
         </div>
       </div>
 
-      <div className="pt-1">
-        <Button
-          type="submit"
-          className="h-10 w-full justify-center rounded-lg text-[14px] font-medium"
-        >
-          <span className="flex items-center gap-2">
-            <span>Create account</span>
-            <Arrow size={14} color="white" />
-          </span>
-        </Button>
-        <p className="mx-auto mt-2.5 max-w-[520px] text-center text-[11px] leading-4 text-[#8A8A8A]">
-          By continuing, you agree to Landstore's Professional Standards and Anti-Bypass Policy.
-        </p>
-      </div>
-    </form>
+        <div className="pt-1">
+          <Button
+            type="submit"
+            className="h-10 w-full justify-center rounded-lg text-[14px] font-medium"
+          >
+            <span className="flex items-center gap-2">
+              <span>Create account</span>
+              <Arrow size={14} color="white" />
+            </span>
+          </Button>
+          <p className="mx-auto mt-2.5 max-w-[520px] text-center text-[11px] leading-4 text-[#8A8A8A]">
+            By continuing, you agree to Landstore's Professional Standards and Anti-Bypass Policy.
+          </p>
+        </div>
+      </form>
+
+      <EmailConfirmationModal
+        open={isEmailModalOpen}
+        onClose={handleCloseEmailModal}
+        onResend={handleResendEmail}
+      />
+    </>
   );
 };
 
