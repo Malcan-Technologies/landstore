@@ -24,21 +24,21 @@ const SelectDropdown = ({
     <Listbox value={value} onChange={onChange} name={name} disabled={disabled} {...props}>
       <div className={`relative ${className}`.trim()}>
         {label ? (
-          <Listbox.Label className="mb-1.5 block text-[14px] font-medium text-[#4A4A4A] md:text-[15px]">
+          <Listbox.Label className="mb-1.5 block text-[14px] font-medium text-gray7 md:text-[15px]">
             {label}
           </Listbox.Label>
         ) : null}
         <Listbox.Button
-          className={`flex w-full items-center justify-between gap-3 rounded-xl border border-[#D7DEE7] bg-white px-3.5 py-2 text-left text-[14px] text-[#1A1A1A] outline-none transition focus-visible:border-green-primary focus-visible:ring-2 focus-visible:ring-green-primary/40 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-[#F4F5F7] disabled:text-[#A1A1A1] ${buttonClassName}`.trim()}
+          className={`flex w-full items-center justify-between gap-3 rounded-xl border border-border-input bg-white px-3.5 py-2 text-left text-[14px] text-gray2 outline-none transition focus-visible:border-green-primary focus-visible:ring-2 focus-visible:ring-green-primary/40 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-background-primary disabled:text-gray5 ${buttonClassName}`.trim()}
         >
           <span className="flex-1 truncate">
             {selectedOption ? (
               renderValue ? renderValue(selectedOption) : selectedOption.label
             ) : (
-              <span className="text-[#B3B3B3]">{placeholder}</span>
+              <span className="text-gray5">{placeholder}</span>
             )}
           </span>
-          <span className="text-[#6B6B6B]">
+          <span className="text-gray5">
             <svg
               width="16"
               height="16"
@@ -64,14 +64,14 @@ const SelectDropdown = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <Listbox.Options className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-[#E4E9F0] bg-white py-1 shadow-xl focus:outline-none">
+          <Listbox.Options className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-border-card bg-white py-1 shadow-xl focus:outline-none">
             {options.map((option) => (
               <Listbox.Option
                 key={option.value}
                 value={option.value}
                 className={({ active }) =>
                   `flex cursor-pointer items-center justify-between px-3.5 py-2 text-[14px] transition ${
-                    active ? "bg-[#F3FBF7] text-green-primary" : "text-[#1A1A1A]"
+                    active ? "bg-activebg text-green-primary" : "text-gray2"
                   } ${optionClassName}`.trim()
                 }
               >

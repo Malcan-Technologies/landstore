@@ -12,7 +12,7 @@ const PillCheckbox = ({
   showTick = true,
   tickIcon,
   checkedClassName = "border-green-secondary/39 text-green-secondary",
-  uncheckedClassName = "border-[#D8DDE3] bg-white text-[#262626]",
+  uncheckedClassName = "border-border-input bg-white text-gray2",
   ...props
 }) => {
   const baseClasses =

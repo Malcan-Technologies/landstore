@@ -83,7 +83,7 @@ const RangeSlider = ({
       aria-label={handle === "start" ? "Minimum value" : "Maximum value"}
       onPointerDown={attachPointerEvents(handle)}
       onKeyDown={handleKeyDown(handle)}
-      className="absolute top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-2 border-[#1A1A1A] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#145C45]/60"
+      className="absolute top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-2 border-gray2 bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-green-primary/60"
       style={{ left: `calc(${percentFromValue(position)}% - 12px)` }}
     />
   );
@@ -108,9 +108,9 @@ const RangeSlider = ({
         </RadioGroup>
       </div>
 
-      <div ref={trackRef} className="relative h-3 rounded-full bg-[#E8EAED]">
+      <div ref={trackRef} className="relative h-3 rounded-full bg-border-input">
         <div
-          className="absolute top-0 h-full rounded-full bg-[#121212]"
+          className="absolute top-0 h-full rounded-full bg-gray2"
           style={{
             left: `${percentFromValue(start)}%`,
             width: `${percentFromValue(end) - percentFromValue(start)}%`,
@@ -121,7 +121,7 @@ const RangeSlider = ({
       </div>
 
       {showValues ? (
-        <div className="mt-3 flex items-center justify-between text-[14px] font-medium text-[#1A1A1A]">
+        <div className="mt-3 flex items-center justify-between text-[14px] font-medium text-gray2">
           <span>{formatValue(start)}</span>
           <span>{formatValue(end)}</span>
         </div>

@@ -12,7 +12,7 @@ const Button = ({
   type = "button",
   ...rest
 }) => {
-  const base = "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium shadow-sm transition";
+  const base = "inline-flex cursor-pointer items-center gap-2 px-4 py-2 text-sm font-medium shadow-sm transition disabled:cursor-not-allowed";
   const classes = `${base} ${rounded} ${colorClass} ${className}`.trim();
 
   if (href) {

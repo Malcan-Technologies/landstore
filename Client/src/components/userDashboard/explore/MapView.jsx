@@ -4,47 +4,64 @@ import { useCallback, useMemo, useState } from "react";
 import { GoogleMap, InfoWindowF, MarkerF, useLoadScript } from "@react-google-maps/api";
 import InfoWindowCard from "@/components/userDashboard/explore/InfoWindowCard";
 
-const containerClassName =
-  "relative h-full min-h-135 w-full overflow-hidden rounded-3xl border border-[#E6EBF2] bg-[#F8F8F8] shadow-[0_15px_35px_rgba(15,61,46,0.05)]";
+const baseContainerClassName =
+  "relative h-full min-h-135 w-full overflow-hidden rounded-3xl border border-border-card bg-background-primary shadow-[0_15px_35px_rgba(15,61,46,0.05)]";
 
 const mapOptions = {
   disableDefaultUI: true,
   clickableIcons: false,
-  styles: [
-    {
-      featureType: "all",
-      elementType: "geometry",
-      stylers: [{ color: "#f5f5f5" }],
-    },
-    {
-      featureType: "poi",
-      stylers: [{ visibility: "off" }],
-    },
-    {
-      featureType: "road",
-      elementType: "geometry",
-      stylers: [{ color: "#ffffff" }],
-    },
-    {
-      featureType: "water",
-      stylers: [{ color: "#d4e8ff" }],
-    },
-  ],
+  styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
 };
 
 const isFiniteLatLng = (value) => Number.isFinite(value?.lat) && Number.isFinite(value?.lng);
 
 const defaultCenter = { lat: 4.2105, lng: 101.9758 }; // Malaysia
 
-const MapView = ({ markers = [], center, zoom = 8 }) => {
-  const [activeMarker, setActiveMarker] = useState(null);
+const baseMarkerSvg = (color) => `
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 0C11.3726 0 6 5.37258 6 12C6 20.25 18 36 18 36C18 36 30 20.25 30 12C30 5.37258 24.6274 0 18 0Z" fill="${color}"/>
+    <circle cx="18" cy="12" r="6" fill="white"/>
+  </svg>`;
+
+const getThemeColor = (variableName, fallback = "") => {
+  if (typeof window === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+  return value || fallback;
+};
+
+const MapView = ({
+  markers = [],
+  center,
+  zoom = 8,
+  containerClassName = "",
+  mapClassName = "h-full w-full",
+  showCenterRings = false,
+  ringClassName = "",
+  defaultActiveMarkerId = null,
+  infoWindowOffset = 13,
+  markerColor,
+  hideMarkerPin = false,
+}) => {
+  const [activeMarker, setActiveMarker] = useState(defaultActiveMarkerId);
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
   });
 
+  const combinedContainerClassName = `${baseContainerClassName} ${containerClassName}`.trim();
+
   const validMarkers = useMemo(
     () => markers.filter((marker) => isFinite(marker?.lat) && isFinite(marker?.lng)),
     [markers]
+  );
+
+  const activeMarkerData = useMemo(
+    () => validMarkers.find((marker) => marker.id === activeMarker) ?? null,
+    [activeMarker, validMarkers]
+  );
+
+  const resolvedMarkerColor = useMemo(
+    () => markerColor || getThemeColor("--color-green-secondary", "var(--color-green-secondary)"),
+    [markerColor]
   );
 
   const safeCenter = useMemo(() => {
@@ -63,13 +80,13 @@ const MapView = ({ markers = [], center, zoom = 8 }) => {
   const infoWindowOptions = useMemo(() => {
     if (typeof window === "undefined" || !window.google) return undefined;
     return {
-      pixelOffset: new window.google.maps.Size(0, 13),
+      pixelOffset: new window.google.maps.Size(0, infoWindowOffset),
     };
-  }, [isLoaded]);
+  }, [infoWindowOffset, isLoaded]);
 
   if (loadError) {
     return (
-      <div className={`${containerClassName} flex items-center justify-center text-sm text-[#5F6C7B]`}>
+      <div className={`${combinedContainerClassName} flex items-center justify-center text-sm text-gray5`}>
         Unable to load Google Maps. Please verify your API key.
       </div>
     );
@@ -77,48 +94,68 @@ const MapView = ({ markers = [], center, zoom = 8 }) => {
 
   if (!isLoaded) {
     return (
-      <div className={`${containerClassName} animate-pulse bg-gradient-to-br from-[#f5f8f6] to-[#e9f3ef]`}>
+      <div className={`${combinedContainerClassName} animate-pulse bg-background-primary`}>
         <span className="sr-only">Loading map...</span>
       </div>
     );
   }
 
   return (
-    <GoogleMap
-      mapContainerClassName={containerClassName}
-      center={safeCenter}
-      zoom={zoom}
-      options={mapOptions}
-    >
-      {validMarkers.map((marker) => (
-        <MarkerF
-          key={marker.id}
-          position={{ lat: marker.lat, lng: marker.lng }}
-          onClick={() => handleMarkerClick(marker.id)}
-          icon={{
-            url:
-              "data:image/svg+xml;charset=UTF-8," +
-              encodeURIComponent(`
-                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 0C11.3726 0 6 5.37258 6 12C6 20.25 18 36 18 36C18 36 30 20.25 30 12C30 5.37258 24.6274 0 18 0Z" fill="#0F3D2E"/>
-                  <circle cx="18" cy="12" r="6" fill="white"/>
-                </svg>`),
-            scaledSize: new window.google.maps.Size(36, 36),
-          }}
-        >
-          {activeMarker === marker.id ? (
-            <InfoWindowF onCloseClick={() => setActiveMarker(null)} options={infoWindowOptions}>
-              <InfoWindowCard
-                image={marker.image}
-                price={marker.price}
-                area={marker.area}
-                category={marker.category}
-              />
-            </InfoWindowF>
-          ) : null}
-        </MarkerF>
-      ))}
-    </GoogleMap>
+    <div className={combinedContainerClassName}>
+      <GoogleMap mapContainerClassName={mapClassName} center={safeCenter} zoom={zoom} options={mapOptions}>
+        {validMarkers.map((marker) => (
+          hideMarkerPin ? (
+            activeMarker === marker.id && activeMarkerData ? (
+              <InfoWindowF
+                key={marker.id}
+                position={{ lat: activeMarkerData.lat, lng: activeMarkerData.lng }}
+                onCloseClick={() => setActiveMarker(null)}
+                options={infoWindowOptions}
+              >
+                <InfoWindowCard
+                  image={marker.image}
+                  price={marker.price}
+                  area={marker.area}
+                  category={marker.category}
+                />
+              </InfoWindowF>
+            ) : null
+          ) : (
+            <MarkerF
+              key={marker.id}
+              position={{ lat: marker.lat, lng: marker.lng }}
+              onClick={() => handleMarkerClick(marker.id)}
+              icon={{
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(baseMarkerSvg(resolvedMarkerColor)),
+                scaledSize: new window.google.maps.Size(36, 36),
+              }}
+            >
+              {activeMarker === marker.id && activeMarkerData ? (
+                <InfoWindowF
+                  position={{ lat: activeMarkerData.lat, lng: activeMarkerData.lng }}
+                  onCloseClick={() => setActiveMarker(null)}
+                  options={infoWindowOptions}
+                >
+                  <InfoWindowCard
+                    image={marker.image}
+                    price={marker.price}
+                    area={marker.area}
+                    category={marker.category}
+                  />
+                </InfoWindowF>
+              ) : null}
+            </MarkerF>
+          )
+        ))}
+      </GoogleMap>
+
+      {showCenterRings ? (
+        <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${ringClassName}`.trim()}>
+          <span className="absolute h-48 w-48 rounded-full bg-green-secondary/20" />
+          <span className="absolute h-34 w-34 rounded-full bg-green-secondary/15" />
+        </div>
+      ) : null}
+    </div>
   );
 };
 

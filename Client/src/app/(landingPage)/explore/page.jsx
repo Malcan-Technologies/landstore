@@ -3,14 +3,14 @@
 import { useMemo } from "react";
 
 import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
-import LandCard from "@/components/userDashboard/explore/LandCard";
+import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import MapView from "@/components/userDashboard/explore/MapView";
 
 const landListings = [
   {
     id: "LS-000128",
     status: "Active",
-    statusColor: "#1E765F",
+    statusColor: "var(--color-green-secondary)",
     image: "https://images.unsplash.com/photo-1470246973918-29a93221c455?auto=format&fit=crop&w=1200&q=80",
     category: "Agriculture",
     area: "5.2 Acres",
@@ -25,7 +25,7 @@ const landListings = [
   {
     id: "LS-000129",
     status: "Active",
-    statusColor: "#118368",
+    statusColor: "var(--color-green-secondary)",
     image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
     category: "Industrial",
     area: "2.5 Acres",
@@ -40,7 +40,7 @@ const landListings = [
   {
     id: "LS-000130",
     status: "Active",
-    statusColor: "#1E765F",
+    statusColor: "var(--color-green-secondary)",
     image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?auto=format&fit=crop&w=1200&q=80",
     category: "Commercial",
     area: "3.1 Acres",
@@ -107,7 +107,7 @@ const ExplorePage = () => {
   }, []);
 
   return (
-    <main className="bg-[#F6F8F6] py-10">
+    <main className="bg-background-primary py-10">
       <div className="mx-4 flex w-full flex-col gap-8 px-4 lg:flex-row lg:items-start lg:px-8">
         <FilterPanel />
 
@@ -115,11 +115,11 @@ const ExplorePage = () => {
           <div className="flex flex-col gap-6 xl:flex-row">
             <div className="flex flex-col gap-5">
               <header className="rounded-3xl px-6 py-5">
-                <p className="text-[20px] font-semibold text-[#0B1220]">Found 12 lands</p>
-                <p className="text-[14px] text-[#5F6C7B]">Secured and verified property listings</p>
+                <p className="text-[20px] font-semibold text-gray2">Found 12 properties</p>
+                <p className="text-[14px] text-gray5">Secured and verified property listings</p>
               </header>
               {randomizedListingsNearCenter.map((land) => (
-                <LandCard key={land.id} land={land} />
+                <PropertyCard key={land.id} land={land} />
               ))}
             </div>
 

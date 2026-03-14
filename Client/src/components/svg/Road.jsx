@@ -1,6 +1,6 @@
 import React from "react";
 
-const Road = ({ size = 14, color = "#9D9D9D", className, ...props }) => (
+const Road = ({ size = 14, color = "var(--color-gray5)", className, ...props }) => (
   <svg
     width={size}
     height={size}

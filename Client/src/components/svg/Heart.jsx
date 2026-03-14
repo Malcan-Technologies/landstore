@@ -2,7 +2,7 @@
 
 import React, { useId } from "react";
 
-const Heart = ({ width = 20, height = 16, color = "#6B6B6B", className, ...props }) => {
+const Heart = ({ width = 20, height = 16, color = "var(--color-gray5)", className, ...props }) => {
   const clipPathId = useId();
 
   return (

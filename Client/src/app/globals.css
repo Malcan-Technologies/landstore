@@ -33,6 +33,8 @@ body {
   --color-font-green: #7fbfa33d;
   --color-border-green: #29806459;
   --color-background-primary: #f8f8f8;
+  --color-border-input: #E2E8F0;
+  --color-border-card: #DBDBDB;
   --color-gray1: #767676;
   --color-gray2: #1a1a1a;
   --color-gray5: #838383;
@@ -55,6 +57,24 @@ body {
   stroke-dashoffset: 1;
   animation: check-draw 0.65s ease forwards;
   animation-fill-mode: forwards;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+summary,
+a[href] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 /* Google Maps InfoWindow custom styling */

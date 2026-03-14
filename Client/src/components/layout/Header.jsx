@@ -31,11 +31,11 @@ const Header = () => {
             </span>
           </Link>
 
-          <nav className="hidden flex-1 items-center justify-center gap-6 text-sm font-medium text-[#1A1A1A] lg:flex">
+          <nav className="hidden flex-1 items-center justify-center gap-6 text-sm font-medium text-gray2 lg:flex">
             <Link href="/explore" className="transition hover:text-green-primary">
               Explore Map
             </Link>
-            <Link href="#" className="transition hover:text-green-primary">
+            <Link href="/user-dashboard/shortlists" className="transition hover:text-green-primary">
               Shortlists
             </Link>
             <Link href="#" className="transition hover:text-green-primary">
@@ -49,7 +49,7 @@ const Header = () => {
                 <Plus size={14} color="white" aria-hidden />
               </span>
             </Button>
-            <span className="h-6 w-[1.5px] bg-[#BABABA]" aria-hidden />
+            <span className="h-6 w-[1.5px] bg-border-card" aria-hidden />
             <Button
               onClick={() => {
                 setAuthTab("login");

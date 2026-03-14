@@ -1,6 +1,6 @@
 import React from "react";
 
-const Person = ({ size = 20, color = "#1A1A1A", className, ...props }) => (
+const Person = ({ size = 20, color = "var(--color-gray2)", className, ...props }) => (
   <svg
     width={size}
     height={size}

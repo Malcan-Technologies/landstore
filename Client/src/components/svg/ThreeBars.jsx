@@ -1,6 +1,6 @@
 import React from "react";
 
-const ThreeBars = ({ size = 18, color = "#0F3D2E", className, ...props }) => (
+const ThreeBars = ({ size = 18, color = "var(--color-green-logo)", className, ...props }) => (
   <svg
     width={size}
     height={size}

@@ -1,6 +1,6 @@
 import React from "react";
 
-const Map = ({ size = 16, color = "#0F3D2E", className, ...props }) => (
+const Map = ({ size = 16, color = "var(--color-green-logo)", className, ...props }) => (
   <svg
     width={size}
     height={size}

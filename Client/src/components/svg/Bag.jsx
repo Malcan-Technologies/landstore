@@ -1,6 +1,6 @@
 import React from "react";
 
-const Bag = ({ size = 14, color = "#838383", className, ...props }) => (
+const Bag = ({ size = 14, color = "var(--color-gray5)", className, ...props }) => (
   <svg
     width={size}
     height={size}

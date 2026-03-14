@@ -1,6 +1,6 @@
 import React from "react";
 
-const DualNote = ({ size = 16, stroke = "#1A1A1A", accentStroke = "#020617", className, ...props }) => (
+const DualNote = ({ size = 16, stroke = "var(--color-gray2)", accentStroke = "var(--color-gray2)", className, ...props }) => (
   <svg
     width={size}
     height={size}

@@ -22,8 +22,8 @@ const EmailConfirmationModal = ({ open, onClose, onResend }) => {
           </div>
         </div>
 
-        <h3 className="mt-5 text-[22px] font-semibold text-[#111827]">Check your email</h3>
-        <p className="mt-2 max-w-xs text-[14px] leading-6 text-[#5E5E5E]">
+        <h3 className="mt-5 text-[22px] font-semibold text-gray2">Check your email</h3>
+        <p className="mt-2 max-w-xs text-[14px] leading-6 text-gray7">
           We've sent a verification link to your email address. Please click it to activate your account.
         </p>
 
@@ -31,14 +31,14 @@ const EmailConfirmationModal = ({ open, onClose, onResend }) => {
           <button
             type="button"
             onClick={onClose}
-            className="h-11 w-full rounded-xl bg-[#1F774E] text-[15px] font-semibold text-white transition hover:bg-[#18603F]"
+            className="h-11 w-full rounded-xl bg-green-primary text-[15px] font-semibold text-white transition hover:bg-green-primary"
           >
             Got it
           </button>
           <button
             type="button"
             onClick={onResend}
-            className="h-11 w-full rounded-xl border border-[#D7DEE7] bg-white text-[14px] font-medium text-[#1A1A1A] transition hover:bg-[#F7F7F7]"
+            className="h-11 w-full rounded-xl border border-border-input bg-white text-[14px] font-medium text-gray2 transition hover:bg-background-primary"
           >
             Resend verification email
           </button>
