@@ -25,18 +25,6 @@ jobs:
           fi
           echo "✅ SSH and project path secrets are set."
 
-      # 3️⃣ Install packages and build frontend
-      - name: Install dependencies and build Server
-        run: |
-          cd server
-          echo "📦 Installing dependencies..."
-          npm ci
-
-          echo "🏗 Building frontend..."
-          npm run build
-
-          echo "✅ Frontend build successful"
-
       # 4️⃣ Sync only frontend to VPS
       - name: Sync Server to VPS
         run: |
@@ -63,15 +51,9 @@ jobs:
 
             echo "📦 Installing dependencies..."
             npm ci
-            echo "📍 Current directory:"
-            echo pwd
-            ls ..
-
-            echo "🏗 Building..."
-            npm run build
 
             echo "♻️ Reloading PM2 process..."
             pm2 reload server || pm2 start npm --name "server" -- start
             pm2 save
 
-            echo "✅ Frontend deployment completed successfully!"
+            echo "✅ Server deployment completed successfully!"
