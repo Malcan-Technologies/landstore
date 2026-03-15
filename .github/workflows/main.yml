@@ -62,7 +62,8 @@ jobs:
             echo "📦 Installing dependencies..."
             npm ci
             echo "📍 Current directory:"
-            pwd
+            echo pwd
+            ls ..
 
             echo "🏗 Building..."
             npm run build
