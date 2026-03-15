@@ -44,7 +44,7 @@ jobs:
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ${{ secrets.PROJECT_PATH }}"
 
-          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" ./Client ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_PATH }}
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" ./Client/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_PATH }}
 
       # 5️⃣ Deploy frontend
       - name: Deploy via SSH
