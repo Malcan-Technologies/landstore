@@ -60,7 +60,7 @@ jobs:
             cd ${{ secrets.PROJECT_PATH }}
 
             echo "📦 Installing dependencies..."
-            npm ci --only=production
+            npm ci
 
             echo "🏗 Building..."
             npm run build
