@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
+import ReduxProvider from "@/components/providers/ReduxProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,8 +19,10 @@ export default function RootLayout({ children }) {
       <body
         className={`${inter.className} antialiased min-h-screen w-full overflow-x-hidden bg-background-primary`}
       >
-        <Header />
-        {children}
+        <ReduxProvider>
+          <Header />
+          {children}
+        </ReduxProvider>
       </body>
     </html>
   );

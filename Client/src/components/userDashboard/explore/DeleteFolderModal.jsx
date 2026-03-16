@@ -22,7 +22,7 @@ const DeleteFolderModal = ({ open, onClose, onConfirm }) => {
             <Delete size={26} />
           </div>
           <h2 className="mt-5 text-[24px] font-semibold tracking-tight text-gray2">Delete folder</h2>
-          <p className="mt-3 max-w-[470px] text-[16px] leading-8 text-gray5">
+          <p className="mt-3 max-w-117.5 text-[16px] leading-8 text-gray5">
             Are you sure you want to permanently delete this folder and all of its contents? This action cannot be undone
           </p>
         </div>

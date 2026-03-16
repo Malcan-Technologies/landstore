@@ -80,18 +80,8 @@ const getDistanceKm = (lat1, lng1, lat2, lng2) => {
   return earthRadiusKm * c;
 };
 
-const shuffle = (list) => {
-  const copy = [...list];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-};
-
 const ExplorePage = () => {
-  console.log("ExplorePage rendered");
-  const randomizedListingsNearCenter = useMemo(() => {
+  const listingsNearCenter = useMemo(() => {
     const nearbyListings = landListings.filter((listing) => {
       if (!Number.isFinite(listing.lat) || !Number.isFinite(listing.lng)) {
         return false;
@@ -99,11 +89,18 @@ const ExplorePage = () => {
       return getDistanceKm(mapCenter.lat, mapCenter.lng, listing.lat, listing.lng) <= 60;
     });
 
-    if (nearbyListings.length === 0) {
-      return shuffle(landListings);
-    }
+    const sourceListings = nearbyListings.length === 0 ? landListings : nearbyListings;
 
-    return shuffle(nearbyListings);
+    return [...sourceListings].sort((first, second) => {
+      const firstDistance = getDistanceKm(mapCenter.lat, mapCenter.lng, first.lat, first.lng);
+      const secondDistance = getDistanceKm(mapCenter.lat, mapCenter.lng, second.lat, second.lng);
+
+      if (firstDistance !== secondDistance) {
+        return firstDistance - secondDistance;
+      }
+
+      return first.id.localeCompare(second.id);
+    });
   }, []);
 
   return (
@@ -118,7 +115,7 @@ const ExplorePage = () => {
                 <p className="text-[20px] font-semibold text-gray2">Found 12 properties</p>
                 <p className="text-[14px] text-gray5">Secured and verified property listings</p>
               </header>
-              {randomizedListingsNearCenter.map((land) => (
+              {listingsNearCenter.map((land) => (
                 <PropertyCard key={land.id} land={land} />
               ))}
             </div>

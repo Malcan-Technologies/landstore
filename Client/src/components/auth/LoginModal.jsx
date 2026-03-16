@@ -1,23 +1,54 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
 import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
 import Register from "@/components/auth/Register";
 import Arrow from "@/components/svg/Arrow";
 import EyeClose from "@/components/svg/EyeClose";
 import EyeOpen from "@/components/svg/EyeOpen";
+import { loginSuccess } from "@/store/authSlice";
 
 const LoginModal = ({ open, onClose, initialTab = "login" }) => {
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (open) {
       setActiveTab(initialTab);
       setShowPassword(false);
+      setEmail("");
+      setPassword("");
     }
   }, [open, initialTab]);
+
+  const handleLoginSubmit = (event) => {
+    event.preventDefault();
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail && !trimmedPassword) {
+      return;
+    }
+
+    const fallbackName = trimmedEmail
+      ? trimmedEmail.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+      : "Landstore User";
+
+    dispatch(
+      loginSuccess({
+        email: trimmedEmail || "no-email@landstore.my",
+        name: fallbackName,
+      })
+    );
+
+    onClose();
+  };
 
   return (
     <Modal open={open} onClose={onClose} showCloseButton>
@@ -52,7 +83,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
         </div>
 
       {activeTab === "login" ? (
-        <form className="mt-5 space-y-4">
+        <form className="mt-5 space-y-4" onSubmit={handleLoginSubmit}>
             <div>
               <label htmlFor="email" className="mb-2 block text-[15px] font-medium text-gray7 md:text-[16px]">
                 Email address
@@ -61,6 +92,8 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
                 id="email"
                 type="email"
                 placeholder="Enter email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 className="h-11 w-full rounded-xl border border-border-input px-4 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
               />
             </div>
@@ -74,6 +107,8 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="**********"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   className="h-11 w-full rounded-xl border border-border-input px-4 pr-11 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
                 />
                 <button
@@ -103,7 +138,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
                   <Arrow size={14} color="white" />
                 </span>
               </Button>
-              <p className="mx-auto mt-3 max-w-[520px] text-center text-[14px] leading-5 text-gray5">
+              <p className="mx-auto mt-3 max-w-130 text-center text-[14px] leading-5 text-gray5">
                 By continuing, you agree to Landstore's Professional Standards and Anti-Bypass Policy.
               </p>
             </div>
