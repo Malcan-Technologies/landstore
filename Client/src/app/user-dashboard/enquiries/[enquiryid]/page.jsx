@@ -5,9 +5,12 @@ import Calendar from "@/components/svg/Calendar";
 import Chat2 from "@/components/svg/Chat2";
 import Controls from "@/components/svg/Controls";
 import Mic from "@/components/svg/Mic";
+import Person from "@/components/svg/Person";
 import Plus from "@/components/svg/Plus";
 import Pointer from "@/components/svg/Pointer";
 import Send from "@/components/svg/Send";
+import Sheild from "@/components/svg/Sheild";
+import StepperTick from "@/components/svg/StepperTick";
 import UpRight from "@/components/svg/UpRight";
 
 const enquiryDetails = {
@@ -32,7 +35,7 @@ const EnquiryDetailPage = async ({ params }) => {
 
   return (
     <main className="bg-background-primary py-8 md:py-10">
-      <div className="mx-auto w-full max-w-375 px-4 md:px-6 xl:px-9">
+      <div className="mx-auto w-full max-w-350 px-4 md:px-6 xl:px-9">
         <section className="rounded-[22px] border border-border-card bg-white px-4 py-4 shadow-[0px_6px_24px_rgba(15,61,46,0.04)] md:px-4 md:py-4">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-4 md:flex-row md:items-center">
@@ -86,31 +89,41 @@ const EnquiryDetailPage = async ({ params }) => {
           </div>
 
           <div className="mt-6 border-t border-border-card pt-12">
-            <div className="grid grid-cols-5 gap-2 px-2 md:px-10">
+            <div className="mx-auto flex max-w-190 items-start justify-between gap-2 px-2 lg:gap-20">
               {progressSteps.map((step, index) => {
-                const isCurrent = index === 0;
-                const isCompleted = index < 1;
+                const currentStep = 1;
+                const stepNumber = index + 1;
+                const isCurrent = currentStep === stepNumber;
+                const isCompleted = currentStep > stepNumber;
                 const showLine = index < progressSteps.length - 1;
 
                 return (
-                  <div key={step} className="relative flex flex-col items-center text-center">
-                    <div className="relative flex h-8 w-full items-center justify-center">
-                      {showLine ? <span className="absolute left-1/2 top-1/2 h-[2px] w-full -translate-y-1/2 bg-[#E6E6E6]" aria-hidden /> : null}
-                      {isCurrent ? (
-                        <div className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-green-secondary bg-white">
-                          <div className="h-4 w-4 rounded-full bg-green-secondary" />
+                  <div key={step} className="relative flex flex-1 flex-col items-center justify-start text-center">
+                    <div className="relative flex h-11 w-full items-center justify-center">
+                      {isCompleted ? (
+                        <div className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-green-secondary shadow-[0px_4px_10px_rgba(38,143,109,0.18)]">
+                          <StepperTick width={16} height={14} color="white" />
                         </div>
-                      ) : isCompleted ? (
-                        <div className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full bg-green-secondary">
-                          <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                      ) : isCurrent ? (
+                        <div className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-green-secondary bg-white">
+                          <div className="flex h-8.5 w-8.5 items-center justify-center rounded-full bg-green-secondary">
+                            <span className="h-3 w-3 rounded-full bg-white" />
+                          </div>
                         </div>
                       ) : (
-                        <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#E5E7EB] bg-white">
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#E5E7EB]" />
+                        <div className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-border-card bg-white">
+                          <span className="h-2.5 w-2.5 rounded-full bg-border-card" />
                         </div>
                       )}
+
+                      {showLine ? (
+                        <span
+                          className={`absolute left-1/2 top-1/2 h-[2px] w-full -translate-y-1/2 lg:w-[180%] ${isCompleted ? "bg-green-secondary" : "bg-border-card"}`}
+                          aria-hidden
+                        />
+                      ) : null}
                     </div>
-                    <span className="mt-5 text-[12px] font-medium text-gray2 md:text-[13px]">{step}</span>
+                    <span className="mt-3 flex min-h-10 w-full items-start justify-center text-center text-[13px] font-medium text-gray2">{step}</span>
                   </div>
                 );
               })}
@@ -133,7 +146,7 @@ const EnquiryDetailPage = async ({ params }) => {
           <div className="mt-5 rounded-[18px] border border-[#F1F3F2] bg-[#FAFBFA] px-3 py-5 md:px-6 md:py-6">
             <div className="flex gap-3 md:gap-4">
               <span className="mt-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F1F1F] text-white">
-                <span className="text-[14px] leading-none">◌</span>
+                <Person size={16} color="white" />
               </span>
 
               <div className="flex-1 space-y-4">
@@ -166,9 +179,7 @@ const EnquiryDetailPage = async ({ params }) => {
                     </p>
                   </article>
                   <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-secondary text-white">
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-white">
-                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                    </span>
+                    <Sheild size={15} color="white" />
                   </span>
                 </div>
               </div>
