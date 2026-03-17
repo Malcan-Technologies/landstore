@@ -1,16 +1,18 @@
-name: Deploy to ECS
+name: Deploy Client to ECS
 
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "Client/**"   # only trigger when Client changes
 
 jobs:
   deploy:
-    name: Build & Deploy
+    name: Build & Deploy Client
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Configure AWS credentials
@@ -21,18 +23,20 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Login to ECR
+      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build, tag, and push image
-      run: |
-        IMAGE_TAG=latest
-        docker build -t $ECR_REPO:$IMAGE_TAG .
-        docker tag $ECR_REPO:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
-        docker push ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+    - name: Build, tag, and push Docker image (Client)
       env:
-        ECR_REPO: ${{ secrets.ECR_REPOSITORY }}
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        cd Client
+        docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+        docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
-    - name: Update ECS service
+    - name: Force ECS deployment
       run: |
         aws ecs update-service \
           --cluster ${{ secrets.ECS_CLUSTER }} \
