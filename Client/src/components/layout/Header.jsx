@@ -59,8 +59,8 @@ const Header = () => {
 
   return (
     <>
-      <div className="shadow-sm bg-white">
-        <div className="mx-auto flex w-full max-w-[95vw] items-center justify-between gap-6 px-4 py-3 md:px-6">
+      <div className="shadow-sm bg-white fixed w-full z-10">
+        <div className="mx-auto flex w-full items-center justify-between gap-6 px-4 py-3 md:px-6">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-10 w-10 md:h-12 md:w-12">
               <Image
@@ -72,7 +72,7 @@ const Header = () => {
                 priority
               />
             </div>
-            <span className="text-lg font-bold text-green-logo">
+            <span className="text-lg font-bold text-green-logo hidden sm:block">
               LandStore<span className="text-green-secondary font-normal">.my</span>
             </span>
           </Link>
@@ -90,31 +90,35 @@ const Header = () => {
           </nav>
 
           <div className="flex items-center gap-3 text-sm font-medium">
-            <div ref={notificationRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setNotificationOpen((prev) => !prev)}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full  text-gray2 transition hover:border-green-primary/30 hover:bg-background-primary"
-                aria-label="Open notifications"
-              >
-                <Bell width={18} height={18} fill="currentColor" />
-                <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-green-secondary" />
-              </button>
-
-              {notificationOpen ? (
-                <NotificationPopup notifications={notificationItems} onClose={() => setNotificationOpen(false)} />
-              ) : null}
-            </div>
-            <span className="h-6 w-[1.5px] bg-border-card" aria-hidden />
-
             {!hydrated ? (
               <div className="h-10 w-24 rounded-lg bg-background-primary" aria-hidden />
             ) : isAuthenticated ? (
               <>
-                <Button href="/user-dashboard/listings" className="h-10 rounded-md" label="List a land">
+                <div ref={notificationRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setNotificationOpen((prev) => !prev)}
+                    className="relative inline-flex h-10 w-10 items-center justify-center rounded-full  text-gray2 transition hover:border-green-primary/30 hover:bg-background-primary"
+                    aria-label="Open notifications"
+                  >
+                    <Bell width={18} height={18} fill="currentColor" />
+                    <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-green-secondary" />
+                  </button>
+
+                  {notificationOpen ? (
+                    <NotificationPopup notifications={notificationItems} onClose={() => setNotificationOpen(false)} />
+                  ) : null}
+                </div>
+                <span className="h-6 w-[1.5px] bg-border-card" aria-hidden />
+
+                <Button
+                  href="/user-dashboard/listings"
+                  className="sm:h-10 h-8 justify-center gap-0 rounded-md !px-2 sm:gap-2 sm:px-4!"
+                >
                   <span className="flex h-6 w-6 items-center justify-center text-white">
                     <Plus size={14} color="white" aria-hidden />
                   </span>
+                  <span className="hidden sm:inline">List a land</span>
                 </Button>
 
                 <div ref={profileMenuRef} className="relative">

@@ -8,6 +8,7 @@ import LocationStep from "@/components/userDashboard/listings/createListing/Loca
 import ReviewStep from "@/components/userDashboard/listings/createListing/ReviewStep";
 
 const initialFormData = {
+  photos: [],
   dealTypes: ["Buy", "JV"],
   terrain: ["Flat"],
   features: [],

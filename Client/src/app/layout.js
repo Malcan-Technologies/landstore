@@ -21,7 +21,9 @@ export default function RootLayout({ children }) {
       >
         <ReduxProvider>
           <Header />
-          {children}
+          <div  className="pt-10">
+            {children}
+          </div>
         </ReduxProvider>
       </body>
     </html>

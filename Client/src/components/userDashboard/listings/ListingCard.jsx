@@ -13,40 +13,60 @@ const statusStyles = {
 };
 
 const ListingCard = ({ listing }) => {
-  const statusClassName = statusStyles[listing.statusKey] ?? statusStyles.active;
+  const statusClassName =
+    statusStyles[listing.statusKey] ?? statusStyles.active;
 
   return (
     <article className="rounded-2xl border border-border-card bg-white p-3 shadow-[0px_4px_18px_rgba(15,61,46,0.04)]">
-      <div className="flex gap-4">
-        <div className="relative w-64 overflow-hidden rounded-xl">
-          <img src={listing.image} alt={listing.title} className="h-full w-full object-cover" />
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="relative sm:w-72 w-auto overflow-hidden rounded-xl">
+          <img
+            src={listing.image}
+            alt={listing.title}
+            className="h-full w-full object-cover"
+          />
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="rounded-md bg-background-primary px-2 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-gray5">
-                  {listing.code}
-                </span>
-                <span className={`rounded-md px-2 py-1 text-[10px] font-medium capitalize ${statusClassName}`}>
-                  {listing.statusLabel}
-                </span>
+          <div className="flex items-start w-full gap-4 ">
+            <div className="w-full min-w-0">
+              <div className="flex w-full justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  <span className="rounded-md bg-background-primary px-2 py-1 sm:text-[10px] text-[9px] font-medium uppercase tracking-[0.08em] text-gray5">
+                    {listing.code}
+                  </span>
+                  <span
+                    className={`rounded-md px-2 py-1 sm:text-[10px] text-[9px] font-medium capitalize ${statusClassName}`}
+                  >
+                    {listing.statusLabel}
+                  </span>
+                </div>
+                <div className="shrink-0 text-right lg:mt-0">
+                  <p className="text-[18px] font-bold text-gray2 lg:text-[26px]">
+                    {listing.price}
+                  </p>
+                  <p className="text-[9px] lg:text-[12px] text-gray5 font-medium  lg:mt-0">
+                    Estimated Valuation
+                  </p>
+                </div>
               </div>
 
-              <h2 className="mt-3 flex items-center gap-2 text-[16px] font-semibold text-gray2 md:text-[18px]">
+              <h2 className="flex sm:-mt-3 lg:-mt-6 items-center gap-2 text-[18px] font-bold text-gray2 lg:text-[28px]">
                 <Pointer size={17} color="var(--color-green-secondary)" />
                 <span className="truncate">{listing.title}</span>
               </h2>
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-gray5">
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 sm:gap-y-2 lg:text-[16px] sm:text-[12px] text-[10px] font-medium text-gray5">
                 <span className="inline-flex items-center gap-1.5">
                   <Bag size={14} color="var(--color-gray5)" />
                   <span>{listing.category}</span>
                 </span>
                 <span>{listing.area}</span>
                 {listing.dealTags.map((tag) => (
-                  <span key={tag} className="rounded-md border border-border-input px-2 py-0.5 text-[11px] font-medium text-gray5">
+                  <span
+                    key={tag}
+                    className="rounded-2xl border border-border-input px-2 py-1 lg:text-[14px] text-[10px] font-semibold text-gray5"
+                  >
                     {tag}
                   </span>
                 ))}
@@ -56,16 +76,11 @@ const ListingCard = ({ listing }) => {
                 </span>
               </div>
             </div>
-
-            <div className="shrink-0 text-right">
-              <p className="text-[18px] font-semibold text-gray2 md:text-[20px]">{listing.price}</p>
-              <p className="text-[12px] text-gray5">Estimated Valuation</p>
-            </div>
           </div>
 
           <div className="mt-4 border-t border-border-card pt-4">
-            <div className="flex items-end justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex justify-between items-center gap-2 sm:gap-4">
+              <div className="flex sm:flex-row flex-col items-start gap-2">
                 {listing.actions.map((action) => {
                   if (action.type === "delete") {
                     return (
@@ -98,7 +113,7 @@ const ListingCard = ({ listing }) => {
                       <button
                         key={action.label}
                         type="button"
-                        className="inline-flex h-8 items-center rounded-lg bg-[#EAF8F1] px-3 text-[12px] font-medium text-green-secondary transition hover:bg-[#DCF3E8]"
+                        className="inline-flex h-8 items-center rounded-lg bg-[#EAF8F1] px-2 py-2 sm:text-[12px] text-[9px] font-semibold text-green-secondary transition hover:bg-[#DCF3E8]"
                       >
                         {action.label}
                       </button>
@@ -109,23 +124,29 @@ const ListingCard = ({ listing }) => {
                     <button
                       key={action.label}
                       type="button"
-                      className="inline-flex h-8 items-center rounded-lg border border-border-input px-3 text-[12px] font-medium text-gray2 transition hover:bg-background-primary"
+                      className="inline-flex h-8 items-center rounded-lg border border-border-input px-3 sm:text-[12px] text-[9px] font-medium text-gray2 transition hover:bg-background-primary"
                     >
-                      {action.type === "default" ? <Edit size={16} color="currentColor" className="mr-2" /> : null}
+                      {action.type === "default" ? (
+                        <Edit size={16} color="currentColor" className="mr-2" />
+                      ) : null}
                       {action.label}
                     </button>
                   );
                 })}
               </div>
 
-              <div className="flex items-end gap-8 text-right">
-                <div>
-                  <p className="text-[18px] font-semibold text-gray2">{listing.views}</p>
-                  <p className="text-[12px] text-gray5">Views</p>
+              <div className="flex items-center sm:gap-8 gap-3 text-right">
+                <div className="flex flex-col items-center ">
+                  <p className="sm:text-[16px] text-[13px] font-bold text-gray2">
+                    {listing.views}
+                  </p>
+                  <p className="sm:text-[14px] text-[11px] text-gray5">Views</p>
                 </div>
-                <div>
-                  <p className="text-[18px] font-semibold text-gray2">{listing.interests}</p>
-                  <p className="text-[12px] text-gray5">Interests</p>
+                <div className="flex flex-col items-center ">
+                  <p className="sm:text-[16px] text-[13px] font-bold text-gray2">
+                    {listing.interests}
+                  </p>
+                  <p className="sm:text-[14px] text-[11px] text-gray5">Interests</p>
                 </div>
               </div>
             </div>

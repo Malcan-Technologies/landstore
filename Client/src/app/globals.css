@@ -79,17 +79,33 @@ textarea:disabled,
   cursor: not-allowed;
 }
 
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Google Maps InfoWindow custom styling */
 .gm-style .gm-style-iw-c {
   padding: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  /* height: auto; */
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+.gm-style .gm-style-iw {
+  overflow: visible !important;
+  max-height: none !important;
 }
 
 .gm-style .gm-style-iw-d {
   overflow: visible !important;
+  max-height: none !important;
 }
 .gm-style-iw-tc{
   display: none;

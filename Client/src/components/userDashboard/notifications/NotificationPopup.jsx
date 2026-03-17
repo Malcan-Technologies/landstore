@@ -24,10 +24,10 @@ const notificationTypeStyles = {
 
 const NotificationPopup = ({ notifications = [], onClose }) => {
   return (
-    <div className="absolute right-0 top-[calc(100%+12px)] z-40 w-96 overflow-hidden rounded-[18px] border border-border-card bg-white shadow-[0px_24px_60px_rgba(15,61,46,0.12)]">
-      <div className="flex items-center justify-between border-b border-border-card px-4 py-3">
-        <h3 className="text-[15px] font-semibold text-gray2">Notification</h3>
-        <Link href="/user-dashboard/notifications" onClick={onClose} className="text-[14px] font-medium text-green-primary transition hover:text-green-secondary">
+    <div className="absolute left-1/2 top-[calc(100%+10px)] z-40 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-[18px] border border-border-card bg-white shadow-[0px_24px_60px_rgba(15,61,46,0.12)] sm:top-[calc(100%+12px)] sm:w-[22rem] md:left-auto md:right-0 md:w-96 md:translate-x-0">
+      <div className="flex items-center justify-between border-b border-border-card px-3 py-2.5 sm:px-4 sm:py-3">
+        <h3 className="text-[13px] font-semibold text-gray2 sm:text-[14px] md:text-[15px]">Notification</h3>
+        <Link href="/user-dashboard/notifications" onClick={onClose} className="text-[12px] font-medium text-green-primary transition hover:text-green-secondary sm:text-[13px] md:text-[14px]">
           View all
         </Link>
       </div>
@@ -41,18 +41,18 @@ const NotificationPopup = ({ notifications = [], onClose }) => {
               key={notification.id}
               href={notification.href}
               onClick={onClose}
-              className={`block px-4 py-3 transition hover:bg-background-primary ${index !== notifications.length - 1 ? "border-b border-border-card" : ""}`}
+              className={`block px-3 py-2.5 transition hover:bg-background-primary sm:px-4 sm:py-3 ${index !== notifications.length - 1 ? "border-b border-border-card" : ""}`}
             >
-              <div className="flex items-start gap-3">
-                <span className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${style.iconClassName}`}>
+              <div className="flex items-start gap-2.5 sm:gap-3">
+                <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md sm:h-6 sm:w-6 ${style.iconClassName}`}>
                   {style.icon}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-[15px] font-semibold leading-5 text-gray2">{notification.title}</p>
-                    <span className="whitespace-nowrap text-[12px] text-gray5">{notification.timeLabel}</span>
+                    <p className="text-[13px] font-semibold leading-4 text-gray2 sm:text-[14px] sm:leading-5 md:text-[15px]">{notification.title}</p>
+                    <span className="whitespace-nowrap text-[10px] text-gray5 sm:text-[11px] md:text-[12px]">{notification.timeLabel}</span>
                   </div>
-                  <p className="mt-1 text-[14px] leading-5 text-gray5">{notification.message}</p>
+                  <p className="mt-1 text-[12px] leading-4 text-gray5 sm:text-[13px] sm:leading-5 md:text-[14px]">{notification.message}</p>
                 </div>
               </div>
             </Link>
@@ -63,7 +63,7 @@ const NotificationPopup = ({ notifications = [], onClose }) => {
       <button
         type="button"
         onClick={onClose}
-        className="flex h-12 w-full items-center justify-center border-t border-border-card text-[15px] font-medium text-gray5 transition hover:bg-background-primary hover:text-gray2"
+        className="flex h-10 w-full items-center justify-center border-t border-border-card text-[13px] font-medium text-gray5 transition hover:bg-background-primary hover:text-gray2 sm:h-11 sm:text-[14px] md:h-12 md:text-[15px]"
       >
         Mark all as read
       </button>

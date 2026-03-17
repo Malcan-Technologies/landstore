@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
 import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import MapView from "@/components/userDashboard/explore/MapView";
+import Funnel from "@/components/svg/Funnel";
 
 const landListings = [
   {
@@ -81,6 +82,28 @@ const getDistanceKm = (lat1, lng1, lat2, lng2) => {
 };
 
 const ExplorePage = () => {
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isDesktopFilterHidden, setIsDesktopFilterHidden] = useState(false);
+  const filterMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isFilterModalOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
+        setIsFilterModalOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [isFilterModalOpen]);
+
   const listingsNearCenter = useMemo(() => {
     const nearbyListings = landListings.filter((listing) => {
       if (!Number.isFinite(listing.lat) || !Number.isFinite(listing.lng)) {
@@ -104,24 +127,62 @@ const ExplorePage = () => {
   }, []);
 
   return (
-    <main className="bg-background-primary py-10">
-      <div className="mx-4 flex w-full flex-col gap-8 px-4 lg:flex-row lg:items-start lg:px-8">
-        <FilterPanel />
+    <main className="bg-background-primary pt-10 pb-2">
+      <div className="sm:mx-10 mx-1 flex w-auto gap-6 px-2 lg:items-start lg:px-2 ">
+        {!isDesktopFilterHidden ? (
+          <div className="hidden md:block h-[calc(100vh-6rem)] xl:h-[calc(100vh-6rem)]">
+            <FilterPanel collapseBehavior="external" onToggleRequest={() => setIsDesktopFilterHidden(true)} />
+          </div>
+        ) : null}
 
         <section className="flex-1 space-y-6">
-          <div className="flex flex-col gap-6 xl:flex-row">
-            <div className="flex flex-col gap-5">
-              <header className="rounded-3xl px-6 py-5">
-                <p className="text-[20px] font-semibold text-gray2">Found 12 properties</p>
+          <div className="flex  gap-6 ">
+            <div className="hidden h-[calc(100vh-6rem)] xl:flex xl:flex-col xl:gap-5">
+              <header className="rounded-3xl px-6 py-5 pl-0">
+                <p className="text-[24px] font-bold text-gray2">Found 12 properties</p>
                 <p className="text-[14px] text-gray5">Secured and verified property listings</p>
               </header>
-              {listingsNearCenter.map((land) => (
-                <PropertyCard key={land.id} land={land} />
-              ))}
+              <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto no-scrollbar">
+                {listingsNearCenter.map((land) => (
+                  <PropertyCard key={land.id} land={land} />
+                ))}
+              </div>
             </div>
 
-            <div className="w-full">
+            <div className="relative w-full h-[calc(100vh-6rem)]">
+              <div ref={filterMenuRef} className={`absolute right-4 top-4 z-10 ${isDesktopFilterHidden ? "block" : "md:hidden"}`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isDesktopFilterHidden) {
+                      setIsDesktopFilterHidden(false);
+                      return;
+                    }
+                    setIsFilterModalOpen((prev) => !prev);
+                  }}
+                  className="flex h-auto w-auto items-center justify-center rounded-3xl bg-white p-2 cursor-pointer"
+                >
+                  <Funnel />
+                  <span className="ml-2 text-[14px] font-medium">Filters</span>
+                </button>
+
+                {isFilterModalOpen && !isDesktopFilterHidden ? (
+                  <div className="absolute right-0 top-12 z-40 flex max-h-[calc(100vh-30rem)] sm:max-h-[calc(100vh-11rem)] sm:w-80 flex-col overflow-hidden rounded-xl bg-white shadow-lg">
+                    <FilterPanel variant="modal" />
+                  </div>
+                ) : null}
+              </div>
               <MapView center={mapCenter} markers={mapMarkers} />
+              <div className="absolute inset-x-0 bottom-4 z-2 xl:hidden px-4">
+                <div
+                  className="mx-auto flex max-w-full gap-4 overflow-x-auto no-scrollbar"
+                  style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
+                >
+                  {listingsNearCenter.map((land) => (
+                    <PropertyCard key={land.id} land={land} variant="compact" className="" />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
