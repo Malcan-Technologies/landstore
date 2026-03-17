@@ -3,8 +3,8 @@ name: Deploy Client to ECS
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - "Client/**"   # only trigger when Client changes
+    # paths:
+    #   - "Client/**"   # only trigger when Client changes
 
 jobs:
   deploy:
