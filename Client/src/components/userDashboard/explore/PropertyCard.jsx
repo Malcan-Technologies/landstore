@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import Arrow from "@/components/svg/Arrow";
 import Button from "@/components/common/Button";
@@ -19,6 +19,7 @@ const PropertyCard = ({
   onMenuClick,
   variant = "default",
 }) => {
+  const router = useRouter();
   const {
     id,
     status = "Active",
@@ -70,6 +71,11 @@ const PropertyCard = ({
   if (variant === "compact") {
     const compactCardContent = (
       <article
+        onClick={() => {
+          if (id) {
+            router.push(`/property/${id}`);
+          }
+        }}
         className={`w-auto cursor-pointer rounded-lg border border-white/70 bg-white px-2 py-1.5 transition ${className}`.trim()}
       >
         <div className="flex items-stretch gap-3">
@@ -139,13 +145,7 @@ const PropertyCard = ({
       </article>
     );
 
-    return id ? (
-      <Link href={`/property/${id}`} className="block">
-        {compactCardContent}
-      </Link>
-    ) : (
-      compactCardContent
-    );
+    return compactCardContent;
   }
 
   return (

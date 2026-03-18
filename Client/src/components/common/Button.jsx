@@ -1,5 +1,7 @@
-import Link from "next/link";
+"use client";
+
 import React from "react";
+import { useRouter } from "next/navigation";
 
 const Button = ({
   href,
@@ -12,15 +14,26 @@ const Button = ({
   type = "button",
   ...rest
 }) => {
+  const router = useRouter();
   const base = "inline-flex cursor-pointer items-center gap-2 px-4 py-2 text-sm font-medium shadow-sm transition disabled:cursor-not-allowed";
   const classes = `${base} ${rounded} ${colorClass} ${className}`.trim();
 
+  const handleClick = (event) => {
+    onClick?.(event);
+
+    if (event?.defaultPrevented || !href) {
+      return;
+    }
+
+    router.push(href);
+  };
+
   if (href) {
     return (
-      <Link href={href} className={classes} {...rest}>
+      <button type="button" onClick={handleClick} className={classes} {...rest}>
         {children}
         {label ? <span className="flex items-center leading-none">{label}</span> : null}
-      </Link>
+      </button>
     );
   }
 

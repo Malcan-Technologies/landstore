@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 
 import Exclamation from "@/components/svg/Exclamation";
 import Sheild from "@/components/svg/Sheild";
@@ -23,13 +25,20 @@ const notificationTypeStyles = {
 };
 
 const NotificationPopup = ({ notifications = [], onClose }) => {
+  const router = useRouter();
+
+  const handleNavigate = (href) => {
+    onClose?.();
+    router.push(href);
+  };
+
   return (
     <div className="absolute left-1/2 top-[calc(100%+10px)] z-40 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-[18px] border border-border-card bg-white shadow-[0px_24px_60px_rgba(15,61,46,0.12)] sm:top-[calc(100%+12px)] sm:w-[22rem] md:left-auto md:right-0 md:w-96 md:translate-x-0">
       <div className="flex items-center justify-between border-b border-border-card px-3 py-2.5 sm:px-4 sm:py-3">
         <h3 className="text-[13px] font-semibold text-gray2 sm:text-[14px] md:text-[15px]">Notification</h3>
-        <Link href="/user-dashboard/notifications" onClick={onClose} className="text-[12px] font-medium text-green-primary transition hover:text-green-secondary sm:text-[13px] md:text-[14px]">
+        <button type="button" onClick={() => handleNavigate("/user-dashboard/notifications")} className="text-[12px] font-medium text-green-primary transition hover:text-green-secondary sm:text-[13px] md:text-[14px]">
           View all
-        </Link>
+        </button>
       </div>
 
       <div className="max-h-[360px] overflow-y-auto">
@@ -37,10 +46,10 @@ const NotificationPopup = ({ notifications = [], onClose }) => {
           const style = notificationTypeStyles[notification.type] ?? notificationTypeStyles.info;
 
           return (
-            <Link
+            <button
+              type="button"
               key={notification.id}
-              href={notification.href}
-              onClick={onClose}
+              onClick={() => handleNavigate(notification.href)}
               className={`block px-3 py-2.5 transition hover:bg-background-primary sm:px-4 sm:py-3 ${index !== notifications.length - 1 ? "border-b border-border-card" : ""}`}
             >
               <div className="flex items-start gap-2.5 sm:gap-3">
@@ -55,7 +64,7 @@ const NotificationPopup = ({ notifications = [], onClose }) => {
                   <p className="mt-1 text-[12px] leading-4 text-gray5 sm:text-[13px] sm:leading-5 md:text-[14px]">{notification.message}</p>
                 </div>
               </div>
-            </Link>
+            </button>
           );
         })}
       </div>

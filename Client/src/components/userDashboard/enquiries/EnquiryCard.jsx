@@ -1,5 +1,7 @@
+"use client";
+
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import Arrow from "@/components/svg/Arrow";
 import Bag from "@/components/svg/Bag";
@@ -16,6 +18,7 @@ const statusStyles = {
 };
 
 const EnquiryCard = ({ enquiry }) => {
+  const router = useRouter();
   const {
     id,
     code,
@@ -33,8 +36,9 @@ const EnquiryCard = ({ enquiry }) => {
   const hasUnread = unreadCount > 0;
 
   return (
-    <Link
-      href={`/user-dashboard/enquiries/${id}`}
+    <button
+      type="button"
+      onClick={() => router.push(`/user-dashboard/enquiries/${id}`)}
       className="block rounded-xl border border-border-card bg-white px-3 py-3 shadow-[0px_6px_18px_rgba(15,61,46,0.04)] transition hover:border-[#67DCC3] md:px-2 md:py-2 w-auto"
     >
       <article className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -111,7 +115,7 @@ const EnquiryCard = ({ enquiry }) => {
           
         </div>
       </article>
-    </Link>
+    </button>
   );
 };
 

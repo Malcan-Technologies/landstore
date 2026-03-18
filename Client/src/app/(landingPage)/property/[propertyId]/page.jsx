@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import Modal from "@/components/common/Modal";
 import MapView from "@/components/userDashboard/explore/MapView";
@@ -81,6 +81,7 @@ const interestTypeOptions = ["Buy", "JV", "Financing"];
 const roleOptions = ["Developer", "Buyer", "Financier", "Representative"];
 
 const PropertyPage = () => {
+  const router = useRouter();
   const [showInterestForm, setShowInterestForm] = useState(false);
   const [interestType, setInterestType] = useState(interestTypeOptions[0]);
   const [message, setMessage] = useState("");
@@ -109,10 +110,10 @@ const PropertyPage = () => {
     <main className="bg-background-primary py-20">
       <div className="flex mx-3 flex-col gap-8 px-6 lg:flex-row lg:items-start">
         <section className="w-full space-y-6 lg:w-[67%] lg:max-w-[87%] lg:flex-none">
-          <Link href="/explore" className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
+          <button type="button" onClick={() => router.push("/explore")} className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
             <ArrowLeftIcon />
             Back to marketplace
-          </Link>
+          </button>
 
           <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
             <button type="button" onClick={() => handleOpenGallery(0)} className="relative h-auto rounded-l-xl text-left lg:col-span-2">
