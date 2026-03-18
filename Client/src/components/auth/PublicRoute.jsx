@@ -18,10 +18,10 @@ const PublicRoute = ({ children }) => {
       return;
     }
 
-    if (authenticated) {
-      router.replace("/");
-      return;
-    }
+    // if (authenticated) {
+    //   router.replace("/");
+    //   return;
+    // }
 
     setIsChecking(false);
   }, [authenticated, hydrated, router]);

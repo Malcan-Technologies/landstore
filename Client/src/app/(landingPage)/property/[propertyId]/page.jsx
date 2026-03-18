@@ -108,88 +108,93 @@ const PropertyPage = () => {
 
   return (
     <main className="bg-background-primary py-20">
-      <div className="flex mx-3 flex-col gap-8 px-6 lg:flex-row lg:items-start">
+      <div className="flex mx-3 flex-col gap-8 px-2 lg:px-6 xl:px-10 lg:flex-row lg:items-start">
         <section className="w-full space-y-6 lg:w-[67%] lg:max-w-[87%] lg:flex-none">
           <button type="button" onClick={() => router.push("/explore")} className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
             <ArrowLeftIcon />
             Back to marketplace
           </button>
 
-          <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
-            <button type="button" onClick={() => handleOpenGallery(0)} className="relative h-auto rounded-l-xl text-left lg:col-span-2">
+          <div className="grid gap-2 sm:grid-cols-3 items-stretch">
+            <button type="button" onClick={() => handleOpenGallery(0)} className="relative sm:h-100 h-60 sm:rounded-l-xl rounded-t-xl text-left sm:col-span-2 w-full">
               <Image
                 src={propertyDetails.images[0]}
                 alt="Main property view"
                 fill
-                className="rounded-l-xl object-cover"
+                className="sm:rounded-l-xl sm:rounded-tr-none rounded-t-xl object-cover"
                 sizes="(min-width: 1024px) 66vw, 100vw"
                 unoptimized
               />
             </button>
-            <div className="flex flex-col gap-2">
-              <button type="button" onClick={() => handleOpenGallery(1)} className="relative h-38 rounded-tr-xl text-left">
+            <div className="flex h-30 gap-2 sm:h-auto sm:flex-col">
+              <button type="button" onClick={() => handleOpenGallery(1)} className="relative sm:h-49 flex-1 rounded-r-none rounded-bl-xl text-left sm:w-full sm:flex-none sm:rounded-bl-none sm:rounded-tr-xl">
                 <Image
                   src={propertyDetails.images[1]}
                   alt="Property gallery image 2"
                   fill
-                  className="rounded-tr-xl object-cover"
-                  sizes="(min-width: 1024px) 32vw, 100vw"
+                  className="rounded-r-none rounded-bl-xl object-cover sm:rounded-bl-none sm:rounded-tr-xl"
+                  sizes="(min-width: 1024px) 24vw, 80vw"
                   unoptimized
                 />
               </button>
-              <button type="button" onClick={() => handleOpenGallery(2)} className="relative h-38 rounded-br-xl text-left">
+              <button type="button" onClick={() => handleOpenGallery(2)} className="relative sm:h-49 flex-1 rounded-r-xl text-left sm:w-full sm:flex-none sm:rounded-br-xl">
                 <Image
                   src={propertyDetails.images[2]}
                   alt="Property gallery image 3"
                   fill
-                  className="rounded-br-xl object-cover"
-                  sizes="(min-width: 1024px) 32vw, 100vw"
+                  className="rounded-br-xl object-cover sm:rounded-br-xl"
+                  sizes="(min-width: 1024px) 24vw, 80vw"
                   unoptimized
                 />
-                <div className="absolute inset-0 flex items-center justify-center rounded-br-xl bg-black/50 text-white">
+                <div className="absolute inset-0 flex items-center justify-center rounded-r-xl bg-black/30 text-white sm:rounded-br-xl">
                   +15 more
                 </div>
               </button>
             </div>
           </div>
 
-          <header className="flex flex-col gap-4 border-b border-border-input pb-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2">
-              <h1 className="flex items-center gap-3 text-[22px] font-semibold text-gray2">
-                <Pointer size={20} color="currentColor" className="text-green-secondary" />
-                {propertyDetails.title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray5">
-                <span className="flex items-center gap-1.5 text-gray2">
-                  <Person size={14} color="black" />
+          <header className="flex flex-col gap-4 border-b w-full border-border-input pb-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-2 w-full">
+              <div className="flex items-center justify-between sm:gap-6 gap-2">
+                <div className="flex items-center justify-start sm:gap-3 gap-1 sm:-mt-6 -mt-4">
+                  <Pointer size={24} color="currentColor" className="text-green-secondary shrink-0 sm:w-6 sm:h-6 w-4 h-4" />
+                  <h1 className="lg:text-[32px] sm:text-[24px] text-[16px] whitespace-nowrap font-semibold leading-none text-gray2">
+                    {propertyDetails.title}
+                  </h1>
+                </div>
+                <div className="text-right leading-tight shrink-0">
+                  <p className="lg:text-[30px] sm:text-[20px] text-[14px]  font-semibold text-gray2">{propertyDetails.valuation}</p>
+                  <p className="sm:text-sm text-[10px]  text-gray5">Est. Valuation</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1 sm:gap-2 lg:gap-4 text-[10px] sm:text-xs lg:text-sm xl:text-lg text-gray5">
+                <span className="flex items-center gap-1.5 text-gray2 font-bold">
+                  <Person size={14} color="black" className="sm:w-4 sm:h-4 w-2.5 h-2.5" />
                   {propertyDetails.ownerType}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Building size={14} color="currentColor" className="text-gray5" />
+                  <Building size={14} color="currentColor" className="text-gray5 sm:w-4 sm:h-4 w-2.5 h-2.5" />
                   {propertyDetails.category}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Bag size={14} color="currentColor" className="text-gray5" />
+                  <Bag size={14} color="currentColor" className="text-gray5 sm:w-4 sm:h-4 w-2.5 h-2.5" />
                   {propertyDetails.area}
                 </span>
-                <span className="rounded-md border border-border-card px-2 py-1 text-xs font-medium text-gray7">{propertyDetails.code}</span>
+                <span className="rounded-md border border-border-card px-2 py-1  font-medium text-gray7">{propertyDetails.code}</span>
                 <span className="flex items-center gap-1.5">
-                  <Calendar size={14} color="currentColor" className="text-gray5" />
+                  <Calendar size={14} color="currentColor" className="text-gray5 sm:w-4 sm:h-4 w-2.5 h-2.5" />
                   Updated {propertyDetails.updatedAt}
                 </span>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-[22px] font-semibold text-gray2">{propertyDetails.valuation}</p>
-              <p className="text-sm text-gray5">Est. Valuation</p>
-            </div>
+           
           </header>
 
-          <div className="grid gap-4 border-b border-border-input pb-5 sm:grid-cols-2 lg:grid-cols-5">
-            {stats.map((item) => (
-              <div key={item.label} className="space-y-2">
+          <div className="flex md:justify-between gap-4 border-b border-border-input pb-5 flex-wrap lg:gap-0">
+            {stats.map((item, index) => (
+              <div key={item.label} className={`space-y-2 lg:flex-1 lg:px-6 ${index !== 0 ? "lg:border-l lg:border-border-input" : ""}`}>
                 <p className="text-[12px] font-medium text-gray7">{item.label}</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-nowrap gap-2">
                   {item.values.map((value) => (
                     <span
                       key={`${item.label}-${value.text}`}
@@ -219,15 +224,15 @@ const PropertyPage = () => {
             ))}
           </div>
 
-          <div className="space-y-3 border-b border-border-input pb-5">
-            <h2 className="text-[18px] font-semibold text-gray2">Public Description</h2>
-            <p className="max-w-4xl text-sm leading-6 text-gray7">{propertyDetails.description}</p>
+          <div className="md:space-y-3 space-y-1 border-b border-border-input pb-5">
+            <h2 className="sm:text-[18px] text-[16px] font-semibold text-gray2">Public Description</h2>
+            <p className="max-w-4xl text-[10px] sm:text-xs lg:text-sm xl:text-lg sm:leading-6 text-gray7 leading-snug">{propertyDetails.description}</p>
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-[18px] font-semibold text-gray2">Approximate Location</h2>
+            <h2 className="sm:text-[18px] text-[16px] font-semibold text-gray2">Approximate Location</h2>
             <div className="space-y-4">
-              <div className="relative overflow-hidden rounded-[24px] border border-border-card bg-white p-3 shadow-[0_10px_30px_rgba(17,24,39,0.08)]">
+              <div className="relative overflow-hidden rounded-xl border border-border-card bg-white p-3 shadow-[0_10px_30px_rgba(17,24,39,0.08)]">
                 <MapView
                   center={{ lat: propertyDetails.lat, lng: propertyDetails.lng }}
                   zoom={13}
@@ -236,8 +241,8 @@ const PropertyPage = () => {
                   hideMarkerPin
                   showCenterRings
                   infoWindowOffset={8}
-                  containerClassName="min-h-[322px] rounded-[20px] border-none bg-background-primary shadow-none"
-                  mapClassName="h-[322px] w-full rounded-[20px]"
+                  containerClassName="min-h-[322px] rounded-lg border-none bg-background-primary shadow-none"
+                  mapClassName="h-[322px] w-full rounded-lg"
                   ringClassName="z-[1]"
                 />
                 <div className="pointer-events-none absolute bottom-6 right-6 z-[2] rounded-[14px] border border-border-card bg-white px-4 py-3 text-[12px] font-semibold text-gray7 shadow-[0_6px_18px_rgba(15,23,42,0.16)]">
@@ -245,9 +250,11 @@ const PropertyPage = () => {
                 </div>
               </div>
 
-              <div className="inline-flex items-center gap-3 rounded-[16px] border border-border-card bg-white px-4 py-3 text-sm font-medium text-gray7 shadow-[0_6px_16px_rgba(15,61,46,0.08)]">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-border-card bg-white">
-                  <WarningRingIcon />
+              <div className="inline-flex items-center gap-3 h-12 rounded-xl border border-border-card bg-[#FFFCF2] px-3 py-2 text-sm font-medium text-[#DFA403] shadow-[0_6px_16px_rgba(15,61,46,0.08)]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-yellow-200/30 bg-[#FFFCF2]">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-yellow-300 bg-[#FFFCF2]">
+                    <WarningRingIcon />
+                  </span>
                 </span>
                 <span>Location is approximate. Owner identity is protected</span>
               </div>
@@ -454,9 +461,9 @@ const ArrowLeftIcon = () => (
 
 const WarningRingIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <circle cx="9" cy="9" r="7.25" stroke="currentColor" strokeWidth="1.5" className="text-green-secondary" />
-    <path d="M9 5.25V9.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-green-secondary" />
-    <circle cx="9" cy="12.25" r="0.85" fill="currentColor" className="text-green-secondary" />
+    <circle cx="9" cy="9" r="7.25" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M9 5.25V9.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <circle cx="9" cy="12.25" r="0.85" fill="currentColor" />
   </svg>
 );
 

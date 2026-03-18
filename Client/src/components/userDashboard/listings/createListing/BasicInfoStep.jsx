@@ -83,10 +83,10 @@ const BasicInfoStep = ({ formData, updateField, toggleArrayValue }) => {
           Photo upload
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5">
           {photoSlots.map((photoUrl, index) =>
             photoUrl ? (
-              <div key={index} className="relative h-[92px] overflow-hidden rounded-md bg-background-primary sm:h-[108px] sm:rounded-lg md:h-[124px]">
+              <div key={index} className="relative h-30 overflow-hidden rounded-md bg-background-primary sm:h-40 sm:rounded-lg md:h-44">
                 <button
                   type="button"
                   onClick={() => handleRemovePhoto(index)}
@@ -102,7 +102,7 @@ const BasicInfoStep = ({ formData, updateField, toggleArrayValue }) => {
                 key={index}
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex h-[92px] flex-col items-center justify-center rounded-md border border-dashed border-border-card bg-white text-center transition hover:border-green-secondary/60 sm:h-[108px] sm:rounded-lg md:h-[124px]"
+                className="flex h-30 flex-col items-center justify-center rounded-md border border-dashed border-border-card bg-white text-center transition hover:border-green-secondary/60 sm:h-40 sm:rounded-lg md:h-44"
               >
                 <span className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-border-input bg-white text-gray7 sm:mb-3 sm:h-9 sm:w-9 sm:rounded-md">
                   <Upload size={16} color="var(--color-gray7)" />
@@ -110,7 +110,7 @@ const BasicInfoStep = ({ formData, updateField, toggleArrayValue }) => {
                 <span className="text-[10px] font-medium text-gray2 sm:text-[12px] md:text-[13px]">Add photo <span className="text-gray5">(max. 5MB)</span></span>
               </button>
             ) : (
-              <div key={index} className="h-[92px] rounded-md bg-background-primary sm:h-[108px] sm:rounded-lg md:h-[124px]" />
+              <div key={index} className="h-30 rounded-md bg-[#F1F1F1] sm:h-40 sm:rounded-lg md:h-44" />
             )
           )}
         </div>

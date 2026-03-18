@@ -66,11 +66,11 @@ const enquiries = [
 
 const EnquiriesPage = () => {
   return (
-    <main className="bg-background-primary py-8 md:py-10">
-      <div className="mx-auto w-auto px-4 md:px-6 xl:px-9">
+    <main className="bg-background-primary py-10 md:py-12">
+      <div className="mx-auto w-full  sm:px-8 px-3">
         <header>
-          <h1 className="text-[24px] font-semibold tracking-tight text-gray2 sm:text-[28px] md:text-[32px]">My Enquiries</h1>
-          <p className="mt-1 lg:text-[18px] md:text-[16px] text-[14px] text-gray5">Track your interest across various land parcels.</p>
+          <h1 className="text-[20px] font-bold tracking-tight text-gray2 sm:text-[28px] md:text-[32px]">My Enquiries</h1>
+          <p className="mt-1 lg:text-[18px] md:text-[16px] text-[12px] text-gray5">Track your interest across various land parcels.</p>
         </header>
 
         <section className="mt-6 space-y-4">

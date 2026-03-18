@@ -430,20 +430,20 @@ const ShortlistsPage = () => {
   );
 
   return (
-    <main className="bg-background-primary py-10">
-      <div className="px-8">
+    <main className="bg-background-primary py-12">
+      <div className="sm:px-8 px-2">
         <div className="flex items-center justify-between">
           <div className="mb-6">
-            <h1 className="text-[24px] font-semibold tracking-tight text-gray2 sm:text-[28px] md:text-[32px]">My Shortlists</h1>
-            <p className="mt-1 lg:text-[18px] md:text-[16px] text-[14px] text-gray5">Manage your saved land options</p>
+            <h1 className="text-[20px] font-semibold tracking-tight text-gray2 sm:text-[28px] md:text-[32px]">My Shortlists</h1>
+            <p className="mt-1 lg:text-[18px] md:text-[16px] text-[12px] text-gray5">Manage your saved land options</p>
           </div>
           <div ref={filterMenuRef} className="relative mb-6 lg:hidden">
             <button
               type="button"
               onClick={() => setIsFilterMenuOpen((prev) => !prev)}
-              className="flex items-center gap-2 rounded-lg border border-green-secondary bg-white px-3 py-1.5 transition-colors hover:bg-gray1"
+              className="flex items-center gap-1 sm:gap-1.5 md:gap-2 rounded-lg border border-border-card bg-white px-2 py-2 sm:px-2.5 sm:py-1.5 md:px-3 md:py-1.5 text-xs sm:text-sm md:text-base transition-colors hover:bg-gray1"
             >
-              <Funnel />
+              <Funnel className="w-4 h-4 md:w-5 md:h-5" />
               <span>Filter</span>
             </button>
 
@@ -500,7 +500,7 @@ const ShortlistsPage = () => {
                   key={property.id}
                   land={property}
                   className="w-full"
-                  showMenuButton
+                  // showMenuButton
                 />
               ))}
             </div>

@@ -4,7 +4,7 @@ import CreateListingStepper from "@/components/userDashboard/listings/createList
 
 const CreateListingLayout = ({ currentStep, children, onBack, onNext, isLastStep = false, nextLabel = "Next step" }) => {
   return (
-    <main className="min-h-screen bg-background-primary py-10 sm:py-8 md:py-10">
+    <main className="min-h-screen bg-background-primary pt-10 sm:pt-8 md:pt-10">
       <div className="mx-2 w-auto px-3 sm:px-4 md:px-6 lg:mx-10">
         <header className="text-center">
           <h1 className="text-[24px] font-semibold tracking-tight text-gray2 sm:text-[30px] md:text-[40px]">List your land</h1>
@@ -17,7 +17,7 @@ const CreateListingLayout = ({ currentStep, children, onBack, onNext, isLastStep
           <CreateListingStepper currentStep={currentStep} />
         </div>
 
-        <section className="mt-8 rounded-[20px] bg-white px-3 py-4 shadow-[0px_10px_35px_rgba(15,61,46,0.04)] sm:mt-10 sm:px-4 sm:py-5 md:mt-12 md:rounded-[24px] md:px-8 md:py-8">
+        <section className="mt-8  px-3 py-4 sm:mt-10 sm:px-4 sm:py-5 md:mt-12 md:px-8 md:py-8">
           {children}
         </section>
       </div>

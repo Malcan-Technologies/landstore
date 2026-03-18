@@ -25,6 +25,8 @@ const initialFormData = {
   mukim: "",
   seksyen: "",
   lotNumber: "",
+  latitude: 3.114,
+  longitude: 101.69,
   titleType: "leasehold",
   leaseStartDate: "",
   leasePeriod: "30-years",
