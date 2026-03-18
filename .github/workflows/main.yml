@@ -1,12 +1,13 @@
-name: Deploy to ECS
+name: Deploy Client to ECS
 
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "Client/**"
 
 jobs:
   deploy:
-    name: Build & Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -18,21 +19,23 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+        aws-region: ap-southeast-5   # 👈 hardcode or keep secret
 
     - name: Login to ECR
+      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Build, tag, and push image
-      run: |
-        IMAGE_TAG=latest
-        docker build -t $ECR_REPO:$IMAGE_TAG .
-        docker tag $ECR_REPO:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
-        docker push ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
       env:
-        ECR_REPO: ${{ secrets.ECR_REPOSITORY }}
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: land-marketplace/client   # 👈 IMPORTANT
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        cd Client
+        docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
-    - name: Update ECS service
+    - name: Force ECS deployment
       run: |
         aws ecs update-service \
           --cluster ${{ secrets.ECS_CLUSTER }} \
