@@ -6,10 +6,12 @@ import PillCheckbox from "@/components/common/PillCheckbox";
 import CircleRadioGroup from "@/components/common/CircleRadioGroup";
 import RangeSlider from "@/components/common/RangeSlider";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import FolderSection from "@/components/userDashboard/explore/FolderSection";
 import ThreeBars from "@/components/svg/ThreeBars";
 import List from "@/components/svg/List";
 import Note from "@/components/svg/Note";
 import DualNote from "@/components/svg/DualNote";
+import Folder from "@/components/svg/Folder";
 import Funnel from "@/components/svg/Funnel";
 import Map from "@/components/svg/Map";
 
@@ -28,6 +30,12 @@ const tanahOptions = [
   { value: "no", label: "No" },
   { value: "both", label: "Both" },
 ];
+const landAreaUnitOptions = [
+  { value: "acres", label: "Acres" },
+  { value: "sqft", label: "Square feet" },
+  { value: "hectares", label: "Hectares" },
+  { value: "sqm", label: "Square meters" },
+];
 
 const summaryStats = [
   { label: "Listings", value: 5, icon: Note, key: "listings" },
@@ -43,8 +51,23 @@ const viewModeOptions = [
 const toggleValue = (list, value) =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 
+const getRangePercent = (value, min, max) => {
+  if (max <= min) {
+    return 0;
+  }
+
+  return ((value - min) / (max - min)) * 100;
+};
+
+const getThumbAlignedLeft = (value, min, max, thumbSize = 20) => {
+  const percent = getRangePercent(value, min, max);
+  const offset = (0.5 - percent / 100) * thumbSize;
+
+  return `calc(${percent}% + ${offset}px)`;
+};
+
 const ViewToggle = memo(({ options, activeKey, onChange }) => (
-  <div className="inline-flex items-center gap-1 rounded-lg border border-[#E4E9F0] bg-[#F5F7F5] p-0.5">
+  <div className="inline-flex items-center gap-1 rounded-lg  bg-background-primary p-1">
     {options.map(({ key, icons }) => {
       const active = activeKey === key;
       return (
@@ -53,19 +76,12 @@ const ViewToggle = memo(({ options, activeKey, onChange }) => (
           type="button"
           onClick={() => onChange(key)}
           aria-pressed={active}
-          className={`flex h-8 w-12 items-center justify-center rounded-md transition ${
-            active ? "text-green-logo bg-white" : "text-[#7B8A99] bg-[#F5F7F5]"
-          }`}
+          className={`flex h-8 w-12 items-center justify-center rounded-md transition ${active ? "bg-white text-green-logo" : "bg-background-primary text-gray5"}`}
           aria-label={`${key} view`}
         >
           <span className="flex items-center gap-1.5">
             {icons.map((IconComp, iconIndex) => (
-              <IconComp
-                key={`${key}-icon-${iconIndex}`}
-                size={16}
-                color={active ? "var(--color-green-logo)" : "#7B8A99"}
-                aria-hidden
-              />
+              <IconComp key={`${key}-icon-${iconIndex}`} size={16} color={active ? "var(--color-green-logo)" : "var(--color-gray5)"} aria-hidden />
             ))}
           </span>
         </button>
@@ -78,9 +94,9 @@ const SummaryList = memo(({ summary, activeKey, onSelect }) => (
   <div className="space-y-1">
     {summary.map(({ label, value, icon: Icon, key }) => {
       const active = activeKey === key;
-      const iconColor = active ? "#0F8D62" : "#9AA6B5";
-      const inactiveColor = "text-[var(--color-gray1)]";
-      const labelColor = active ? "text-[#0F8D62]" : inactiveColor;
+      const iconColor = active ? "var(--color-green-secondary)" : "var(--color-gray5)";
+      const inactiveColor = "text-gray1";
+      const labelColor = active ? "text-green-secondary" : inactiveColor;
       return (
         <button
           key={label}
@@ -94,7 +110,7 @@ const SummaryList = memo(({ summary, activeKey, onSelect }) => (
             <Icon size={14} color={iconColor} aria-hidden />
             {label}
           </span>
-          <span className={active ? "text-[#0F8D62]" : "text-[#5F6C7B]"}>({value})</span>
+          <span className={active ? "text-green-secondary" : "text-gray5"}>({value})</span>
         </button>
       );
     })}
@@ -103,7 +119,7 @@ const SummaryList = memo(({ summary, activeKey, onSelect }) => (
 
 const CheckboxSection = memo(({ label, options, selected, onToggle }) => (
   <div className="space-y-3">
-    <p className="text-[13px] font-medium text-[#4A4A4A]">{label}</p>
+    <p className="text-[13px] font-medium text-gray7">{label}</p>
     <div className="flex flex-wrap gap-2">
       {options.map((option) => (
         <PillCheckbox
@@ -117,7 +133,24 @@ const CheckboxSection = memo(({ label, options, selected, onToggle }) => (
   </div>
 ));
 
-const FilterPanel = () => {
+const FilterPanel = ({
+  showFilters = true,
+  variant = "sidebar",
+  collapseBehavior = "internal",
+  onToggleRequest,
+  folders = [],
+  foldersTitle = "Folders",
+  activeFolderId,
+  onFolderSelect,
+  createFolderLabel = "Create new folder",
+  onCreateFolder,
+  activeFolderMenuId,
+  onFolderMenuToggle,
+  onRenameFolder,
+  renamingFolderId,
+  onRenameFolderSave,
+  onDeleteFolder,
+}) => {
   // console.log("FilterPanel rendered");
   const [locationSearch, setLocationSearch] = useState("");
   const [selectedState, setSelectedState] = useState(negeriOptions[0].value);
@@ -127,10 +160,14 @@ const FilterPanel = () => {
   const [selectedUtilization, setSelectedUtilization] = useState(["Vacant", "Plantation"]);
   const [tanahRizab, setTanahRizab] = useState("yes");
   const [landArea, setLandArea] = useState([25, 75]);
+  const [landAreaUnit, setLandAreaUnit] = useState(landAreaUnitOptions[0].value);
   const [pricePerSqft, setPricePerSqft] = useState("");
   const [titleType, setTitleType] = useState("");
   const [viewMode, setViewMode] = useState(viewModeOptions[0].key);
   const [activeSummary, setActiveSummary] = useState(summaryStats[0].key);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const isModalVariant = variant === "modal";
+  const usesExternalCollapse = collapseBehavior === "external";
 
   const handleLocationChange = (event) => setLocationSearch(event.target.value);
   const handleStateChange = useCallback((value) => setSelectedState(value), []);
@@ -152,6 +189,7 @@ const FilterPanel = () => {
   );
   const handleTanahChange = useCallback((value) => setTanahRizab(value), []);
   const handleRangeChange = useCallback((range) => setLandArea(range), []);
+  const handleLandAreaUnitChange = useCallback((value) => setLandAreaUnit(value), []);
   const handlePriceChange = useCallback((event) => setPricePerSqft(event.target.value), []);
   const handleTitleChange = useCallback((event) => setTitleType(event.target.value), []);
 
@@ -159,123 +197,192 @@ const FilterPanel = () => {
     event.preventDefault();
   };
 
+  const handleViewModeChange = useCallback((nextViewMode) => {
+    if (isModalVariant) {
+      return;
+    }
+    setViewMode(nextViewMode);
+    if (usesExternalCollapse) {
+      onToggleRequest?.(nextViewMode);
+      return;
+    }
+    setIsPanelCollapsed((prev) => !prev);
+  }, [isModalVariant, onToggleRequest, usesExternalCollapse]);
+
   return (
-    <aside className="w-full max-w-92.5 rounded-xl border border-[#E6EBF2] bg-white p-5 shadow-[0_20px_40px_rgba(15,61,46,0.05)]">
-      <div className="space-y-5">
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <p className="flex items-center gap-2 text-[16px] font-semibold text-gray2">
-              <DualNote size={16} color="#0F3D2E" aria-hidden /> Account summary
-            </p>
-            <ViewToggle options={viewModeOptions} activeKey={viewMode} onChange={setViewMode} />
-          </div>
-          <SummaryList summary={summaryStats} activeKey={activeSummary} onSelect={setActiveSummary} />
-          <div className="my-5 border-t border-[#E7ECEF]" />
-        </div>
-
-        <div className="space-y-5">
-          <p className="flex items-center gap-2 text-[15px] font-semibold text-[#0B1220]">
-            <Funnel size={16} color="#0F3D2E" /> Filters
+    <aside
+      className={`relative ${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "max-w-fit bg-transparent p-0 shadow-none" : "max-w-84 rounded-xl bg-white p-5 shadow-[0_20px_40px_rgba(15,61,46,0.05)]"} ${isModalVariant || usesExternalCollapse ? "flex h-full flex-col overflow-hidden" : ""}`}
+    >
+      <div className={`${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "absolute -right-20 top-0 z-10" : "mb-4 flex items-center justify-between gap-2"}`}>
+        {!(!isModalVariant && !usesExternalCollapse && isPanelCollapsed) ? (
+          <p className="flex items-center gap-2 text-[16px] font-semibold text-gray2">
+            <DualNote size={16} color="var(--color-green-logo)" aria-hidden /> Account summary
           </p>
-
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-[13px] font-medium text-[#4A4A4A]">
-                <Map size={14} color="#1E765F" /> Location
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search Negeri or Daerah..."
-                  value={locationSearch}
-                  onChange={handleLocationChange}
-                  autoComplete="off"
-                  // inputMode="search"
-                  className="h-10 w-full rounded-xl border border-[#D7DEE7] px-3.5 pl-4 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#B3B3B3] focus:border-green-primary"
-                />
-              </div>
-              <SelectDropdown
-                value={selectedState}
-                onChange={handleStateChange}
-                options={negeriOptions}
-                placeholder="Select Negeri"
-              />
-            </div>
-
-            <CheckboxSection
-              label="Deal type"
-              options={dealTypeOptions}
-              selected={selectedDealTypes}
-              onToggle={handleDealTypeToggle}
-            />
-
-            <CheckboxSection
-              label="Category"
-              options={categoryOptions}
-              selected={selectedCategories}
-              onToggle={handleCategoryToggle}
-            />
-
-            <CheckboxSection
-              label="Terrain"
-              options={terrainOptions}
-              selected={selectedTerrain}
-              onToggle={handleTerrainToggle}
-            />
-
-            <CheckboxSection
-              label="Current utilization"
-              options={utilizationOptions}
-              selected={selectedUtilization}
-              onToggle={handleUtilizationToggle}
-            />
-
-            <div className="space-y-3">
-              <p className="text-[13px] font-medium text-[#4A4A4A]">Tanah Rizab Melayu</p>
-              <CircleRadioGroup value={tanahRizab} onChange={handleTanahChange} options={tanahOptions} />
-            </div>
-
-            {/* <div className="space-y-3">
-              <div className="flex items-center justify-between text-[13px] font-medium text-[#4A4A4A]">
-                <span>Land area</span>
-                <span className="rounded-xl border border-[#E0E7EF] px-2 py-1 text-[12px] text-[#4A4A4A]">
-                  Acres
-                </span>
-              </div>
-              <RangeSlider value={landArea} onChange={handleRangeChange} min={0} max={100} />
-            </div> */}
-
-            <div className="space-y-3">
-              <label className="text-[13px] font-medium text-[#4A4A4A]">Price per sqft (RM)</label>
-              <input
-                type="number"
-                placeholder="e.g. 4500"
-                value={pricePerSqft}
-                onChange={handlePriceChange}
-                className="h-10 w-full rounded-xl border border-[#D7DEE7] px-3.5 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#B3B3B3] focus:border-green-primary"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-[13px] font-medium text-[#4A4A4A]">Title type</label>
-              <input
-                type="text"
-                placeholder="Enter title"
-                value={titleType}
-                onChange={handleTitleChange}
-                className="h-10 w-full rounded-xl border border-[#D7DEE7] px-3.5 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#B3B3B3] focus:border-green-primary"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="mt-2 w-full justify-center rounded-xl text-[14px] font-semibold"
-            >
-              Apply filters
-            </Button>
-          </form>
-        </div>
+        ) : null}
+        {!isModalVariant ? <ViewToggle options={viewModeOptions} activeKey={viewMode} onChange={handleViewModeChange} /> : null}
       </div>
+
+      {isModalVariant || usesExternalCollapse || !isPanelCollapsed ? (
+        <div className={`space-y-5 ${isModalVariant || usesExternalCollapse ? "min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1" : ""}`}>
+          <div>
+            <SummaryList summary={summaryStats} activeKey={activeSummary} onSelect={setActiveSummary} />
+            <div className="my-5 border-t border-border-input" />
+          </div>
+
+          {folders.length ? (
+            <div className="space-y-5">
+              <p className="flex items-center gap-2 text-[15px] font-semibold text-gray2">
+                <Folder size={18} color="var(--color-gray2)" /> {foldersTitle}
+              </p>
+              <FolderSection
+                folders={folders}
+                activeFolderId={activeFolderId}
+                onFolderSelect={onFolderSelect}
+                createFolderLabel={createFolderLabel}
+                onCreateFolder={onCreateFolder}
+                activeFolderMenuId={activeFolderMenuId}
+                onFolderMenuToggle={onFolderMenuToggle}
+                onRenameFolder={onRenameFolder}
+                renamingFolderId={renamingFolderId}
+                onRenameFolderSave={onRenameFolderSave}
+                onDeleteFolder={onDeleteFolder}
+              />
+            </div>
+          ) : null}
+
+          {showFilters ? (
+            <div className="space-y-5">
+              <p className="flex items-center gap-2 text-[15px] font-semibold text-gray2">
+                <Funnel size={16} color="var(--color-green-logo)" /> Filters
+              </p>
+
+              <form className="space-y-5" onSubmit={handleSubmit}>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-[13px] font-medium text-gray7">
+                    <Map size={14} color="var(--color-green-secondary)" /> Location
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search Negeri or Daerah..."
+                      value={locationSearch}
+                      onChange={handleLocationChange}
+                      autoComplete="off"
+                      className="h-10 w-full rounded-xl border border-border-input px-3.5 pl-4 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
+                    />
+                  </div>
+                  <SelectDropdown
+                    value={selectedState}
+                    onChange={handleStateChange}
+                    options={negeriOptions}
+                    placeholder="Select Negeri"
+                  />
+                </div>
+
+                <CheckboxSection
+                  label="Deal type"
+                  options={dealTypeOptions}
+                  selected={selectedDealTypes}
+                  onToggle={handleDealTypeToggle}
+                />
+
+                <CheckboxSection
+                  label="Category"
+                  options={categoryOptions}
+                  selected={selectedCategories}
+                  onToggle={handleCategoryToggle}
+                />
+
+                <CheckboxSection
+                  label="Terrain"
+                  options={terrainOptions}
+                  selected={selectedTerrain}
+                  onToggle={handleTerrainToggle}
+                />
+
+                <CheckboxSection
+                  label="Current utilization"
+                  options={utilizationOptions}
+                  selected={selectedUtilization}
+                  onToggle={handleUtilizationToggle}
+                />
+
+                <div className="space-y-3">
+                  <p className="text-[13px] font-medium text-gray7">Tanah Rizab Melayu</p>
+                  <CircleRadioGroup value={tanahRizab} onChange={handleTanahChange} options={tanahOptions} />
+                </div>
+
+                <div className="space-y-0">
+                  <label className="block text-[13px] font-medium text-gray7">Land area</label>
+                  <div className="flex items-center gap-3 mt-2">
+                    <div className="relative flex-1 pb-7">
+                      <RangeSlider
+                        value={landArea}
+                        onChange={handleRangeChange}
+                        min={0}
+                        max={100}
+                        step={1}
+                        className="max-w-none"
+                        showValues={false}
+                      />
+                      <span
+                        className="absolute top-full -mt-4  -translate-x-1/2 text-[14px] font-medium text-gray2"
+                        style={{ left: getThumbAlignedLeft(landArea[0], 0, 100) }}
+                      >
+                        {landArea[0]}
+                      </span>
+                      <span
+                        className="absolute top-full -mt-4  -translate-x-1/2 text-[14px] font-medium text-gray2"
+                        style={{ left: getThumbAlignedLeft(landArea[1], 0, 100) }}
+                      >
+                        {landArea[1]}
+                      </span>
+                    </div>
+                    <SelectDropdown
+                      value={landAreaUnit}
+                      onChange={handleLandAreaUnitChange}
+                      options={landAreaUnitOptions}
+                      className="w-16 shrink-0 -mt-3"
+                      buttonClassName="h-7 rounded-lg !px-2 !py-1 !text-[10px] -mt-3 !gap-0"
+                      optionsClassName="right-0 !w-32 min-w-32"
+                      optionClassName="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[13px] font-medium text-gray7">Price per sqft (RM)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 4500"
+                    value={pricePerSqft}
+                    onChange={handlePriceChange}
+                    className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[13px] font-medium text-gray7">Title type</label>
+                  <input
+                    type="text"
+                    placeholder="Enter title"
+                    value={titleType}
+                    onChange={handleTitleChange}
+                    className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="mt-2 w-full justify-center rounded-xl text-[14px] font-semibold"
+                >
+                  Apply filters
+                </Button>
+              </form>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </aside>
   );
 };

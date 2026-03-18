@@ -4,7 +4,7 @@ import React from "react";
 
 const Check = ({
   size = 36,
-  stroke = "#FFFFFF",
+  stroke = "currentColor",
   strokeWidth = 2.5,
   className = "",
   circleFill,

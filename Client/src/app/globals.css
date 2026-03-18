@@ -31,8 +31,12 @@ body {
   --color-green-primary: #1f7a5a;
   --color-green-secondary: #298064;
   --color-font-green: #7fbfa33d;
+  --color-font2-green:#06241A;
+  --color-greenbg:#56F6C2;
   --color-border-green: #29806459;
   --color-background-primary: #f8f8f8;
+  --color-border-input: #E2E8F0;
+  --color-border-card: #DBDBDB;
   --color-gray1: #767676;
   --color-gray2: #1a1a1a;
   --color-gray5: #838383;
@@ -57,17 +61,51 @@ body {
   animation-fill-mode: forwards;
 }
 
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+summary,
+a[href] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Google Maps InfoWindow custom styling */
 .gm-style .gm-style-iw-c {
   padding: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  /* height: auto; */
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+.gm-style .gm-style-iw {
+  overflow: visible !important;
+  max-height: none !important;
 }
 
 .gm-style .gm-style-iw-d {
   overflow: visible !important;
+  max-height: none !important;
 }
 .gm-style-iw-tc{
   display: none;

@@ -1,6 +1,6 @@
 import React from "react";
 
-const Funnel = ({ size = 16, color = "#1A1A1A", className, ...props }) => (
+const Funnel = ({ size = 16, color = "var(--color-gray2)", className, ...props }) => (
   <svg
     width={size}
     height={size}

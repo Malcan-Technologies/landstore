@@ -1,6 +1,6 @@
 import React from "react";
 
-const Tick = ({ width = 12, height = 10, color = "#298064", className, ...props }) => (
+const Tick = ({ width = 12, height = 10, color = "var(--color-green-secondary)", className, ...props }) => (
   <svg
     width={width}
     height={height}

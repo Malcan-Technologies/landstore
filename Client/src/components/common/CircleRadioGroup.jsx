@@ -23,17 +23,13 @@ const CircleRadioGroup = ({
       <RadioGroup.Option key={option.value} value={option.value} className="focus:outline-none">
         {({ checked }) => (
           <span
-            className={`flex cursor-pointer items-center gap-2 text-[14px] font-medium transition ${
-              checked ? "text-[#0B1220]" : "text-[#1A1A1A]"
-            } ${optionClassName}`.trim()}
+            className={`flex cursor-pointer items-center gap-2 text-[14px] font-medium transition ${checked ? "text-gray2" : "text-gray2"} ${optionClassName}`.trim()}
           >
             <span
-              className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-                checked ? "border-[#1E765F] bg-[#1E765F]/10" : "border-[#D5DBE4] bg-white"
-              }`}
+              className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${checked ? "border-green-secondary bg-green-secondary/10" : "border-border-input bg-white"}`}
             >
               <span
-                className={`h-2.5 w-2.5 rounded-full transition ${checked ? "bg-[#1E765F]" : "bg-transparent"}`}
+                className={`h-2.5 w-2.5 rounded-full transition ${checked ? "bg-green-secondary" : "bg-transparent"}`}
               />
             </span>
             <span>{option.label}</span>

@@ -1,6 +1,6 @@
 import React from "react";
 
-const Bell = ({ width = 16, height = 16, fill = "#1A1A1A", ...props }) => (
+const Bell = ({ width = 16, height = 16, fill = "var(--color-gray2)", ...props }) => (
   <svg
     width={width}
     height={height}

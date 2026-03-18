@@ -1,6 +1,6 @@
 import React from "react";
 
-const EyeClose = ({ size = 20, color = "#6B6B6B", className, ...props }) => (
+const EyeClose = ({ size = 20, color = "var(--color-gray5)", className, ...props }) => (
   <svg
     width={size}
     height={size}

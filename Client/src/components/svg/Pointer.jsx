@@ -1,6 +1,6 @@
 import React from "react";
 
-const Pointer = ({ size = 17, color = "#298064", className, ...props }) => (
+const Pointer = ({ size = 17, color = "var(--color-green-secondary)", className, ...props }) => (
   <svg
     width={(size * 14) / 17}
     height={size}

@@ -1,6 +1,6 @@
 import React from "react";
 
-const Building = ({ size = 20, color = "#1A1A1A", className, ...props }) => (
+const Building = ({ size = 20, color = "var(--color-gray5)", className, ...props }) => (
   <svg
     width={size}
     height={size}

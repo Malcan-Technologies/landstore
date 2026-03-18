@@ -14,7 +14,7 @@ const Modal = ({
   overlayClassName = "bg-black/30",
   containerClassName = "flex min-h-full items-center justify-center p-4 text-center",
   showCloseButton = true,
-  closeButtonClassName = "absolute right-4 top-4 text-[30px] leading-none text-[#A3A3A3] transition hover:text-[#6B6B6B]",
+  closeButtonClassName = "absolute right-4 top-4 text-[30px] leading-none text-gray5 transition hover:text-gray7",
   closeLabel = "Close modal",
   as = Fragment,
 }) => {
@@ -56,7 +56,7 @@ const Modal = ({
                   </button>
                 ) : null}
                 {title ? (
-                  <Dialog.Title className="text-center text-[24px] font-bold text-black md:text-[28px]">
+                  <Dialog.Title className="text-center text-[24px] font-bold text-gray2 md:text-[28px]">
                     {title}
                   </Dialog.Title>
                 ) : null}

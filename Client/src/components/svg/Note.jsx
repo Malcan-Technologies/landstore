@@ -1,6 +1,6 @@
 import React from "react";
 
-const Note = ({ size = 16, color = "#298064", className, ...props }) => (
+const Note = ({ size = 16, color = "var(--color-green-secondary)", className, ...props }) => (
   <svg
     width={size}
     height={size}
