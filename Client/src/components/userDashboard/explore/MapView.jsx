@@ -5,7 +5,7 @@ import { GoogleMap, InfoWindowF, MarkerF, useLoadScript } from "@react-google-ma
 import InfoWindowCard from "@/components/userDashboard/explore/InfoWindowCard";
 
 const baseContainerClassName =
-  "relative h-full min-h-135 w-full overflow-hidden rounded-3xl border border-border-card bg-background-primary shadow-[0_15px_35px_rgba(15,61,46,0.05)]";
+  "relative h-full min-h-135 w-full overflow-hidden rounded-xl border border-border-card bg-background-primary shadow-[0_15px_35px_rgba(15,61,46,0.05)]";
 
 const mapOptions = {
   disableDefaultUI: true,
@@ -27,6 +27,23 @@ const getThemeColor = (variableName, fallback = "") => {
   if (typeof window === "undefined") return fallback;
   const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
   return value || fallback;
+};
+
+const InfoWindowContent = ({ marker, showCenterRings, ringClassName }) => {
+  return (
+    <div className="relative">
+      {showCenterRings ? (
+        <div className={`pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center ${ringClassName}`.trim()}>
+          <span className="absolute h-56 w-56 rounded-full border-[1.5px] border-dashed border-green-secondary/45 bg-green-logo/15" />
+          <span className="absolute h-40 w-40 rounded-full  bg-green-logo/32" />
+        </div>
+      ) : null}
+
+      <div className="relative z-10">
+        <InfoWindowCard image={marker.image} price={marker.price} area={marker.area} category={marker.category} />
+      </div>
+    </div>
+  );
 };
 
 const MapView = ({
@@ -112,12 +129,7 @@ const MapView = ({
                 onCloseClick={() => setActiveMarker(null)}
                 options={infoWindowOptions}
               >
-                <InfoWindowCard
-                  image={marker.image}
-                  price={marker.price}
-                  area={marker.area}
-                  category={marker.category}
-                />
+                <InfoWindowContent marker={marker} showCenterRings={showCenterRings} ringClassName={ringClassName} />
               </InfoWindowF>
             ) : null
           ) : (
@@ -136,25 +148,13 @@ const MapView = ({
                   onCloseClick={() => setActiveMarker(null)}
                   options={infoWindowOptions}
                 >
-                  <InfoWindowCard
-                    image={marker.image}
-                    price={marker.price}
-                    area={marker.area}
-                    category={marker.category}
-                  />
+                  <InfoWindowContent marker={marker} showCenterRings={showCenterRings} ringClassName={ringClassName} />
                 </InfoWindowF>
               ) : null}
             </MarkerF>
           )
         ))}
       </GoogleMap>
-
-      {showCenterRings ? (
-        <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${ringClassName}`.trim()}>
-          <span className="absolute h-48 w-48 rounded-full bg-green-secondary/20" />
-          <span className="absolute h-34 w-34 rounded-full bg-green-secondary/15" />
-        </div>
-      ) : null}
     </div>
   );
 };

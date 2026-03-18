@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+import Modal from "@/components/common/Modal";
 import MapView from "@/components/userDashboard/explore/MapView";
 import Bag from "@/components/svg/Bag";
 import Bag2 from "@/components/svg/Bag2";
@@ -84,18 +85,37 @@ const PropertyPage = () => {
   const [interestType, setInterestType] = useState(interestTypeOptions[0]);
   const [message, setMessage] = useState("");
   const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const handleOpenGallery = useCallback((index) => {
+    setActiveImageIndex(index);
+    setIsGalleryOpen(true);
+  }, []);
+
+  const handleCloseGallery = useCallback(() => {
+    setIsGalleryOpen(false);
+  }, []);
+
+  const handlePreviousImage = useCallback(() => {
+    setActiveImageIndex((prev) => (prev === 0 ? propertyDetails.images.length - 1 : prev - 1));
+  }, []);
+
+  const handleNextImage = useCallback(() => {
+    setActiveImageIndex((prev) => (prev === propertyDetails.images.length - 1 ? 0 : prev + 1));
+  }, []);
 
   return (
-    <main className="bg-background-primary py-12">
+    <main className="bg-background-primary py-20">
       <div className="flex mx-3 flex-col gap-8 px-6 lg:flex-row lg:items-start">
-        <section className="flex-1 space-y-6">
+        <section className="w-full space-y-6 lg:w-[67%] lg:max-w-[87%] lg:flex-none">
           <Link href="/explore" className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
             <ArrowLeftIcon />
             Back to marketplace
           </Link>
 
-          <div className="grid gap-2 lg:grid-cols-3">
-            <div className="relative h-auto rounded-l-xl lg:col-span-2">
+          <div className="grid gap-2 grid-cols-2 lg:grid-cols-3">
+            <button type="button" onClick={() => handleOpenGallery(0)} className="relative h-auto rounded-l-xl text-left lg:col-span-2">
               <Image
                 src={propertyDetails.images[0]}
                 alt="Main property view"
@@ -104,9 +124,9 @@ const PropertyPage = () => {
                 sizes="(min-width: 1024px) 66vw, 100vw"
                 unoptimized
               />
-            </div>
+            </button>
             <div className="flex flex-col gap-2">
-              <div className="relative h-38 rounded-tr-xl">
+              <button type="button" onClick={() => handleOpenGallery(1)} className="relative h-38 rounded-tr-xl text-left">
                 <Image
                   src={propertyDetails.images[1]}
                   alt="Property gallery image 2"
@@ -115,8 +135,8 @@ const PropertyPage = () => {
                   sizes="(min-width: 1024px) 32vw, 100vw"
                   unoptimized
                 />
-              </div>
-              <div className="relative h-38 rounded-br-xl">
+              </button>
+              <button type="button" onClick={() => handleOpenGallery(2)} className="relative h-38 rounded-br-xl text-left">
                 <Image
                   src={propertyDetails.images[2]}
                   alt="Property gallery image 3"
@@ -128,7 +148,7 @@ const PropertyPage = () => {
                 <div className="absolute inset-0 flex items-center justify-center rounded-br-xl bg-black/50 text-white">
                   +15 more
                 </div>
-              </div>
+              </button>
             </div>
           </div>
 
@@ -234,7 +254,7 @@ const PropertyPage = () => {
           </div>
         </section>
 
-        <aside className="h-fit w-full max-w-sm rounded-xl border border-border-card bg-white p-6 shadow-[0_10px_30px_rgba(16,24,40,0.08)]">
+        <aside className="h-fit w-auto  rounded-xl border border-border-card bg-white p-6 shadow-[0_10px_30px_rgba(16,24,40,0.08)]">
           {showInterestForm ? (
             <div className="space-y-5">
               <div className="space-y-2">
@@ -338,6 +358,82 @@ const PropertyPage = () => {
           )}
         </aside>
       </div>
+
+      <Modal
+        open={isGalleryOpen}
+        onClose={handleCloseGallery}
+        panelClassName="w-full max-w-[1100px] overflow-visible bg-transparent px-4 py-4 text-left shadow-none md:px-5 md:py-5"
+        overlayClassName="bg-black/70"
+        containerClassName="flex min-h-full items-center justify-center p-4"
+        closeButtonClassName="absolute right-5 top-4 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-[34px] leading-none text-white/80 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
+        closeLabel="Close gallery"
+      >
+        <div className="relative space-y-4 rounded-[28px] bg-[#0D0D0D] p-4 shadow-2xl md:p-5">
+          <div className="relative z-10 overflow-hidden rounded-[22px] bg-black/50">
+            <div className="relative h-[70vh] min-h-105 w-full">
+              <Image
+                src={propertyDetails.images[activeImageIndex]}
+                alt={`Property gallery image ${activeImageIndex + 1}`}
+                fill
+                className="object-contain"
+                sizes="100vw"
+                unoptimized
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handlePreviousImage}
+              className="absolute left-4 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
+              aria-label="Previous image"
+            >
+              <span className="text-[22px] leading-none">‹</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNextImage}
+              className="absolute right-4 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
+              aria-label="Next image"
+            >
+              <span className="text-[22px] leading-none">›</span>
+            </button>
+          </div>
+
+          <div className="relative z-10 flex items-center justify-between gap-3 text-sm text-white/80">
+            <span>
+              Image {activeImageIndex + 1} of {propertyDetails.images.length}
+            </span>
+          </div>
+
+          <div className="relative z-10 flex gap-3 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
+            {propertyDetails.images.map((image, index) => {
+              const isActive = activeImageIndex === index;
+
+              return (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => setActiveImageIndex(index)}
+                  className={`relative h-20 w-28 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
+                    isActive ? "border-green-secondary" : "border-transparent opacity-70 hover:opacity-100"
+                  }`}
+                  aria-label={`Open image ${index + 1}`}
+                >
+                  <Image
+                    src={image}
+                    alt={`Property thumbnail ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="112px"
+                    unoptimized
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </Modal>
     </main>
   );
 };

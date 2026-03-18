@@ -5,8 +5,8 @@ import Building from "@/components/svg/Building";
 
 const InfoWindowCard = ({ image, price, area, category }) => (
   <div className="relative inline-flex flex-col items-center text-white">
-    <div className="flex min-w-56 max-w-xs items-stretch rounded-2xl bg-gray2 ">
-      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-l-2xl">
+    <div className="flex w-auto max-w-xs items-stretch rounded-lg bg-gray2 ">
+      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-l-lg">
         {image ? (
           <Image
             src={image}
@@ -22,14 +22,14 @@ const InfoWindowCard = ({ image, price, area, category }) => (
           </div>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-2 px-4 py-3 text-sm">
+      <div className="flex flex-1 flex-col gap-1 px-2 py-2 text-sm">
         <p className="text-base font-semibold tracking-tight">{price}</p>
         <div className="flex items-center gap-2 text-white">
-          <Road size={15} color="white" aria-hidden />
+          <Road size={12} color="white" aria-hidden />
           <span className="text-xs uppercase tracking-wide opacity-90">{area}</span>
         </div>
         <div className="flex items-center gap-2 text-white">
-          <Building size={15} color="white" aria-hidden />
+          <Building size={12} color="white" aria-hidden />
           <span className="text-xs uppercase tracking-wide opacity-90">{category}</span>
         </div>
       </div>

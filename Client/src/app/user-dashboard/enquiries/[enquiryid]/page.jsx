@@ -12,6 +12,7 @@ import Send from "@/components/svg/Send";
 import Sheild from "@/components/svg/Sheild";
 import StepperTick from "@/components/svg/StepperTick";
 import UpRight from "@/components/svg/UpRight";
+import Exclamation from "@/components/svg/Exclamation";
 
 const enquiryDetails = {
   "enquiry-1": {
@@ -35,8 +36,8 @@ const EnquiryDetailPage = async ({ params }) => {
 
   return (
     <main className="bg-background-primary py-8 md:py-10">
-      <div className="mx-auto w-full max-w-350 px-4 md:px-6 xl:px-9">
-        <section className="rounded-[22px] border border-border-card bg-white px-4 py-4 shadow-[0px_6px_24px_rgba(15,61,46,0.04)] md:px-4 md:py-4">
+      <div className="mx-auto w-full max-w-350 px-2 md:px-6 xl:px-9">
+        <section className="rounded-lg border border-border-card bg-white px-4 py-4 shadow-[0px_6px_24px_rgba(15,61,46,0.04)] md:px-4 md:py-4">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-4 md:flex-row md:items-center">
               <div className="relative h-25 w-25 shrink-0 overflow-hidden rounded-2xl">
@@ -49,7 +50,7 @@ const EnquiryDetailPage = async ({ params }) => {
                   <span className="rounded-md bg-[#F5F5F5] px-2.5 py-1 text-[10px] font-medium text-[#7B7B7B]">{enquiry.status}</span>
                 </div>
 
-                <h1 className="mt-3 flex items-center gap-2 text-[26px] font-semibold leading-tight text-gray2 md:text-[28px]">
+                <h1 className="mt-3 flex items-center gap-2 text-[20px] font-semibold leading-tight text-gray2 md:text-[24px] lg:text-[26px]">
                   <Pointer size={18} color="var(--color-green-secondary)" />
                   {enquiry.title}
                 </h1>
@@ -89,7 +90,7 @@ const EnquiryDetailPage = async ({ params }) => {
           </div>
 
           <div className="mt-6 border-t border-border-card pt-12">
-            <div className="mx-auto flex max-w-190 items-start justify-between gap-2 px-2 lg:gap-20">
+            <div className="mx-auto flex max-w-190 items-start justify-between gap-0.5 px-0 sm:gap-2 sm:px-2 lg:gap-20">
               {progressSteps.map((step, index) => {
                 const currentStep = 1;
                 const stepNumber = index + 1;
@@ -99,31 +100,31 @@ const EnquiryDetailPage = async ({ params }) => {
 
                 return (
                   <div key={step} className="relative flex flex-1 flex-col items-center justify-start text-center">
-                    <div className="relative flex h-11 w-full items-center justify-center">
+                    <div className="relative flex h-7 w-full items-center justify-center sm:h-9 md:h-11">
                       {isCompleted ? (
-                        <div className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-green-secondary shadow-[0px_4px_10px_rgba(38,143,109,0.18)]">
-                          <StepperTick width={16} height={14} color="white" />
+                        <div className="relative z-10 flex h-5 w-5 items-center justify-center rounded-full bg-green-secondary shadow-[0px_4px_10px_rgba(38,143,109,0.18)] sm:h-7 sm:w-7 md:h-9 md:w-9">
+                          <StepperTick width={10} height={8} color="white" className="sm:h-3 sm:w-3 md:h-auto md:w-auto" />
                         </div>
                       ) : isCurrent ? (
-                        <div className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-green-secondary bg-white">
-                          <div className="flex h-8.5 w-8.5 items-center justify-center rounded-full bg-green-secondary">
-                            <span className="h-3 w-3 rounded-full bg-white" />
+                        <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 border-green-secondary bg-white sm:h-9 sm:w-9 md:h-11 md:w-11 md:border-[3px]">
+                          <div className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-green-secondary sm:h-6.5 sm:w-6.5 md:h-8.5 md:w-8.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white sm:h-2.5 sm:w-2.5 md:h-3 md:w-3" />
                           </div>
                         </div>
                       ) : (
-                        <div className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-border-card bg-white">
-                          <span className="h-2.5 w-2.5 rounded-full bg-border-card" />
+                        <div className="relative z-10 flex h-5 w-5 items-center justify-center rounded-full border border-border-card bg-white sm:h-7 sm:w-7 sm:border-2 md:h-8 md:w-8">
+                          <span className="h-1.5 w-1.5 rounded-full bg-border-card sm:h-2.5 sm:w-2.5" />
                         </div>
                       )}
 
                       {showLine ? (
                         <span
-                          className={`absolute left-1/2 top-1/2 h-[2px] w-full -translate-y-1/2 lg:w-[180%] ${isCompleted ? "bg-green-secondary" : "bg-border-card"}`}
+                          className={`absolute left-1/2 top-1/2 h-px w-full -translate-y-1/2 lg:w-[180%] ${isCompleted ? "bg-green-secondary" : "bg-border-card"}`}
                           aria-hidden
                         />
                       ) : null}
                     </div>
-                    <span className="mt-3 flex min-h-10 w-full items-start justify-center text-center text-[13px] font-medium text-gray2">{step}</span>
+                    <span className="mt-1.5 flex min-h-7 w-full items-start justify-center text-center text-[9px] font-medium leading-tight text-gray2 sm:mt-2.5 sm:min-h-9 sm:text-[11px] md:mt-3 md:min-h-10 md:text-[13px]">{step}</span>
                   </div>
                 );
               })}
@@ -136,9 +137,7 @@ const EnquiryDetailPage = async ({ params }) => {
               Mediation Log
             </div>
             <div className="flex items-center gap-2 text-[11px] font-medium text-gray5 md:text-[14px]">
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-green-secondary text-green-secondary">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-secondary" />
-              </span>
+              <Sheild size={16} color="var(--color-green-secondary)" />
               Secure Admin Mediation
             </div>
           </div>
@@ -150,6 +149,7 @@ const EnquiryDetailPage = async ({ params }) => {
               </span>
 
               <div className="flex-1 space-y-4">
+                <div className="flex items-start justify-start gap-3">
                 <article className="rounded-2xl border border-[#D9DDE3] bg-white px-4 py-4 shadow-[0px_4px_12px_rgba(15,61,46,0.03)] md:px-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -167,6 +167,8 @@ const EnquiryDetailPage = async ({ params }) => {
                     Entity: <span className="font-medium text-gray2">Individual</span>
                   </div>
                 </article>
+
+                </div>
 
                 <div className="flex items-start justify-end gap-3">
                   <article className="w-full max-w-157.5 rounded-2xl border border-[#BFEBDD] bg-[#EDFCF6] px-4 py-4 text-right shadow-[0px_4px_12px_rgba(15,61,46,0.02)] md:px-5">
@@ -187,7 +189,7 @@ const EnquiryDetailPage = async ({ params }) => {
           </div>
 
           <div className="mt-6 flex justify-center">
-            <div className="w-full max-w-167.5">
+            <div className="w-full max-w-200">
               <div className="rounded-2xl border border-[#D9DDE3] bg-white px-4 py-3 shadow-[0px_4px_12px_rgba(15,61,46,0.03)]">
                 <textarea
                   placeholder="Type a follow-up note to LandStore admin..."
@@ -211,8 +213,8 @@ const EnquiryDetailPage = async ({ params }) => {
               </div>
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] text-[#9A9A9A] md:text-[11px]">
-                <span>◌ Encrypted communication</span>
-                <span>◌ Replies go to admin, not seller</span>
+                <span className="flex items-center gap-1"><Sheild size={12} color="currentColor" /> Encrypted communication</span>
+                <span className="flex items-center gap-1"><Exclamation size={12} color="currentColor" /> Replies go to admin, not seller</span>
               </div>
             </div>
           </div>

@@ -1,42 +1,53 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
+import DualNote from "@/components/svg/DualNote";
+import Verify from "@/components/svg/Verify";
+import Edit from "@/components/svg/Edit";
+import Sheild from "@/components/svg/Sheild";
+import ProfileCheck from "@/components/svg/ProfileCheck";
+
 const verifiedBadge = (
-  <span className="inline-flex items-center gap-1 rounded-full bg-activebg px-2 py-1 text-[11px] font-semibold text-active">
-    <span className="h-2 w-2 rounded-full bg-active" aria-hidden />
+  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ECFDF3] px-2.5 py-1 text-[12px] font-bold text-active">
+    <Sheild size={14} color="var(--color-active)" />
     Identity Verified
   </span>
 );
 
 const memberBadge = (
-  <span className="inline-flex items-center rounded-full bg-gray2 px-2 py-1 text-[11px] font-semibold text-white">
+  <span className="inline-flex items-center rounded-full bg-[#1F1F1F] px-2.5 py-1 text-[12px] font-medium text-white">
     Member ID: U123
   </span>
 );
 
 const lockIcon = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <path
-      d="M7 10V7a5 5 0 0 1 10 0v3M6 10h12a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const checkIcon = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <circle cx="12" cy="12" r="9" stroke="var(--color-green-secondary)" strokeWidth="1.6" />
-    <path
-      d="M8 12.3L10.6 14.8L16 9.6"
-      stroke="var(--color-green-secondary)"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 18 18"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <g clip-path="url(#clip0_1_21859)">
+      <path
+        d="M1.5 12C1.5 9.87868 1.5 8.81802 2.15901 8.15901C2.81802 7.5 3.87868 7.5 6 7.5H12C14.1213 7.5 15.182 7.5 15.841 8.15901C16.5 8.81802 16.5 9.87868 16.5 12C16.5 14.1213 16.5 15.182 15.841 15.841C15.182 16.5 14.1213 16.5 12 16.5H6C3.87868 16.5 2.81802 16.5 2.15901 15.841C1.5 15.182 1.5 14.1213 1.5 12Z"
+        stroke="#838383"
+        stroke-width="1.5"
+      />
+      <path
+        d="M4.5 7.5V6C4.5 3.51472 6.51472 1.5 9 1.5C11.4853 1.5 13.5 3.51472 13.5 6V7.5"
+        stroke="#838383"
+        stroke-width="1.5"
+        stroke-linecap="round"
+      />
+    </g>
+    <defs>
+      <clipPath id="clip0_1_21859">
+        <rect width="18" height="18" fill="white" />
+      </clipPath>
+    </defs>
   </svg>
 );
 
@@ -53,54 +64,86 @@ const ProfilePage = () => {
 
   return (
     <main className="bg-background-primary pb-14 pt-10">
-      <div className="mx-20 w-auto rounded-xl  px-5 py-7  md:px-10 md:py-9">
+      <div className="lg:mx-16 md:mx-4 mx-2 w-auto px-4 py-7 sm:px-6 md:px-10 md:py-9">
         <header className="mb-10">
-          <h1 className="text-[42px] font-semibold leading-tight tracking-tight text-gray2">Profile</h1>
-          <p className="mt-2 text-[17px] text-gray5">Manage your identity, entity verification, and preferences.</p>
+          <h1 className="text-[24px] font-bold tracking-tight text-gray2 sm:text-[28px] md:text-[32px]">
+            Profile
+          </h1>
+          <p className="mt-1 text-[13px] font-medium text-gray5 sm:text-[14px] md:text-[16px]">
+            Manage your identity, entity verification, and preferences.
+          </p>
         </header>
 
         <section className="mb-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div className="flex items-start gap-5">
-            <div className="relative h-24 w-24 shrink-0 rounded-full bg-[#d8d8d8] p-0.75">
-              <div className="h-full w-full rounded-full bg-linear-to-b from-[#f8e8de] via-[#edd5c5] to-[#d8c0ac]" />
-              <span className="absolute -bottom-0.5 -right-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#2f80ed] text-[13px] font-bold text-white">
-                ✓
+          <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4">
+            <div className="relative md:h-36 md:w-36 shrink-0 h-30 w-30">
+              <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-white shadow-[0px_4px_18px_rgba(15,61,46,0.08)]">
+                <Image
+                  src="/user.jpg"
+                  alt="User profile"
+                  fill
+                  unoptimized
+                  className="object-cover"
+                  sizes="143px"
+                />
+              </div>
+              <span className="absolute bottom-2 md:bottom-2 right-1 md:right-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full z-10">
+                <Verify width={28} height={28} />
               </span>
             </div>
 
-            <div>
-              <h2 className="text-[38px] font-semibold leading-tight text-gray2">Dato' Ridzuan Shah</h2>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="max-w-155 items-center sm:items-start flex flex-col">
+              <h2 className="text-[22px] font-semibold leading-tight text-gray2 sm:text-[24px] md:text-[26px]">
+                Dato' Ridzuan Shah
+              </h2>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 {verifiedBadge}
                 {memberBadge}
               </div>
-              <p className="mt-4 max-w-140 text-[17px] leading-relaxed text-gray5">
-                Registered as a <span className="font-semibold text-gray2">Corporate</span> user. Access limited to verified land assets and
-                mediated enquiries.
+              <p className="mt-4 max-w-140 text-[14px] leading-6 text-gray5 md:text-[15px] text-center sm:text-left">
+                Registered as a{" "}
+                <span className="font-semibold text-gray2">Corporate</span>{" "}
+                user. Access limited to verified land assets and mediated
+                enquiries.
               </p>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setIsEditing((prev) => !prev)}
-            className={`inline-flex h-11 items-center justify-center rounded-lg px-5 text-[14px] font-semibold transition ${
-              isEditing
-                ? "bg-green-primary text-white hover:bg-green-secondary"
-                : "border border-border-input bg-white text-gray2 hover:bg-background-primary"
-            }`}
-          >
-            {isEditing ? "Save profile" : "Edit profile"}
-          </button>
+          <div className="flex sm:items-center sm:justify-start justify-center">
+            <button
+              type="button"
+              onClick={() => setIsEditing((prev) => !prev)}
+              className={`inline-flex h-11 items-center justify-center gap-2 self-start whitespace-nowrap rounded-lg px-3 text-[14px] font-medium transition md:px-4 ${
+                isEditing
+                  ? "bg-green-primary text-white hover:bg-green-secondary"
+                  : "border border-border-input  text-gray2 hover:bg-background-primary"
+              }`}
+            >
+              {!isEditing ? (
+                <Edit
+                  size={16}
+                  stroke="currentColor"
+                  accentStroke="currentColor"
+                />
+              ) : (
+                ""
+              )}
+              {isEditing ? "Save profile" : "Edit profile"}
+            </button>
+          </div>
         </section>
 
         <section className="mb-10">
-          <h3 className="text-[30px] font-semibold text-gray2">Contract details</h3>
+          <h3 className="text-[18px] font-semibold text-gray2 md:text-[22px]">
+            Contract details
+          </h3>
           <div className="mt-5 h-px w-full bg-border-card" />
 
-          <div className="mt-6 space-y-4">
-            <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
-              <label htmlFor="email" className="text-[14px] font-semibold text-gray2">
+          <div className="mt-6 space-y-4 mx-4">
+            <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+              <label
+                htmlFor="email"
+                className="text-[14px] font-semibold text-gray2"
+              >
                 Email address
               </label>
               <div className="relative">
@@ -112,12 +155,18 @@ const ProfilePage = () => {
                   onChange={(event) => setEmail(event.target.value)}
                   disabled={!isEditing}
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">{checkIcon}</span>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                  {" "}
+                  <ProfileCheck size={16} />{" "}
+                </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
-              <label htmlFor="phone" className="text-[14px] font-semibold text-gray2">
+            <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+              <label
+                htmlFor="phone"
+                className="text-[14px] font-semibold text-gray2"
+              >
                 Phone number
               </label>
               <div className="relative flex rounded-lg border border-border-input bg-white">
@@ -140,7 +189,9 @@ const ProfilePage = () => {
                   className="h-11 w-full rounded-r-lg bg-transparent px-4 pr-10 text-[14px] text-gray2 outline-none disabled:text-gray5"
                   disabled={!isEditing}
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">{checkIcon}</span>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                  <ProfileCheck size={16} />{" "}
+                </span>
               </div>
             </div>
           </div>
@@ -148,7 +199,9 @@ const ProfilePage = () => {
 
         <section className="mb-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-[30px] font-semibold text-gray2">Entity information</h3>
+            <h3 className="text-[18px] font-semibold text-gray2 md:text-[22px]">
+              Entity information
+            </h3>
             <div className="inline-flex items-center gap-2 text-[14px] text-gray5">
               <span className="text-gray5">{lockIcon}</span>
               <span>Locked after verification</span>
@@ -156,33 +209,62 @@ const ProfilePage = () => {
           </div>
           <div className="mt-5 h-px w-full bg-border-card" />
 
-          <div className="mt-6 space-y-4">
-            <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
-              <span className="text-[14px] font-semibold text-gray2">Entity Type</span>
-              <input type="text" className={inputClassName} value="Corporate" disabled />
+          <div className="mt-6 space-y-4 mx-4">
+            <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+              <span className="text-[14px] font-semibold text-gray2">
+                Entity Type
+              </span>
+              <input
+                type="text"
+                className={inputClassName}
+                value="Corporate"
+                disabled
+              />
             </div>
 
-            <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
-              <span className="text-[14px] font-semibold text-gray2">Company Name</span>
-              <input type="text" className={inputClassName} value="Ridzuan Holdings Sdn Bhd" disabled />
+            <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+              {" "}
+              <span className="text-[14px] font-semibold text-gray2">
+                Company Name
+              </span>
+              <input
+                type="text"
+                className={inputClassName}
+                value="Ridzuan Holdings Sdn Bhd"
+                disabled
+              />
             </div>
 
-            <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
-              <span className="text-[14px] font-semibold text-gray2">ID Number (SSM / IC)</span>
-              <input type="text" className={inputClassName} value="202201012345" disabled />
+            <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+              {" "}
+              <span className="text-[14px] font-semibold text-gray2">
+                ID Number (SSM / IC)
+              </span>
+              <input
+                type="text"
+                className={inputClassName}
+                value="202201012345"
+                disabled
+              />
             </div>
           </div>
         </section>
 
         <section>
-          <h3 className="text-[30px] font-semibold text-gray2">Notification Preferences</h3>
+          <h3 className="text-[18px] font-semibold text-gray2 md:text-[22px]">
+            Notification Preferences
+          </h3>
           <div className="mt-5 h-px w-full bg-border-card" />
 
-          <div className="mt-6 space-y-5">
+          <div className="mt-6 space-y-5 mx-4">
             <div className="flex items-start justify-between gap-6">
               <div>
-                <p className="text-[18px] font-semibold text-gray2">Email Notifications</p>
-                <p className="text-[14px] text-gray5">Receive weekly market reports and listing updates via email</p>
+                <p className="text-[13px] font-semibold text-gray2 md:text-[16px]">
+                  Email Notifications
+                </p>
+                <p className="text-[10px] md:text-[13px]  text-gray5">
+                  Receive weekly market reports and listing updates via email
+                </p>
               </div>
               <button
                 type="button"
@@ -203,8 +285,12 @@ const ProfilePage = () => {
 
             <div className="flex items-start justify-between gap-6">
               <div>
-                <p className="text-[18px] font-semibold text-gray2">In-App Alerts</p>
-                <p className="text-[14px] text-gray5">Instant notifications for new enquiries and status changes</p>
+                <p className="text-[13px] font-semibold text-gray2 md:text-[16px]">
+                  In-App Alerts
+                </p>
+                <p className="text-[10px] md:text-[13px] text-gray5">
+                  Instant notifications for new enquiries and status changes
+                </p>
               </div>
               <button
                 type="button"

@@ -1,3 +1,7 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
 import EyeOpen from "@/components/svg/EyeOpen";
 import Star from "@/components/svg/Star";
 import UpRight from "@/components/svg/UpRight";
@@ -105,29 +109,47 @@ const listings = [
 ];
 
 const ListingsPage = () => {
+  const [activeTab, setActiveTab] = useState("all");
+
+  const filteredListings = useMemo(() => {
+    switch (activeTab) {
+      case "drafts":
+        return listings.filter((listing) => listing.statusKey === "draft");
+      case "review":
+        return listings.filter((listing) => listing.statusKey === "review");
+      case "active":
+        return listings.filter((listing) => listing.statusKey === "active");
+      case "inactive":
+        return listings.filter((listing) => listing.statusKey === "reserved");
+      default:
+        return listings;
+    }
+  }, [activeTab]);
+
   return (
-    <main className="bg-background-primary py-10">
-      <div className="mx-10 w-fulls px-4 md:px-6">
+    <main className="bg-background-primary py-14">
+      <div className="mx-2 md:mx-10 w-fulls px-2 md:px-4">
         <header>
-          <h1 className="text-[40px] font-semibold tracking-tight text-gray2">My Listings</h1>
-          <p className="mt-1 text-[18px] text-gray5">Manage your professional land portfolio</p>
+          <h1 className="text-[24px] font-bold tracking-tight text-gray2 sm:text-[28px] md:text-[32px]">My Listings</h1>
+          <p className="mt-1 lg:text-[16px] md:text-[16px] text-[14px] text-gray5">Manage your professional land portfolio</p>
         </header>
 
-        <section className="mt-8 flex flex-col lg:flex-row xl:gap-4 gap-2">
+        <section className="mt-8 flex flex-col lg:flex-row justify-between xl:gap-3 gap-2">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 lg:w-[50%]">
           {listingStats.map((stat) => {
             const Icon = stat.icon;
 
             return (
-              <article key={stat.id} className="lg:w-[25%] flex-shrink-0 rounded-2xl border border-border-card bg-white px-5 py-4 shadow-[0px_4px_18px_rgba(15,61,46,0.04)]">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-start gap-4">
-                    <span className="inline-flex h-13 w-13 items-center justify-center rounded-lg border border-border-card bg-white text-gray5 shadow-[0px_3px_10px_rgba(15,61,46,0.06)]">
+              <article key={stat.id} className="sm:w-[50%] flex justify-center items-center rounded-2xl border border-border-card bg-white px-3 py-3 shadow-[0px_4px_18px_rgba(15,61,46,0.04)]">
+                <div className="flex items-center justify-between gap-2 w-full">
+                  <div className="flex items-center justify-center md:gap-3 gap-4">
+                    <span className="inline-flex h-10 w-10 -mt-2 items-center justify-center rounded-lg border border-border-card bg-white text-gray5 shadow-[0px_3px_10px_rgba(15,61,46,0.06)]">
                       <Icon size={20} color="var(--color-gray5)" />
                     </span>
 
-                    <div>
+                    <div className="flex flex-col gap-3">
                       <p className="text-[13px] font-medium text-[#8C8C8C] md:text-[14px]">{stat.label}</p>
-                      <p className="mt-3 text-[18px] font-semibold leading-none text-gray2 md:text-[20px]">{stat.value}</p>
+                      <p className=" text-[18px] font-bold leading-none text-gray2 md:text-[24px]">{stat.value}</p>
                     </div>
                   </div>
 
@@ -140,7 +162,9 @@ const ListingsPage = () => {
             );
           })}
 
-          <article className="relative lg:w-[50%]  flex-shrink-0 overflow-hidden rounded-2xl bg-font2-green px-6 py-5 text-white shadow-[0px_10px_24px_rgba(6,36,26,0.18)]">
+          </div>
+
+          <div className="relative lg:w-[50%] mt-2 lg:mt-0 overflow-hidden rounded-2xl bg-font2-green px-6 py-5 text-white shadow-[0px_10px_24px_rgba(6,36,26,0.18)]">
             <div className="absolute -right-14 -top-5 opacity-20 z-1">
               <Star size={150} color="white" />
             </div>
@@ -151,30 +175,32 @@ const ListingsPage = () => {
               </div>
               <button
                 type="button"
-                className="inline-flex h-11 items-center gap-3 rounded-xl bg-greenbg px-5 z-2 text-[14px] font-semibold text-font2-green transition hover:opacity-90"
+                className="inline-flex h-11 items-center justify-center gap-3 rounded-xl bg-greenbg px-5 z-2 sm:text-[14px] text-[12px] font-semibold text-font2-green transition hover:opacity-90"
               >
                 <Star size={18} color="var(--color-font2-green)" />
                 Promote listing today
               </button>
             </div>
-          </article>
+          </div>
         </section>
 
-        <div className="mt-6 flex flex-wrap items-center gap-8 border-b border-border-card text-[14px] font-medium text-gray5">
+        <div className="no-scrollbar mt-6 flex flex-nowrap items-center gap-x-4 gap-y-3 overflow-x-auto border-b border-border-card text-[11px] font-medium text-gray5 sm:gap-x-5 sm:text-[12px] md:gap-x-8 md:text-[14px]">
           {listingTabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
-              className={`relative pb-4 transition ${tab.active ? "text-green-secondary" : "hover:text-gray2"}`}
+              onClick={() => setActiveTab(tab.id)}
+              aria-pressed={activeTab === tab.id}
+              className={`relative shrink-0 whitespace-nowrap pb-3 transition sm:pb-3.5 md:pb-4 ${activeTab === tab.id ? "text-green-secondary" : "hover:text-gray2"}`}
             >
               {tab.label}
-              {tab.active ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-green-secondary" /> : null}
+              {activeTab === tab.id ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-green-secondary" /> : null}
             </button>
           ))}
         </div>
 
         <section className="mt-6 space-y-4">
-          {listings.map((listing) => (
+          {filteredListings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
         </section>
