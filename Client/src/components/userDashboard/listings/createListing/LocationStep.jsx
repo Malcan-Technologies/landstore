@@ -1,7 +1,7 @@
 import CircleRadioGroup from "@/components/common/CircleRadioGroup";
+import LeaseholdCalendarInput from "@/components/userDashboard/listings/createListing/LeaseholdCalendarInput";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import MapView from "@/components/userDashboard/explore/MapView";
-import Calendar from "@/components/svg/Calendar";
 
 const negeriOptions = [
   { value: "selangor", label: "Selangor" },
@@ -16,11 +16,6 @@ const leaseOptions = [
   { value: "60-years", label: "60 Years" },
   { value: "99-years", label: "99 Years" },
 ];
-const yearOptions = Array.from({ length: 5 }, (_, index) => {
-  const year = 2025 + index;
-  return { value: String(year), label: String(year) };
-});
-const days = [null, null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, null];
 
 const LocationStep = ({ formData, updateField }) => {
   const locationMarker = {
@@ -131,65 +126,29 @@ const LocationStep = ({ formData, updateField }) => {
               Leasehold
             </button>
             </div>
-        <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
-          <div>
-            
-
-            <div className="mt-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-[12px] font-medium text-gray2 sm:text-[13px]">Leasehold start year</label>
-                  <div className="relative">
-                    <input
-                      value={formData.leaseStartDate}
-                      onChange={(event) => updateField("leaseStartDate", event.target.value)}
-                      placeholder="MM/DD/YYYY"
-                      className="h-9 w-full rounded-xl border border-border-input bg-white px-3 pr-9 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:h-10 sm:px-3.5 sm:pr-10 sm:text-[13px] md:h-11 md:text-[14px]"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray5">
-                      <Calendar size={14} color="currentColor" />
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <SelectDropdown
-                    label="Leasehold Period"
-                    value={formData.leasePeriod}
-                    onChange={(value) => updateField("leasePeriod", value)}
-                    options={leaseOptions}
-                    placeholder="Select period"
-                  />
-                </div>
-              </div>
-
-            </div>
-              <div className="mt-3 rounded-2xl border border-border-input bg-white p-3 shadow-[0px_8px_24px_rgba(15,61,46,0.08)] sm:p-4">
-                <SelectDropdown
-                  value={formData.calendarYear}
-                  onChange={(value) => updateField("calendarYear", value)}
-                  options={yearOptions}
-                  className="mb-3"
-                  buttonClassName="h-9 rounded-lg text-[12px] sm:h-10 sm:text-[13px]"
+        <div className="flex flex-col sm:flex-row sm:gap-3 gap-1">
+          {formData.titleType === "leasehold" && (
+            <>
+              <div className="mt-3 flex-1">
+                <LeaseholdCalendarInput
+                  label="Leasehold start year"
+                  value={formData.leaseStartDate}
+                  calendarYear={formData.calendarYear}
+                  onChange={(value) => updateField("leaseStartDate", value)}
+                  onCalendarYearChange={(value) => updateField("calendarYear", value)}
                 />
-                <div className="mb-3 flex items-center justify-between text-[11px] font-medium text-gray2 sm:text-[12px] md:text-[13px]">
-                  <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-border-input text-gray5 sm:h-7 sm:w-7">‹</button>
-                  <span>November 2024</span>
-                  <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-border-input text-gray5 sm:h-7 sm:w-7">›</button>
-                </div>
-                <div className="grid grid-cols-7 gap-1.5 text-center text-[9px] text-gray5 sm:gap-2 sm:text-[10px] md:text-[11px]">
-                  {['Su','Mo','Tu','We','Th','Fr','Sa'].map((day) => <span key={day}>{day}</span>)}
-                  {days.map((day, index) => (
-                    <span
-                      key={`${day ?? 'empty'}-${index}`}
-                      className={`flex h-6 items-center justify-center rounded-lg text-[10px] sm:h-7 sm:text-[11px] md:h-8 md:text-[12px] ${day === 7 ? "bg-[#2F2F2F] text-white" : day ? "text-gray2" : "text-transparent"}`}
-                    >
-                      {day ?? "."}
-                    </span>
-                  ))}
-                </div>
               </div>
-          </div>
+              <div className="mt-3 flex-1">
+                <SelectDropdown
+                  label="Leasehold Period"
+                  value={formData.leasePeriod}
+                  onChange={(value) => updateField("leasePeriod", value)}
+                  options={leaseOptions}
+                  placeholder="Select period"
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
