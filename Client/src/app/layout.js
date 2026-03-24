@@ -1,6 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/Header";
+import AppLayoutShell from "@/components/layout/AppLayoutShell";
 import ReduxProvider from "@/components/providers/ReduxProvider";
 
 const inter = Inter({
@@ -17,13 +17,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
+        suppressHydrationWarning
         className={`${inter.className} antialiased min-h-screen w-full overflow-x-hidden bg-background-primary`}
       >
         <ReduxProvider>
-          <Header />
-          <div  className="pt-10">
-            {children}
-          </div>
+          <AppLayoutShell>{children}</AppLayoutShell>
         </ReduxProvider>
       </body>
     </html>
