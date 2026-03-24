@@ -17,7 +17,7 @@ import { logout } from "@/store/authSlice";
 const Header = () => {
   const router = useRouter();
   const dispatch = useDispatch();
-  const { isAuthenticated, user, hydrated } = useSelector((state) => state.auth);
+  const { isAuth, user, hydrated } = useSelector((state) => state.auth);
 
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authTab, setAuthTab] = useState("login");
@@ -61,7 +61,7 @@ const Header = () => {
     <>
       <div className="shadow-sm bg-white fixed w-full z-10">
         <div className="mx-auto flex w-full items-center justify-between gap-6 px-4 py-3 md:px-6">
-          <Link href="/" className="flex items-center gap-3">
+          <button type="button" onClick={() => router.push("/")} className="flex items-center gap-3">
             <div className="relative h-10 w-10 md:h-12 md:w-12">
               <Image
                 src="/logo.png"
@@ -75,24 +75,24 @@ const Header = () => {
             <span className="text-lg font-bold text-green-logo hidden sm:block">
               LandStore<span className="text-green-secondary font-normal">.my</span>
             </span>
-          </Link>
+          </button>
 
           <nav className="hidden flex-1 items-center justify-center gap-6 text-sm font-medium text-gray2 lg:flex">
-            <Link href="/explore" className="transition hover:text-green-primary">
+            <button type="button" onClick={() => router.push("/explore")} className="transition hover:text-green-primary">
               Explore Map
-            </Link>
-            <Link href="/user-dashboard/shortlists" className="transition hover:text-green-primary">
+            </button>
+            <button type="button" onClick={() => router.push("/user-dashboard/shortlists")} className="transition hover:text-green-primary">
               Shortlists
-            </Link>
-            <Link href="/user-dashboard/enquiries" className="transition hover:text-green-primary">
+            </button>
+            <button type="button" onClick={() => router.push("/user-dashboard/enquiries")} className="transition hover:text-green-primary">
               My Enquiries
-            </Link>
+            </button>
           </nav>
 
           <div className="flex items-center gap-3 text-sm font-medium">
             {!hydrated ? (
               <div className="h-10 w-24 rounded-lg bg-background-primary" aria-hidden />
-            ) : isAuthenticated ? (
+            ) : isAuth ? (
               <>
                 <div ref={notificationRef} className="relative">
                   <button
@@ -112,7 +112,7 @@ const Header = () => {
                 <span className="h-6 w-[1.5px] bg-border-card" aria-hidden />
 
                 <Button
-                  href="/user-dashboard/listings"
+                  onClick={() => router.push("/user-dashboard/listings")}
                   className="sm:h-10 h-8 justify-center gap-0 rounded-md !px-2 sm:gap-2 sm:px-4!"
                 >
                   <span className="flex h-6 w-6 items-center justify-center text-white">

@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 
 import Details from "@/components/svg/Details";
 import Exclamation from "@/components/svg/Exclamation";
@@ -29,6 +31,8 @@ const notificationTypeStyles = {
 };
 
 const NotificationList = ({ notifications = [] }) => {
+  const router = useRouter();
+
   return (
     <div className="space-y-3 sm:space-y-4">
       {notifications.map((notification) => {
@@ -55,10 +59,14 @@ const NotificationList = ({ notifications = [] }) => {
                   </div>
                 ) : null}
 
-                <Link href={notification.href} className={`mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium transition sm:mt-4 sm:gap-2 sm:text-[14px] md:text-[15px] ${style.linkClassName}`}>
+                <button
+                  type="button"
+                  onClick={() => router.push(notification.href)}
+                  className={`mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium transition sm:mt-4 sm:gap-2 sm:text-[14px] md:text-[15px] ${style.linkClassName}`}
+                >
                   <span>View details</span>
                   <Details size={16} />
-                </Link>
+                </button>
               </div>
             </div>
           </article>

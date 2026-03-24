@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import Arrow from "@/components/svg/Arrow";
 import Button from "@/components/common/Button";
@@ -19,6 +19,7 @@ const PropertyCard = ({
   onMenuClick,
   variant = "default",
 }) => {
+  const router = useRouter();
   const {
     id,
     status = "Active",
@@ -70,6 +71,11 @@ const PropertyCard = ({
   if (variant === "compact") {
     const compactCardContent = (
       <article
+        onClick={() => {
+          if (id) {
+            router.push(`/property/${id}`);
+          }
+        }}
         className={`w-auto cursor-pointer rounded-lg border border-white/70 bg-white px-2 py-1.5 transition ${className}`.trim()}
       >
         <div className="flex items-stretch gap-3">
@@ -139,17 +145,11 @@ const PropertyCard = ({
       </article>
     );
 
-    return id ? (
-      <Link href={`/property/${id}`} className="block">
-        {compactCardContent}
-      </Link>
-    ) : (
-      compactCardContent
-    );
+    return compactCardContent;
   }
 
   return (
-    <article className={`h-fit w-90 self-start rounded-xl bg-white shadow-[0_10px_35px_rgba(15,61,46,0.05)] ${className}`.trim()}>
+    <article className={`h-fit w-full max-w-full min-w-0 self-start rounded-xl bg-white shadow-[0_10px_35px_rgba(15,61,46,0.05)] ${className}`.trim()}>
       <div className="relative h-40 w-full overflow-hidden rounded-t-xl">
         <Image
           src={image}
@@ -193,9 +193,9 @@ const PropertyCard = ({
         </span>
       </div>
 
-      <div className="mt-4 space-y-3 p-4 pt-0">
-        <div className="flex justify-between items-center gap-3 text-[12px] font-medium text-gray5">
-          <div className="flex items-center gap-3">
+      <div className="mt-4 min-w-0 sm:space-y-3 space-y-2 p-4 px-3 pt-0">
+        <div className="flex justify-between items-center md:gap-3 gap-1 sm:text-[11px] text-[9px] font-medium text-gray5">
+          <div className="flex min-w-0 flex-nowrap items-center md:gap-3 gap-1">
 
           <span className="flex items-center gap-1.5">
             <Building size={14} color="currentColor" className="text-gray5" />
@@ -209,12 +209,12 @@ const PropertyCard = ({
           <span className="rounded-lg border border-border-card px-2 py-1 text-gray7">{code}</span>
         </div>
 
-        <h3 className="flex items-center gap-2 text-[18px] font-bold text-gray2">
+        <h3 className="flex min-w-0 items-center gap-2 sm:text-[18px] text-[15px] font-bold text-gray2">
           <Pointer size={18} color="currentColor" className="text-green-secondary" />
-          {title}
+          <span className="truncate">{title}</span>
         </h3>
 
-        <div className="flex flex-wrap items-center gap-2 text-[12px] font-semibold text-green-secondary">
+        <div className="flex flex-wrap items-center gap-2 sm:text-[12px] text-[10px] font-semibold text-green-secondary">
           {dealTags.slice(0, 2).map((tag) => (
             <span key={tag} className="rounded-full border border-border-card  px-3 py-1 text-gray7">
               {tag}
@@ -223,12 +223,12 @@ const PropertyCard = ({
           {dealTags.length > 2 ? <span className="text-green-logo">{extraDealsLabel}</span> : null}
         </div>
 
-        <div className="flex items-center justify-between text-gray2">
-          <div>
-            <p className="text-[20px] font-semibold">{price}</p>
+        <div className="flex min-w-0 items-center justify-between gap-3 text-gray2">
+          <div className="min-w-0">
+            <p className="md:text-[20px] sm:text-[16px] text-[14px] font-bold">{price}</p>
             <p className="text-[12px] text-gray5">Estimated valuation</p>
           </div>
-          <p className="text-[13px] font-medium text-gray5">{valuation}</p>
+          <p className="shrink-0 sm:text-[13px] text-[11px] font-medium text-gray5">{valuation}</p>
         </div>
 
         <Button

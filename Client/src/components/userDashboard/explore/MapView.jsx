@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { GoogleMap, InfoWindowF, MarkerF, useLoadScript } from "@react-google-maps/api";
 import InfoWindowCard from "@/components/userDashboard/explore/InfoWindowCard";
 
@@ -58,11 +58,16 @@ const MapView = ({
   infoWindowOffset = 13,
   markerColor,
   hideMarkerPin = false,
+  onMapClick,
 }) => {
   const [activeMarker, setActiveMarker] = useState(defaultActiveMarkerId);
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
   });
+
+  useEffect(() => {
+    setActiveMarker(defaultActiveMarkerId);
+  }, [defaultActiveMarkerId]);
 
   const combinedContainerClassName = `${baseContainerClassName} ${containerClassName}`.trim();
 
@@ -94,6 +99,24 @@ const MapView = ({
     setActiveMarker((prev) => (prev === markerId ? null : markerId));
   }, []);
 
+  const handleMapClick = useCallback(
+    (event) => {
+      if (!onMapClick) {
+        return;
+      }
+
+      const lat = event.latLng?.lat?.();
+      const lng = event.latLng?.lng?.();
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return;
+      }
+
+      onMapClick({ lat, lng });
+    },
+    [onMapClick]
+  );
+
   const infoWindowOptions = useMemo(() => {
     if (typeof window === "undefined" || !window.google) return undefined;
     return {
@@ -119,7 +142,7 @@ const MapView = ({
 
   return (
     <div className={combinedContainerClassName}>
-      <GoogleMap mapContainerClassName={mapClassName} center={safeCenter} zoom={zoom} options={mapOptions}>
+      <GoogleMap mapContainerClassName={mapClassName} center={safeCenter} zoom={zoom} options={mapOptions} onClick={handleMapClick}>
         {validMarkers.map((marker) => (
           hideMarkerPin ? (
             activeMarker === marker.id && activeMarkerData ? (
