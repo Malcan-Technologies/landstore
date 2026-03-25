@@ -1,0 +1,160 @@
+import type { Request, Response } from "express";
+import { getRequesterUserFromToken } from "../services/user.ts";
+import {
+	createOwnershipType,
+	getAllOwnershipTypes,
+	getOwnershipTypeById,
+	updateOwnershipType,
+	deleteOwnershipType,
+} from "../services/ownership.ts";
+
+const getTokenFromRequest = (req: Request): string | null => {
+	const authHeader = req.headers.authorization;
+	if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
+	return (req.cookies as Record<string, string>)?.["__session"] ?? null;
+};
+
+const getRequesterUserOrThrow = async (req: Request) => {
+	const token = getTokenFromRequest(req);
+	if (!token) {
+		const unauthorizedError = new Error("Unauthorized");
+		(unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
+		throw unauthorizedError;
+	}
+
+	return getRequesterUserFromToken(token);
+};
+
+/**
+ * Create a new property ownership type
+ */
+export const createOwnershipTypeController = async (
+	req: Request,
+	res: Response
+) => {
+	try {
+		await getRequesterUserOrThrow(req);
+
+		const { name } = req.body;
+
+		const result = await createOwnershipType(name);
+
+		res.status(201).json({
+			success: true,
+			message: "Ownership type created successfully",
+			data: result,
+		});
+	} catch (error: any) {
+		const statusCode = error?.statusCode || 500;
+		res.status(statusCode).json({
+			success: false,
+			message: error?.message || "Failed to create ownership type",
+		});
+	}
+};
+
+/**
+ * Get all property ownership types
+ */
+export const getAllOwnershipTypesController = async (
+	req: Request,
+	res: Response
+) => {
+	try {
+		const types = await getAllOwnershipTypes();
+
+		res.status(200).json({
+			success: true,
+			message: "Ownership types retrieved successfully",
+			data: types,
+		});
+	} catch (error: any) {
+		const statusCode = error?.statusCode || 500;
+		res.status(statusCode).json({
+			success: false,
+			message: error?.message || "Failed to retrieve ownership types",
+		});
+	}
+};
+
+/**
+ * Get a single property ownership type by ID
+ */
+export const getOwnershipTypeByIdController = async (
+	req: Request,
+	res: Response
+) => {
+	try {
+		const typeId = req.params.typeId as string;
+
+		const type = await getOwnershipTypeById(typeId);
+
+		res.status(200).json({
+			success: true,
+			message: "Ownership type retrieved successfully",
+			data: type,
+		});
+	} catch (error: any) {
+		const statusCode = error?.statusCode || 500;
+		res.status(statusCode).json({
+			success: false,
+			message: error?.message || "Failed to retrieve ownership type",
+		});
+	}
+};
+
+/**
+ * Update a property ownership type
+ */
+export const updateOwnershipTypeController = async (
+	req: Request,
+	res: Response
+) => {
+	try {
+		await getRequesterUserOrThrow(req);
+
+		const typeId = req.params.typeId as string;
+		const { name } = req.body;
+
+		const result = await updateOwnershipType(typeId, name);
+
+		res.status(200).json({
+			success: true,
+			message: "Ownership type updated successfully",
+			data: result,
+		});
+	} catch (error: any) {
+		const statusCode = error?.statusCode || 500;
+		res.status(statusCode).json({
+			success: false,
+			message: error?.message || "Failed to update ownership type",
+		});
+	}
+};
+
+/**
+ * Delete a property ownership type
+ */
+export const deleteOwnershipTypeController = async (
+	req: Request,
+	res: Response
+) => {
+	try {
+		await getRequesterUserOrThrow(req);
+
+		const typeId = req.params.typeId as string;
+
+		await deleteOwnershipType(typeId);
+
+		res.status(200).json({
+			success: true,
+			message: "Ownership type deleted successfully",
+		});
+	} catch (error: any) {
+		const statusCode = error?.statusCode || 500;
+		res.status(statusCode).json({
+			success: false,
+			message: error?.message || "Failed to delete ownership type",
+		});
+	}
+};
