@@ -27,12 +27,12 @@ const sidebarItems = [
   },
   {
     label: "Review Listings",
-    href: "/admin/review-listings",
+    href: "/admin/review-lisitings",
     icon: Note,
   },
   {
-    label: "Enquiry Inbox",
-    href: "/admin/enquiry-inbox",
+    label: "Enquiry Hub",
+    href: "/admin/enquiry-hub",
     icon: Chat,
   },
   {
@@ -102,7 +102,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
                   <Icon
                     size={16}
                     color={isActive ? "#111827" : "#3F3F46"}
-                    className={item.label === "Enquiry Inbox" ? "scale-[0.9]" : ""}
+                    className={item.label === "Enquiry Hub" ? "scale-[0.9]" : ""}
                   />
                 </span>
                 <span>{item.label}</span>
@@ -148,7 +148,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
               <Icon
                 size={16}
                 color={isActive ? "#111827" : "#3F3F46"}
-                className={item.label === "Enquiry Inbox" ? "scale-[0.9]" : ""}
+                className={item.label === "Enquiry Hub" ? "scale-[0.9]" : ""}
               />
             </span>
             <span className="hidden lg:inline">{item.label}</span>
