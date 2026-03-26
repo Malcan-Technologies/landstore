@@ -81,7 +81,7 @@ const AdminHeader = ({ onMenuClick }) => {
             <DoubleArrows size={14} color="#6B7280" />
           </div>
 
-          <div className="flex items-center gap-3 py-3 text-sm font-medium">
+          <div className="flex items-center py-3 text-sm font-medium">
             {!hydrated ? (
               <div className="h-10 w-32 rounded-full bg-background-primary" aria-hidden />
             ) : isAuth ? (

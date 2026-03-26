@@ -27,7 +27,8 @@ const sidebarItems = [
   },
   {
     label: "Review Listings",
-    href: "/admin/review-lisitings",
+    href: "/admin/review-listings",
+    legacyHref: "/admin/review-lisitings",
     icon: Note,
   },
   {
@@ -54,6 +55,27 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
   const displayName = user?.name || "shadcn";
   const displayEmail = user?.email || "m@example.com";
   const displayInitial = displayName.trim().charAt(0).toUpperCase();
+
+  const isSidebarItemActive = (itemHref) => {
+    if (!pathname) return false;
+
+    if (itemHref === "/admin") {
+      return pathname === "/admin";
+    }
+
+    return pathname === itemHref || pathname.startsWith(`${itemHref}/`);
+  };
+
+  const isReviewListingsActive = () => {
+    if (!pathname) return false;
+
+    return (
+      pathname === "/admin/review-listings" ||
+      pathname.startsWith("/admin/review-listings/") ||
+      pathname === "/admin/review-lisitings" ||
+      pathname.startsWith("/admin/review-lisitings/")
+    );
+  };
 
   const handleNavigate = (href) => {
     router.push(href);
@@ -87,7 +109,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
         <nav className="mt-3 space-y-1">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive = item.label === "Review Listings" ? isReviewListingsActive() : isSidebarItemActive(item.href);
 
             return (
               <button
@@ -133,7 +155,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
     <nav className="mt-3 space-y-1">
       {sidebarItems.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href;
+        const isActive = item.label === "Review Listings" ? isReviewListingsActive() : isSidebarItemActive(item.href);
 
         return (
           <button
