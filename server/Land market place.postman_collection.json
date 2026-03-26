@@ -17,7 +17,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basit@buraktec.com\",\r\n    \"password\": \"StrongP@ssw0rd2026!\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -56,13 +56,31 @@
           "response": []
         },
         {
+          "name": "refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Register",
           "request": {
             "method": "POST",
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitsheikh@buraktec.com\",\r\n    \"password\": \"StrongP@ssw0rd2026!\",\r\n    \"firstName\": \"Basit\",\r\n    \"lastName\": \"sheikh\",\r\n    \"name\" : \"Basit sheikh\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Ahmad Faiz\",\r\n    \"identityNo\": \"900101-14-5678\",\r\n    \"firstName\": \"Ahmad\",\r\n    \"lastName\": \"Faiz\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -77,6 +95,986 @@
               "path": [
                 "users",
                 "signup"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Get All users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get user By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Ahmad Faiz\",\r\n    \"identityNo\": \"900101-14-5678\",\r\n    \"firstName\": \"Ahmad\",\r\n    \"lastName\": \"Faiz\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Ahmad Faiz\",\r\n    \"identityNo\": \"900101-14-5678\",\r\n    \"firstName\": \"Ahmad\",\r\n    \"lastName\": \"Faiz\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Short List Folders",
+      "item": [
+        {
+          "name": "Create Folder",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"New Folder\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/folders/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add to folder",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"propertyId\" : \"{{propertyId}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/folders/:id/shortlist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                ":id",
+                "shortlist"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remove from folder",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"New Folder\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/folders/:id/shortlist/:propertyId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                ":id",
+                "shortlist",
+                ":propertyId"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                },
+                {
+                  "key": "propertyId",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rename Folder",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"New Folder1\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/folders/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "d487709c-8f8a-4b9c-9606-d924511fbbca"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Folder",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/folders/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "d487709c-8f8a-4b9c-9606-d924511fbbca"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Folders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/folders/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Folder By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/folders/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "d487709c-8f8a-4b9c-9606-d924511fbbca"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "List Land",
+      "item": [
+        {
+          "name": "Create Listing",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all listings",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get listing By id",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update listing",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Listing",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "create category",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Residential\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Residential\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "c2ed419e-cbc4-4e77-8c10-8177cb0df622"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Catogory",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "c2ed419e-cbc4-4e77-8c10-8177cb0df622"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get catogories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get category By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "6cbde785-6484-411b-af96-2b4824c17e8f"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ownership",
+      "item": [
+        {
+          "name": "create ownership type",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Own Land\"\r\n}   ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ownership-types/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ownership-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update ownership type",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Own By Me\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ownership-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ownership-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "b00807b7-fa2e-4f36-9ab1-1d6c1b0db526"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete ownership type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ownership-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ownership-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "b00807b7-fa2e-4f36-9ab1-1d6c1b0db526"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Ownership Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ownership-types/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ownership-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Ownership Type By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ownership-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ownership-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "b00807b7-fa2e-4f36-9ab1-1d6c1b0db526"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Title Type",
+      "item": [
+        {
+          "name": "create title type",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Owner\"\r\n}   ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/title-types/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "title-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update title type",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Owner of land\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/title-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "title-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "a69f3256-d7ef-4d92-8afc-ce8e51ba3b6a"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete title type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/title-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "title-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "b00807b7-fa2e-4f36-9ab1-1d6c1b0db526"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get title Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/title-types/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "title-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get title Type By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/title-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "title-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "a69f3256-d7ef-4d92-8afc-ce8e51ba3b6a"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "utilizations",
+      "item": [
+        {
+          "name": "create utilizations",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Agriculture use\"\r\n}   ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/utilizations/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "utilizations",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update utilizations",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Agriculture Utilization\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/utilizations/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "utilizations",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "8dea6f6e-72da-455c-ba87-84dc2424acea"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete utilizations",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/utilizations/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "utilizations",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "8dea6f6e-72da-455c-ba87-84dc2424acea"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get utilizations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/utilizations/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "utilizations",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get utilizations By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/utilizations/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "utilizations",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "8dea6f6e-72da-455c-ba87-84dc2424acea"
+                }
               ]
             }
           },
