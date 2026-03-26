@@ -10,6 +10,7 @@ import Bell from "@/components/svg/Bell";
 import Person from "@/components/svg/Person";
 import Button from "@/components/common/Button";
 import LoginModal from "@/components/auth/LoginModal";
+import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
 import { notificationItems } from "@/components/userDashboard/notifications/notificationData";
 import { logout } from "@/store/authSlice";
@@ -20,6 +21,7 @@ const Header = () => {
   const { isAuth, user, hydrated } = useSelector((state) => state.auth);
 
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isLoginRequiredOpen, setIsLoginRequiredOpen] = useState(false);
   const [authTab, setAuthTab] = useState("login");
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -55,6 +57,19 @@ const Header = () => {
     router.push("/profile");
   };
 
+  const handleProtectedNavigation = (href) => {
+    if (!hydrated) {
+      return;
+    }
+
+    if (!isAuth) {
+      setIsLoginRequiredOpen(true);
+      return;
+    }
+
+    router.push(href);
+  };
+
   const userInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
 
   return (
@@ -81,10 +96,18 @@ const Header = () => {
             <button type="button" onClick={() => router.push("/explore")} className="transition hover:text-green-primary">
               Explore Map
             </button>
-            <button type="button" onClick={() => router.push("/user-dashboard/shortlists")} className="transition hover:text-green-primary">
+            <button
+              type="button"
+              onClick={() => handleProtectedNavigation("/user-dashboard/shortlists")}
+              className="transition hover:text-green-primary"
+            >
               Shortlists
             </button>
-            <button type="button" onClick={() => router.push("/user-dashboard/enquiries")} className="transition hover:text-green-primary">
+            <button
+              type="button"
+              onClick={() => handleProtectedNavigation("/user-dashboard/enquiries")}
+              className="transition hover:text-green-primary"
+            >
               My Enquiries
             </button>
           </nav>
@@ -182,6 +205,7 @@ const Header = () => {
       </div>
 
       <LoginModal open={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialTab={authTab} />
+      <LoginRequiredModal open={isLoginRequiredOpen} onClose={() => setIsLoginRequiredOpen(false)} />
     </>
   );
 };

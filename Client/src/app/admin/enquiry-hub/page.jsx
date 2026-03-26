@@ -1,10 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Table from "@/components/common/Table";
 import Search from "@/components/svg/Search";
 import Person from "@/components/svg/Person";
 import EyeOpen from "@/components/svg/EyeOpen";
-import File from "@/components/svg/File";
 import Delete from "@/components/svg/Delete";
 import Sheet from "@/components/svg/Sheet";
 
@@ -113,6 +113,12 @@ const iconButtonBase =
   "inline-flex h-8 w-8 items-center justify-center rounded-lg transition border-0";
 
 export default function EnquiryHubPage() {
+  const router = useRouter();
+
+  const handleOpenEnquiry = (enquiryId) => {
+    router.push(`/admin/enquiry-hub/${enquiryId}`);
+  };
+
   const headers = [
     { label: "Enquiry ID" },
     { label: "Listing ID" },
@@ -183,13 +189,31 @@ export default function EnquiryHubPage() {
         key: "actions",
         content: (
           <div className="flex items-center justify-end gap-2">
-            <button type="button" className={`${iconButtonBase} bg-[#18181B] text-white`} aria-label="View enquiry">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleOpenEnquiry(enquiry.id);
+              }}
+              className={`${iconButtonBase} bg-[#18181B] text-white`}
+              aria-label="View enquiry"
+            >
               <EyeOpen size={14} color="#FFFFFF" />
             </button>
-            <button type="button" className={`${iconButtonBase} bg-[#EAFBF1] text-[#0F8A4A]`} aria-label="Open files">
+            <button
+              type="button"
+              onClick={(event) => event.stopPropagation()}
+              className={`${iconButtonBase} bg-[#EAFBF1] text-[#0F8A4A]`}
+              aria-label="Open files"
+            >
               <Sheet size={14} color="#0F8A4A" />
             </button>
-            <button type="button" className={`${iconButtonBase} bg-[#FFF1F2] text-[#F43F5E]`} aria-label="Delete enquiry">
+            <button
+              type="button"
+              onClick={(event) => event.stopPropagation()}
+              className={`${iconButtonBase} bg-[#FFF1F2] text-[#F43F5E]`}
+              aria-label="Delete enquiry"
+            >
               <Delete size={14} className="text-[#F43F5E]" />
             </button>
           </div>
@@ -224,6 +248,7 @@ export default function EnquiryHubPage() {
           <Table
             headers={headers}
             rows={rows}
+            onRowClick={(row) => handleOpenEnquiry(row.key)}
             className="border-none shadow-none"
             tableClassName="min-w-[1100px]"
             headClassName="bg-white"
