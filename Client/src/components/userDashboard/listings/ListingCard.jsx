@@ -17,9 +17,9 @@ const ListingCard = ({ listing, showFooter = true }) => {
     statusStyles[listing.statusKey] ?? statusStyles.active;
 
   return (
-    <article className="rounded-2xl border border-border-card bg-white p-3 shadow-[0px_4px_18px_rgba(15,61,46,0.04)]">
+    <article className="rounded-2xl border border-border-card bg-white p-3 py-4 shadow-[0px_4px_18px_rgba(15,61,46,0.04)]">
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="relative h-44 sm:w-72 w-auto overflow-hidden rounded-xl">
+        <div className="relative h-36 sm:w-54  lg:w-60 xl:w-60 w-auto overflow-hidden rounded-xl">
           <img
             src={listing.image}
             alt={listing.title}
@@ -28,10 +28,10 @@ const ListingCard = ({ listing, showFooter = true }) => {
         </div>
 
         <div className={`flex min-w-0 flex-1 flex-col ${showFooter ? "" : "justify-center"}`}>
-          <div className="flex items-start w-full gap-4 ">
-            <div className="w-full min-w-0">
-              <div className="flex w-full justify-between gap-2">
-                <div className="flex items-start gap-2">
+          <div className="flex items-start w-full gap-2 ">
+            <div className="w-full flex flex-col min-w-0 ">
+              <div className="flex w-full justify-between gap-2 ">
+                <div className="flex items-start gap-2  h-fit ">
                   <span className="rounded-md bg-background-primary px-2 py-1 sm:text-[10px] text-[9px] font-medium uppercase tracking-[0.08em] text-gray5">
                     {listing.code}
                   </span>
@@ -42,21 +42,21 @@ const ListingCard = ({ listing, showFooter = true }) => {
                   </span>
                 </div>
                 <div className="shrink-0 text-right lg:mt-0">
-                  <p className="text-[18px] font-bold text-gray2 lg:text-[26px]">
+                  <p className="text-[18px] font-bold text-gray2 xl:text-[26px] lg:text-[22px]">
                     {listing.price}
                   </p>
-                  <p className="text-[9px] lg:text-[12px] text-gray5 font-medium  lg:mt-0">
+                  <p className="text-[9px] lg:text-[12px] text-gray5 font-medium  lg-mt-3">
                     Estimated Valuation
                   </p>
                 </div>
               </div>
 
-              <h2 className="flex sm:-mt-3 lg:-mt-6 items-center gap-2 text-[18px] font-bold text-gray2 lg:text-[28px]">
-                <Pointer size={17} color="var(--color-green-secondary)" />
+              <h2 className="flex  lg:-mt-4 items-center gap-2 text-[18px] font-bold text-gray2 lg:text-[22px] xl:text-[28px]">
+                <Pointer color="var(--color-green-secondary)" className="h-[15px] w-3 shrink-0 sm:h-4 sm:w-[13px] lg:h-[28px] lg:w-[18px]" />
                 <span className="truncate">{listing.title}</span>
               </h2>
 
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 sm:gap-y-2 lg:text-[16px] sm:text-[12px] text-[10px] font-medium text-gray5">
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 sm:gap-y-0.5 xl:text-[16px] sm:text-[12px] text-[10px] font-medium text-gray5">
                 <span className="inline-flex items-center gap-1.5">
                   <Bag size={14} color="var(--color-gray5)" />
                   <span>{listing.category}</span>
@@ -65,7 +65,7 @@ const ListingCard = ({ listing, showFooter = true }) => {
                 {listing.dealTags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-2xl border border-border-input px-2 py-1 lg:text-[14px] text-[10px] font-semibold text-gray5"
+                    className="rounded-2xl border border-border-input px-2 py-1 xl:text-[14px] lg:text-[12px] text-[10px] font-semibold text-gray5"
                   >
                     {tag}
                   </span>

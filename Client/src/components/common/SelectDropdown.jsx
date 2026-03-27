@@ -16,6 +16,16 @@ const SelectDropdown = ({
   buttonClassName = "",
   optionsClassName = "",
   optionClassName = "",
+  buttonTextClassName = "text-gray2",
+  placeholderClassName = "text-gray5",
+  buttonBorderClassName = "border-border-input",
+  buttonBgClassName = "bg-white",
+  optionsBorderClassName = "border-border-card",
+  optionsBgClassName = "bg-white",
+  optionTextClassName = "text-gray2",
+  optionActiveClassName = "bg-activebg text-green-primary",
+  optionInactiveClassName = "text-gray2",
+  optionSelectedClassName = "text-green-primary",
   renderValue,
   ...props
 }) => {
@@ -30,16 +40,16 @@ const SelectDropdown = ({
           </Listbox.Label>
         ) : null}
         <Listbox.Button
-          className={`flex w-full items-center justify-between gap-3 rounded-lg border border-border-input bg-white px-3.5 py-2 text-left text-[14px] text-gray2 outline-none transition focus-visible:border-green-primary focus-visible:ring-2 focus-visible:ring-green-primary/40 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-background-primary disabled:text-gray5 ${buttonClassName}`.trim()}
+          className={`flex w-full items-center justify-between gap-3 rounded-lg border ${buttonBorderClassName} ${buttonBgClassName} px-3.5 py-2 text-left text-[14px] outline-none transition focus-visible:border-green-primary focus-visible:ring-2 focus-visible:ring-green-primary/40 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-background-primary disabled:text-gray5 ${buttonTextClassName} ${buttonClassName}`.trim()}
         >
           <span className="flex-1 truncate">
             {selectedOption ? (
               renderValue ? renderValue(selectedOption) : selectedOption.label
             ) : (
-              <span className="text-gray5">{placeholder}</span>
+              <span className={placeholderClassName}>{placeholder}</span>
             )}
           </span>
-          <span className="text-gray5">
+          <span className={placeholderClassName}>
             <svg
               width="16"
               height="16"
@@ -66,15 +76,15 @@ const SelectDropdown = ({
           leaveTo="opacity-0"
         >
           <Listbox.Options
-            className={`absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-border-card bg-white py-1 shadow-xl focus:outline-none ${optionsClassName}`.trim()}
+            className={`absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border ${optionsBorderClassName} ${optionsBgClassName} py-1 shadow-xl focus:outline-none ${optionsClassName}`.trim()}
           >
             {options.map((option) => (
               <Listbox.Option
                 key={option.value}
                 value={option.value}
                 className={({ active }) =>
-                  `flex cursor-pointer items-center justify-between px-3.5 py-2 text-[14px] transition ${
-                    active ? "bg-activebg text-green-primary" : "text-gray2"
+                  `flex cursor-pointer items-center justify-between px-3.5 py-2 text-[14px] transition ${optionTextClassName} ${
+                    active ? optionActiveClassName : optionInactiveClassName
                   } ${optionClassName}`.trim()
                 }
               >
@@ -85,7 +95,7 @@ const SelectDropdown = ({
                       <span>{option.label}</span>
                     </span>
                     {selected ? (
-                      <span className="text-green-primary">
+                      <span className={optionSelectedClassName}>
                         <Tick size={12} color="currentColor" />
                       </span>
                     ) : null}

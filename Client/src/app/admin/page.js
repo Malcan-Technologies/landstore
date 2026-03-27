@@ -139,7 +139,7 @@ const approvedListings = [
 
 export default function AdminPage() {
   return (
-    <main className="flex flex-col bg-background-primary px-4 py-5 sm:h-full sm:min-h-0 sm:overflow-hidden sm:px-5">
+    <main className="flex flex-col bg-background-primary px-4 py-5 sm:h-full no-scrollbar sm:min-h-0 sm:overflow-y-auto sm:px-5">
       <div className="shrink-0 grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-3">
         <StatCard
           icon={<Clock />}
@@ -165,24 +165,24 @@ export default function AdminPage() {
           description="Need more info"
         />
       </div>
-      <section className="mt-6 flex h-[70vh] flex-none flex-col overflow-hidden rounded-2xl border border-border-input bg-white p-4 sm:min-h-0 sm:flex-1 sm:p-5">
+      <section className="mt-6 flex max-h-[83vh] flex-none flex-col rounded-2xl border border-border-input bg-white p-4 sm:max-h-[83vh] md:max-h-[83vh] lg:max-h-[87vh] xl:max-h-[90vh] sm:p-5 no-scrollbar">
         <div className="flex shrink-0 items-center justify-between gap-3">
-          <div className="flex items-center">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full ">
-              <RoundCheck size={18} />
+          <div className="flex items-center gap-1 sm:justify-center">
+            <span className="inline-flex sm:h-8 sm:w-8 w-3 h-3 items-center justify-center rounded-full -mt-0.25 sm:-mt-1">
+              <RoundCheck size={22} />
             </span>
             <div>
-              <h2 className="text-[16px] font-semibold capitalize text-gray2 sm:text-[18px]">Recently approved listing</h2>
+              <h2 className="text-[12px] font-semibold  capitalize text-gray2 sm:text-[18px]">Recently approved listing</h2>
               {/* <p className="mt-1 text-[13px] text-gray5">Latest land listing approved for publishing</p> */}
             </div>
           </div>
 
-          <button type="button" className="shrink-0 text-[13px] font-semibold text-green-secondary transition hover:opacity-80 sm:text-[14px]">
+          <button type="button" className="shrink-0 text-[10px] sm:text-[14px] font-semibold text-green-secondary transition hover:opacity-80 sm:text-[14px]">
             View all
           </button>
         </div>
 
-        <div className="mt-5 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1 no-scrollbar">
+        <div className="mt-5 overflow-y-auto space-y-4 pr-1 no-scrollbar">
           {approvedListings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} showFooter={false} />
           ))}
