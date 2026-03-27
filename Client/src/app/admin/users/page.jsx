@@ -61,7 +61,7 @@ export default function UsersPage() {
             </span>
             <div className="min-w-0 leading-4">
               <div className="truncate text-[12px] font-medium text-[#111827]">{user.name}</div>
-              <div className="truncate text-[11px] text-[#8B95A7]">{user.company}</div>
+              <div className="truncate text-[11px] text-gray5">{user.company}</div>
             </div>
           </div>
         ),

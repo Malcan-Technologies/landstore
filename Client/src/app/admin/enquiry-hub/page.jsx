@@ -168,7 +168,7 @@ export default function EnquiryHubPage() {
             </span>
             <div className="min-w-0 leading-4">
               <div className="truncate text-[12px] font-medium text-[#111827]">{enquiry.requester}</div>
-              <div className="truncate text-[11px] text-[#8B95A7]">{enquiry.requesterType}</div>
+              <div className="truncate text-[11px] text-gray5">{enquiry.requesterType}</div>
             </div>
           </div>
         ),
