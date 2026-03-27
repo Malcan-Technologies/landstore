@@ -76,7 +76,7 @@ const Table = ({
                   key={header.key}
                   scope="col"
                   className={joinClasses(
-                    "border-b border-[#E9EDF5] px-3 py-3 font-medium text-[#8B95A7]",
+                    "border-b border-[#E9EDF5] px-3 py-3 font-medium text-gray5",
                     "sm:px-4 sm:py-4 lg:px-5",
                     header.className
                   )}
@@ -128,8 +128,8 @@ const Table = ({
                         <td
                           key={normalizedCell.key}
                           className={joinClasses(
-                            "border-b border-[#E9EDF5] px-3 py-2 align-middle text-[#1E2430]",
-                            "sm:px-3 sm:py-3 lg:px-3",
+                            "border-b border-[#E9EDF5] px-3 py-3 align-middle text-[#1E2430]",
+                            "sm:px-4 sm:py-4 lg:px-5",
                             normalizedCell.className
                           )}
                         >

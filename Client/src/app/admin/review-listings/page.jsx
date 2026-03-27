@@ -63,7 +63,7 @@ export default function ReviewListingsPage() {
       </div>,
       <div key="submitted-date" className="space-y-0.5">
         <div className="font-medium text-[#111827]">{listing.submittedDate}</div>
-        <div className="text-[#8B95A7]">{listing.submittedAgo}</div>
+        <div className="text-gray5">{listing.submittedAgo}</div>
       </div>,
       <div key="owner-profile" className="flex items-center gap-3">
         <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F3F4F6] text-[#6B7280]">
@@ -71,12 +71,12 @@ export default function ReviewListingsPage() {
         </span>
         <div className="min-w-0">
           <div className="truncate font-medium text-[#111827]">{listing.ownerName}</div>
-          <div className="truncate text-[#8B95A7]">{listing.ownerType}</div>
+          <div className="truncate text-gray5">{listing.ownerType}</div>
         </div>
       </div>,
       <div key="region" className="space-y-0.5">
         <div className="font-medium text-[#111827]">{listing.region}</div>
-        <div className="text-[#8B95A7]">{listing.area}</div>
+        <div className="text-gray5">{listing.area}</div>
       </div>,
       <div key="deal-types" className="flex flex-nowrap gap-2">
         {listing.dealTypes.map((deal) => (

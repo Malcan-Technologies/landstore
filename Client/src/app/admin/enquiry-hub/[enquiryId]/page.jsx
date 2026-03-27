@@ -319,8 +319,8 @@ export default function EnquiryHubDetailPage({ params }) {
               <span className="text-[12px] text-white/55">Admin Restricted</span>
             </div>
 
-            <div className="px-4 py-4">
-              <div className="flex gap-4 border-b border-white/10 pb-5">
+            <div className=" py-4">
+              <div className="flex gap-4 border-b border-white/10 pb-5 px-4">
                 <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-[12px]">
                   <Image
                     src={enquiryDetail.image}
@@ -335,7 +335,7 @@ export default function EnquiryHubDetailPage({ params }) {
                   <span className="inline-flex items-center rounded-[4px] bg-[#0F5132] px-2.5 py-1 text-[11px] font-medium text-[#A7F3D0]">
                     {enquiryDetail.listingCode}
                   </span>
-                  <div className="mt-3 flex items-center justify-start gap-2 text-center">
+                  <div className="mt-3 flex items-center justify-start gap-2 ">
                     <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
                       <Pointer size={14} color="#5EE9B5" />
                     </span>
@@ -354,7 +354,7 @@ export default function EnquiryHubDetailPage({ params }) {
                 </div>
               </div>
 
-              <div className="border-b border-white/10 py-5">
+              <div className="border-b border-white/10 py-5 px-4">
                 <p className="text-[14px] text-white/55">Confidential Owner Data</p>
                 <div className="mt-4 rounded-[16px] border border-white/8 bg-[#123628] p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -382,7 +382,7 @@ export default function EnquiryHubDetailPage({ params }) {
                 </div>
               </div>
 
-              <div className="border-b border-white/10 py-5">
+              <div className="border-b border-white/10 py-5 px-4">
                 <p className="text-[14px] text-white/55">Mediation Status</p>
                 <div className="mt-3 relative">
                   <SelectDropdown
@@ -406,7 +406,7 @@ export default function EnquiryHubDetailPage({ params }) {
                 </div>
               </div>
 
-              <div className="grid gap-3 py-5">
+              <div className="grid gap-3 py-5 px-4">
                 <button
                   type="button"
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-[#58E7BE] px-4 text-[14px] font-medium text-[#0B3B2A] transition hover:opacity-95"

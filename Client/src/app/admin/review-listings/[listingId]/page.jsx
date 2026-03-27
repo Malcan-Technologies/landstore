@@ -16,6 +16,7 @@ import PersonCheck from "@/components/svg/PersonCheck";
 import RequestChangesModal from "@/components/adminDashboard/modals/RequestChangesModal";
 import RejectListingModal from "@/components/adminDashboard/modals/RejectListingModal";
 import PermanentDeleteModal from "@/components/adminDashboard/modals/PermanentDeleteModal";
+import Telephone from "@/components/svg/Telephone";
 
 const listingDetails = {
   title: "Kuala Langat, Selangor",
@@ -76,9 +77,9 @@ const propertyMapMarkers = [
   },
 ];
 
-const infoLabelClass = "mb-2 text-[12px] font-medium text-white/36";
-const fieldLabelClass = "mb-2 text-[11px] font-medium text-white/32";
-const fieldBoxClass = "rounded-[9px] border border-white/6 bg-[#173A2D] px-4 py-3 text-[13px] font-medium text-white/80";
+const infoLabelClass = "mb-2 text-[12px] font-medium text-white/50";
+const fieldLabelClass = "mb-2 text-[11px] font-medium text-white/35";
+const fieldBoxClass = "rounded-[9px] border border-white/6 bg-[#153127] px-4 py-3 text-[13px] font-medium text-white/56";
 
 export default function ReviewListingDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -156,8 +157,8 @@ export default function ReviewListingDetailPage({ params }) {
 
           <div className="mt-6">
             <h2 className="text-[16px] font-semibold text-gray2">Approximate Location</h2>
-            <div className="mt-3 rounded-[20px] bg-white p-3">
-              <div className="relative overflow-hidden rounded-[18px]">
+            <div className=" rounded-[10px] bg-white py-3">
+              <div className="relative overflow-hidden rounded-[10px]">
                 <MapView
                   center={{ lat: listingDetails.lat, lng: listingDetails.lng }}
                   zoom={13}
@@ -166,8 +167,8 @@ export default function ReviewListingDetailPage({ params }) {
                   hideMarkerPin
                   showCenterRings
                   infoWindowOffset={8}
-                  containerClassName="min-h-[236px] rounded-[18px] border-none bg-background-primary shadow-none"
-                  mapClassName="h-[236px] w-full rounded-[18px]"
+                  containerClassName="min-h-[236px] rounded-[10px] border-none bg-background-primary shadow-none"
+                  mapClassName="h-[325px] w-full rounded-[10px]"
                   ringClassName="z-[1]"
                 />
                 <div className="pointer-events-none absolute bottom-4 right-4 z-2 rounded-xl border border-border-card bg-white px-3 py-2 text-[12px] font-semibold text-gray7 shadow-[0_8px_20px_rgba(15,23,42,0.12)]">
@@ -195,30 +196,33 @@ export default function ReviewListingDetailPage({ params }) {
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div>
+            <div className="flex flex-col">
               <p className={infoLabelClass}>Owner Identity</p>
-              <div className="rounded-[10px] border border-white/6 bg-[#173A2D] p-4">
+              <div className="flex h-full flex-col justify-start rounded-[10px] border border-white/6 bg-[#153127] p-4">
                 <div className="text-[13px] font-semibold text-white sm:text-[14px]">{listingDetails.owner}</div>
-                <div className="mt-1 text-[12px] text-white/35">Member ID: {listingDetails.memberId}</div>
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#0E2F24] px-2.5 py-1 text-[11px] font-medium text-activebg">
-                  <Sheild size={12} color="var(--color-greenbg)" />
+                <div className="mt-1 text-[12px] text-white/50">Member ID: {listingDetails.memberId}</div>
+               <div className="flex flex-col">
+
+                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green-logo px-1.5 py-0.5 text-[11px] font-medium text-activebg w-fit">
+                  <Sheild size={14} color="#ffff" />
                   Corporate identity
                 </div>
-                <div className="mt-3 inline-flex items-center gap-2 text-[12px] text-greenbg">
-                  <PhoneIcon />
+                <div className="mt-3 inline-flex items-center gap-1 text-[12px] text-[#3DB58E]">
+                  <Telephone size={14} color="#3DB58E" />
                   {listingDetails.phone}
                 </div>
+               </div>
               </div>
             </div>
 
-            <div>
+            <div className="flex flex-col">
               <p className={infoLabelClass}>Ownership type</p>
-              <div className="rounded-[10px] border border-white/6 bg-[#173A2D] p-4">
+              <div className="h-full rounded-[10px] border border-white/6 bg-[#153127] p-4">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#0E2F24] text-greenbg">
                   <PersonCheck size={16} color="var(--color-greenbg)" />
                 </span>
                 <div className="mt-4 text-[14px] font-semibold text-white">{listingDetails.ownerType}</div>
-                <p className="mt-2 text-[12px] leading-5 text-white/58">{listingDetails.ownerDescription}</p>
+                <p className="mt-2 text-[12px] leading-5 text-white/70">{listingDetails.ownerDescription}</p>
               </div>
             </div>
           </div>
@@ -232,8 +236,8 @@ export default function ReviewListingDetailPage({ params }) {
             ))}
           </div>
 
-          <div className="mt-4 rounded-[10px] border border-white/6 bg-[#173A2D] p-4">
-            <div className="flex items-center justify-between gap-4">
+          <div className="mt-4 rounded-[10px] border border-white/6 bg-[#153127] p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
               <div>
                 <p className="text-[11px] font-medium text-white/32">Price Analysis</p>
                 <div className="mt-1 flex items-end gap-1">
