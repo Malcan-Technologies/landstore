@@ -1,11 +1,11 @@
 import type { Request, Response } from "express";
 import {
-	createCategory,
-	getAllCategories,
-	getCategoryById,
-	updateCategory,
-	deleteCategory,
-} from "../services/category.ts";
+	createEntityType,
+	getAllEntityTypes,
+	getEntityTypeById,
+	updateEntityType,
+	deleteEntityType,
+} from "../services/entityType.ts";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -30,10 +30,10 @@ const getRequesterUserOrThrow = (req: Request) => {
 	return user;
 };
 
-const getCategoryIdParamOrThrow = (req: Request): string => {
+const getEntityTypeIdParamOrThrow = (req: Request): string => {
 	const param = req.params.id;
 	if (typeof param !== "string" || !param.trim()) {
-		const badRequestError = new Error("Invalid category id");
+		const badRequestError = new Error("Invalid entity type id");
 		(badRequestError as Error & { statusCode?: number }).statusCode = 400;
 		throw badRequestError;
 	}
@@ -42,10 +42,10 @@ const getCategoryIdParamOrThrow = (req: Request): string => {
 };
 
 /**
- * Create a new property category
- * POST /api/categories
+ * Create a new entity type
+ * POST /api/entity-types
  */
-export const createCategoryController = async (
+export const createEntityTypeController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
@@ -56,16 +56,17 @@ export const createCategoryController = async (
 		const { name } = req.body;
 
 		if (!name) {
-			const badRequestError = new Error("Category name is required");
+			const badRequestError = new Error("Entity type name is required");
 			(badRequestError as Error & { statusCode?: number }).statusCode = 400;
 			throw badRequestError;
 		}
 
-		const category = await createCategory(name);
+		const entityType = await createEntityType(name);
 
 		res.status(201).json({
 			success: true,
-			data: category,
+			message: "Entity type created successfully",
+			data: entityType,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -77,20 +78,20 @@ export const createCategoryController = async (
 };
 
 /**
- * Get all categories
- * GET /api/categories
+ * Get all entity types
+ * GET /api/entity-types
  */
-export const getAllCategoriesController = async (
+export const getAllEntityTypesController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		const categories = await getAllCategories();
+		const entityTypes = await getAllEntityTypes();
 
 		res.status(200).json({
 			success: true,
-			data: categories,
-			count: categories.length,
+			data: entityTypes,
+			count: entityTypes.length,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -102,21 +103,21 @@ export const getAllCategoriesController = async (
 };
 
 /**
- * Get category by ID
- * GET /api/categories/:id
+ * Get a single entity type by ID
+ * GET /api/entity-types/:id
  */
-export const getCategoryByIdController = async (
+export const getEntityTypeByIdController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		const categoryId = getCategoryIdParamOrThrow(req);
+		const entityTypeId = getEntityTypeIdParamOrThrow(req);
 
-		const category = await getCategoryById(categoryId);
+		const entityType = await getEntityTypeById(entityTypeId);
 
 		res.status(200).json({
 			success: true,
-			data: category,
+			data: entityType,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -128,31 +129,33 @@ export const getCategoryByIdController = async (
 };
 
 /**
- * Update category
- * PATCH /api/categories/:id
+ * Update entity type name
+ * PATCH /api/entity-types/:id
  */
-export const updateCategoryController = async (
+export const updateEntityTypeController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		// Verify user is authenticated
-		await getRequesterUserOrThrow(req);
+		// Verify user is authenticated (can be restricted to admins later if needed)
+		getRequesterUserOrThrow(req);
 
-		const categoryId = getCategoryIdParamOrThrow(req);
+		const entityTypeId = getEntityTypeIdParamOrThrow(req);
+
 		const { name } = req.body;
 
 		if (!name) {
-			const badRequestError = new Error("Category name is required");
+			const badRequestError = new Error("Entity type name is required");
 			(badRequestError as Error & { statusCode?: number }).statusCode = 400;
 			throw badRequestError;
 		}
 
-		const updatedCategory = await updateCategory(categoryId, name);
+		const updatedEntityType = await updateEntityType(entityTypeId, name);
 
 		res.status(200).json({
 			success: true,
-			data: updatedCategory,
+			message: "Entity type updated successfully",
+			data: updatedEntityType,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -164,24 +167,24 @@ export const updateCategoryController = async (
 };
 
 /**
- * Delete category
- * DELETE /api/categories/:id
+ * Delete an entity type
+ * DELETE /api/entity-types/:id
  */
-export const deleteCategoryController = async (
+export const deleteEntityTypeController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		// Verify user is authenticated
-		await getRequesterUserOrThrow(req);
+		// Verify user is authenticated (can be restricted to admins later if needed)
+		getRequesterUserOrThrow(req);
 
-		const categoryId = getCategoryIdParamOrThrow(req);
+		const entityTypeId = getEntityTypeIdParamOrThrow(req);
 
-		await deleteCategory(categoryId);
+		await deleteEntityType(entityTypeId);
 
 		res.status(200).json({
 			success: true,
-			message: "Category deleted successfully",
+			message: "Entity type deleted successfully",
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);

@@ -1,24 +1,23 @@
 import { Router } from "express";
 import {
+  completeProfileController,
   deleteUserController,
   getAllUsersController,
   getCurrentUserController,
   getUserByIdController,
-  loginController,
-  logoutController,
-  refreshSessionController,
-  signUpController,
   updateUserController,
 } from "../controllers/user.controller.ts";
 import requireApiAuth from "../middleware/requireApiAuth.ts";
 
 const userRouter = Router();
 
-userRouter.post("/signup", signUpController);
-userRouter.post("/login", loginController);
+// Complete profile after Better Auth signup
+userRouter.post("/complete-profile", completeProfileController);
+
+// Get current authenticated user (requires auth)
 userRouter.get("/me", requireApiAuth, getCurrentUserController);
-userRouter.post("/logout", requireApiAuth, logoutController);
-userRouter.post("/refresh", requireApiAuth, refreshSessionController);
+
+// User management (admin only)
 userRouter.get("/", requireApiAuth, getAllUsersController);
 userRouter.get("/:id", requireApiAuth, getUserByIdController);
 userRouter.patch("/:id", requireApiAuth, updateUserController);

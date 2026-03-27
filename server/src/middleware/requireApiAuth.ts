@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { verifyToken } from "@clerk/backend";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "../../config/auth.ts";
 
 const requireApiAuth = async (
   req: Request,
@@ -7,25 +8,17 @@ const requireApiAuth = async (
   next: NextFunction
 ) => {
   try {
-    // 1. Try Authorization Bearer header first
-    const authHeader = req.headers.authorization;
-    const bearerToken = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : null;
-
-    // 2. Fall back to __session cookie (cookie-based flow)
-    const cookieToken = (req.cookies as Record<string, string>)?.["__session"];
-
-    const token = bearerToken ?? cookieToken;
-
-    if (!token) {
+    // Get session from Better Auth using proper header format
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
+    if (!session || !session.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY,
-    });
-
+    // Attach user and session to request
+    (req as any).user = session.user;
+    (req as any).session = session.session;
     return next();
   } catch {
     return res.status(401).json({ message: "Unauthorized" });
