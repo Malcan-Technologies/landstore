@@ -3,6 +3,8 @@ name: Deploy Client to ECS
 on:
   push:
     branches: [ "main" ]
+    # paths:
+    #   - "Client/**"
 
 jobs:
   deploy:
@@ -25,7 +27,7 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    # ✅ Set global variables
+    # ✅ Set environment variables globally (IMPORTANT FIX)
     - name: Set environment variables
       run: |
         echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
@@ -39,39 +41,30 @@ jobs:
         docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
-    # ✅ Download current task definition
+    # ✅ Debug (you can remove later)
+    - name: Debug image URI
+      run: echo "$REGISTRY/$REPOSITORY:$IMAGE_TAG"
+
+    # ✅ Get current task definition
     - name: Download task definition
       run: |
         aws ecs describe-task-definition \
           --task-definition land-marketplace \
           --query taskDefinition > task-definition.json
 
-    # ✅ Update image + ADD env vars (SAFE: append, not overwrite)
-    - name: Update task definition with image + env vars
+    # ✅ Update image properly
+    - name: Update task definition with new image
       run: |
         jq --arg IMAGE "$REGISTRY/$REPOSITORY:$IMAGE_TAG" \
-           --arg MAP_KEY "${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
-           --arg ADMIN "${{ secrets.ADMIN_EMAIL }}" \
-           --arg ADMIN_PASS "${{ secrets.ADMIN_PASSWORD }}" \
-           --arg USER_TYPE "admin" \
-        '
-        (.containerDefinitions[] | select(.name=="client") | .image) = $IMAGE
-        |
-        (.containerDefinitions[] | select(.name=="client") | .environment) += [
-          {"name":"NEXT_PUBLIC_GOOGLE_MAPS_API_KEY","value":$MAP_KEY},
-          {"name":"admin","value":$ADMIN},
-          {"name":"adminpassword","value":$ADMIN_PASS},
-          {"name":"userType","value":$USER_TYPE}
-        ]
-        |
-        del(.taskDefinitionArn)
+        '(.containerDefinitions[] | select(.name=="client") | .image) = $IMAGE
+        | del(.taskDefinitionArn)
         | del(.revision)
         | del(.status)
         | del(.requiresAttributes)
         | del(.compatibilities)
         | del(.registeredAt)
-        | del(.registeredBy)
-        ' task-definition.json > new-task-def.json
+        | del(.registeredBy)' \
+        task-definition.json > new-task-def.json
 
     # ✅ Register new revision
     - name: Register new task definition
@@ -84,7 +77,7 @@ jobs:
 
         echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
-    # ✅ Deploy to ECS
+    # ✅ Deploy new revision (CRITICAL FIX)
     - name: Deploy to ECS
       run: |
         aws ecs update-service \
