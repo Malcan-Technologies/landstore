@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { getRequesterUserFromToken } from "../services/user.ts";
 import {
 	createFolder,
 	getFoldersByUserId,
@@ -22,21 +21,16 @@ const getErrorPayload = (error: unknown) => {
 	};
 };
 
-const getTokenFromRequest = (req: Request): string | null => {
-	const authHeader = req.headers.authorization;
-	if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
-	return (req.cookies as Record<string, string>)?.["__session"] ?? null;
-};
-
-const getRequesterUserOrThrow = async (req: Request) => {
-	const token = getTokenFromRequest(req);
-	if (!token) {
+const getRequesterUserOrThrow = (req: Request) => {
+	// Middleware already validated session and attached user
+	const user = (req as any).user;
+	if (!user) {
 		const unauthorizedError = new Error("Unauthorized");
 		(unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
 		throw unauthorizedError;
 	}
 
-	return getRequesterUserFromToken(token);
+	return user;
 };
 
 const getFolderIdParamOrThrow = (req: Request): string => {
@@ -70,7 +64,7 @@ export const createFolderController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const { name } = req.body;
 
 		if (!name) {
@@ -78,7 +72,7 @@ export const createFolderController = async (
 			(badRequestError as Error & { statusCode?: number }).statusCode = 400;
 			throw badRequestError;
 		}
-
+		console.log("I'm here", { requester, name }); // Debugging line
 		const folder = await createFolder(requester.id, name);
 
 		res.status(201).json({
@@ -103,7 +97,7 @@ export const getFoldersController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 
 		const folders = await getFoldersByUserId(requester.id);
 
@@ -130,7 +124,7 @@ export const getFolderByIdController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const folderId = getFolderIdParamOrThrow(req);
 
 		const folder = await getFolderById(folderId, requester.id);
@@ -157,7 +151,7 @@ export const updateFolderNameController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const folderId = getFolderIdParamOrThrow(req);
 		const { name } = req.body;
 
@@ -191,7 +185,7 @@ export const deleteFolderController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const folderId = getFolderIdParamOrThrow(req);
 
 		await deleteFolder(folderId, requester.id);
@@ -218,7 +212,7 @@ export const addPropertyToFolderController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const folderId = getFolderIdParamOrThrow(req);
 		const { propertyId } = req.body;
 
@@ -257,7 +251,7 @@ export const removePropertyFromFolderController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const folderId = getFolderIdParamOrThrow(req);
 		const propertyId = getPropertyIdParamOrThrow(req);
 

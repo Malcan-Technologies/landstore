@@ -1,11 +1,11 @@
 import type { Request, Response } from "express";
 import {
-	createCategory,
-	getAllCategories,
-	getCategoryById,
-	updateCategory,
-	deleteCategory,
-} from "../services/category.ts";
+	createInterestType,
+	getAllInterestTypes,
+	getInterestTypeById,
+	updateInterestType,
+	deleteInterestType,
+} from "../services/interestType.ts";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -30,10 +30,10 @@ const getRequesterUserOrThrow = (req: Request) => {
 	return user;
 };
 
-const getCategoryIdParamOrThrow = (req: Request): string => {
+const getInterestTypeIdParamOrThrow = (req: Request): string => {
 	const param = req.params.id;
 	if (typeof param !== "string" || !param.trim()) {
-		const badRequestError = new Error("Invalid category id");
+		const badRequestError = new Error("Invalid interest type id");
 		(badRequestError as Error & { statusCode?: number }).statusCode = 400;
 		throw badRequestError;
 	}
@@ -42,10 +42,10 @@ const getCategoryIdParamOrThrow = (req: Request): string => {
 };
 
 /**
- * Create a new property category
- * POST /api/categories
+ * Create a new interest type
+ * POST /api/interest-types
  */
-export const createCategoryController = async (
+export const createInterestTypeController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
@@ -56,16 +56,17 @@ export const createCategoryController = async (
 		const { name } = req.body;
 
 		if (!name) {
-			const badRequestError = new Error("Category name is required");
+			const badRequestError = new Error("Interest type name is required");
 			(badRequestError as Error & { statusCode?: number }).statusCode = 400;
 			throw badRequestError;
 		}
 
-		const category = await createCategory(name);
+		const interestType = await createInterestType(name);
 
 		res.status(201).json({
 			success: true,
-			data: category,
+			message: "Interest type created successfully",
+			data: interestType,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -77,20 +78,20 @@ export const createCategoryController = async (
 };
 
 /**
- * Get all categories
- * GET /api/categories
+ * Get all interest types
+ * GET /api/interest-types
  */
-export const getAllCategoriesController = async (
+export const getAllInterestTypesController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		const categories = await getAllCategories();
+		const interestTypes = await getAllInterestTypes();
 
 		res.status(200).json({
 			success: true,
-			data: categories,
-			count: categories.length,
+			data: interestTypes,
+			count: interestTypes.length,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -102,21 +103,21 @@ export const getAllCategoriesController = async (
 };
 
 /**
- * Get category by ID
- * GET /api/categories/:id
+ * Get a single interest type by ID
+ * GET /api/interest-types/:id
  */
-export const getCategoryByIdController = async (
+export const getInterestTypeByIdController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		const categoryId = getCategoryIdParamOrThrow(req);
+		const interestTypeId = getInterestTypeIdParamOrThrow(req);
 
-		const category = await getCategoryById(categoryId);
+		const interestType = await getInterestTypeById(interestTypeId);
 
 		res.status(200).json({
 			success: true,
-			data: category,
+			data: interestType,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -128,31 +129,33 @@ export const getCategoryByIdController = async (
 };
 
 /**
- * Update category
- * PATCH /api/categories/:id
+ * Update interest type name
+ * PATCH /api/interest-types/:id
  */
-export const updateCategoryController = async (
+export const updateInterestTypeController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		// Verify user is authenticated
-		await getRequesterUserOrThrow(req);
+		// Verify user is authenticated (can be restricted to admins later if needed)
+		getRequesterUserOrThrow(req);
 
-		const categoryId = getCategoryIdParamOrThrow(req);
+		const interestTypeId = getInterestTypeIdParamOrThrow(req);
+
 		const { name } = req.body;
 
 		if (!name) {
-			const badRequestError = new Error("Category name is required");
+			const badRequestError = new Error("Interest type name is required");
 			(badRequestError as Error & { statusCode?: number }).statusCode = 400;
 			throw badRequestError;
 		}
 
-		const updatedCategory = await updateCategory(categoryId, name);
+		const updatedInterestType = await updateInterestType(interestTypeId, name);
 
 		res.status(200).json({
 			success: true,
-			data: updatedCategory,
+			message: "Interest type updated successfully",
+			data: updatedInterestType,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -164,24 +167,24 @@ export const updateCategoryController = async (
 };
 
 /**
- * Delete category
- * DELETE /api/categories/:id
+ * Delete an interest type
+ * DELETE /api/interest-types/:id
  */
-export const deleteCategoryController = async (
+export const deleteInterestTypeController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		// Verify user is authenticated
-		await getRequesterUserOrThrow(req);
+		// Verify user is authenticated (can be restricted to admins later if needed)
+		getRequesterUserOrThrow(req);
 
-		const categoryId = getCategoryIdParamOrThrow(req);
+		const interestTypeId = getInterestTypeIdParamOrThrow(req);
 
-		await deleteCategory(categoryId);
+		await deleteInterestType(interestTypeId);
 
 		res.status(200).json({
 			success: true,
-			message: "Category deleted successfully",
+			message: "Interest type deleted successfully",
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);

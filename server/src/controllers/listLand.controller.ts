@@ -8,7 +8,6 @@ import {
 	uploadPropertyImages,
 	uploadPropertyDocuments,
 } from "../services/listLand.ts";
-import { getRequesterUserFromToken } from "../services/user.ts";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -21,21 +20,16 @@ const getErrorPayload = (error: unknown) => {
 	};
 };
 
-const getTokenFromRequest = (req: Request): string | null => {
-	const authHeader = req.headers.authorization;
-	if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
-	return (req.cookies as Record<string, string>)?.["__session"] ?? null;
-};
-
-const getRequesterUserOrThrow = async (req: Request) => {
-	const token = getTokenFromRequest(req);
-	if (!token) {
+const getRequesterUserOrThrow = (req: Request) => {
+	// Middleware already validated session and attached user
+	const user = (req as any).user;
+	if (!user) {
 		const unauthorizedError = new Error("Unauthorized");
 		(unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
 		throw unauthorizedError;
 	}
 
-	return getRequesterUserFromToken(token);
+	return user;
 };
 
 const getPropertyIdParamOrThrow = (req: Request): string => {
@@ -55,7 +49,7 @@ const getPropertyIdParamOrThrow = (req: Request): string => {
  */
 export const createListLandController = async (req: Request, res: Response) => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const files = req.files as Express.Multer.File[];
 
 		let mediaIds: string[] = [];
@@ -113,7 +107,7 @@ export const createListLandController = async (req: Request, res: Response) => {
  */
 export const getListLandsController = async (req: Request, res: Response) => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 
 		const page = req.query.page ? Number(req.query.page) : undefined;
 		const limit = req.query.limit ? Number(req.query.limit) : undefined;
@@ -138,7 +132,7 @@ export const getListLandsController = async (req: Request, res: Response) => {
  */
 export const getListLandByIdController = async (req: Request, res: Response) => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const propertyId = getPropertyIdParamOrThrow(req);
 
 		const property = await getListLandById(
@@ -160,7 +154,7 @@ export const getListLandByIdController = async (req: Request, res: Response) => 
  */
 export const updateListLandController = async (req: Request, res: Response) => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const propertyId = getPropertyIdParamOrThrow(req);
 		const files = req.files as Express.Multer.File[];
 
@@ -223,7 +217,7 @@ export const updateListLandController = async (req: Request, res: Response) => {
  */
 export const deleteListLandController = async (req: Request, res: Response) => {
 	try {
-		const requester = await getRequesterUserOrThrow(req);
+		const requester = getRequesterUserOrThrow(req);
 		const propertyId = getPropertyIdParamOrThrow(req);
 
 		const result = await deleteListLandById(

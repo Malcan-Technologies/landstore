@@ -1,11 +1,16 @@
-import { clerkClient } from "@clerk/express";
 import db from "../../config/prisma.ts";
 import { Prisma } from "@prisma/client";
 import type { User, UserType } from "@prisma/client";
+import { auth } from "../../config/auth.ts";
 
-type SignUpPayload = {
+type UpdateUserPayload = {
+  email?: string;
+  phone?: string | null;
+  userType?: UserType;
+};
+
+type CreateUserProfilePayload = {
   email: string;
-  password: string;
   userType?: UserType;
   phone?: string;
   profileType?: "individual" | "company" | "koperasi";
@@ -19,18 +24,16 @@ type SignUpPayload = {
   name?: string;
 };
 
-type LoginPayload = {
-  email: string;
-  password: string;
-};
-
-type UpdateUserPayload = {
-  email?: string;
-  phone?: string | null;
-  userType?: UserType;
-};
-
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+const normalizePhone = (phone?: string | null) => {
+  const value = phone?.trim();
+  return value ? value : null;
+};
+
+const isValidUserType = (value?: string): value is UserType => {
+  return value === "admin" || value === "user";
+};
 
 const buildDisplayName = (
   firstName?: string,
@@ -42,58 +45,107 @@ const buildDisplayName = (
   return fullName || null;
 };
 
-const normalizePhone = (phone?: string | null) => {
-  const value = phone?.trim();
-  return value ? value : null;
+/**
+ * Validate Better Auth session token and retrieve user
+ * Supports both session cookies and bearer tokens
+ */
+export const getRequesterUserFromToken = async (token: string): Promise<User> => {
+  try {
+    // Validate session with Better Auth
+    const session = await auth.api.getSession({
+      headers: {
+        cookie: `__session=${token}`,
+      },
+    });
+
+    if (!session?.user?.id) {
+      const unauthorizedError = new Error("Invalid or expired session");
+      (unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
+      throw unauthorizedError;
+    }
+
+    // Get user from database
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!user) {
+      const notFoundError = new Error("User not found");
+      (notFoundError as Error & { statusCode?: number }).statusCode = 404;
+      throw notFoundError;
+    }
+
+    return user;
+  } catch (error) {
+    const err = error as Error & { statusCode?: number };
+    if (err.statusCode) throw error;
+    
+    const unauthorizedError = new Error("Invalid or expired session");
+    (unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
+    throw unauthorizedError;
+  }
 };
 
-const isValidUserType = (value?: string): value is UserType => {
-  return value === "admin" || value === "user";
-};
+// Update user profile after Better Auth signup
+// Better Auth has already created the User record
+export const completeUserProfile = async ({
+  email,
+  userType,
+  phone,
+  profileType,
+  fullName,
+  identityNo,
+  companyName,
+  koperasiName,
+  registrationNo,
+  firstName,
+  lastName,
+  name,
+}: CreateUserProfilePayload) => {
+  const normalizedEmail = normalizeEmail(email);
 
-const findClerkUserByEmail = async (email: string) => {
-  const result = await clerkClient.users.getUserList({
-    emailAddress: [email],
-    limit: 1,
+  // Find user created by Better Auth
+  const user = await db.user.findUnique({
+    where: { email: normalizedEmail },
   });
 
-  return result.data?.[0] ?? null;
-};
+  if (!user) {
+    const notFoundError = new Error("User not found. Please sign up first.");
+    (notFoundError as Error & { statusCode?: number }).statusCode = 404;
+    throw notFoundError;
+  }
 
-const syncPostgresUser = async (params: {
-  clerkId: string;
-  email: string;
-  phone?: string | null;
-  userType?: UserType;
-}) => {
-  const { clerkId, email, phone, userType } = params;
-
-  const updateData: {
-    email: string;
-    phone: string | null;
-    userType?: UserType;
-  } = {
-    email: normalizeEmail(email),
-    phone: normalizePhone(phone),
-  };
-
-  if (userType) updateData.userType = userType;
-
-  return db.user.upsert({
-    where: { clerkId },
-    update: updateData,
-    create: {
-      clerkId,
-      email: normalizeEmail(email),
+  // Update user with business fields
+  const updatedUser = await db.user.update({
+    where: { id: user.id },
+    data: {
       phone: normalizePhone(phone),
       userType: userType ?? "user",
     },
   });
+
+  // Create user profile details
+  await upsertUserProfileDetail(user.id, {
+    email,
+    userType,
+    phone,
+    profileType,
+    fullName,
+    identityNo,
+    companyName,
+    koperasiName,
+    registrationNo,
+    firstName,
+    lastName,
+    name,
+  });
+
+  return updatedUser;
 };
 
 const upsertUserProfileDetail = async (
   userId: string,
-  payload: SignUpPayload
+  payload: CreateUserProfilePayload
 ) => {
   const profileType =
     payload.profileType ??
@@ -169,155 +221,24 @@ const upsertUserProfileDetail = async (
   });
 };
 
-export const signUpUser = async ({
-  email,
-  password,
-  userType,
-  phone,
-  profileType,
-  fullName,
-  identityNo,
-  companyName,
-  koperasiName,
-  registrationNo,
-  firstName,
-  lastName,
-  name,
-}: SignUpPayload) => {
-  const normalizedEmail = normalizeEmail(email);
-
-  if (userType && !isValidUserType(userType)) {
-    const badRequestError = new Error("Invalid userType");
-    (badRequestError as Error & { statusCode?: number }).statusCode = 400;
-    throw badRequestError;
-  }
-
-  if (profileType && !["individual", "company", "koperasi"].includes(profileType)) {
-    const badRequestError = new Error("Invalid profileType");
-    (badRequestError as Error & { statusCode?: number }).statusCode = 400;
-    throw badRequestError;
-  }
-
-  const [existingClerkUser, existingDbUser] = await Promise.all([
-    findClerkUserByEmail(normalizedEmail),
-    db.user.findFirst({ where: { email: normalizedEmail } }),
-  ]);
-
-  if (existingClerkUser || existingDbUser) {
-    const conflictError = new Error("User already exists");
-    (conflictError as Error & { statusCode?: number }).statusCode = 409;
-    throw conflictError;
-  }
-
-  const clerkUser = await clerkClient.users.createUser({
-    emailAddress: [normalizedEmail],
-    password,
-    firstName,
-    lastName,
-  });
-
-  const appUser = await syncPostgresUser({
-    clerkId: clerkUser.id,
-    email: normalizedEmail,
-    phone,
-    userType,
-  });
-
-  await upsertUserProfileDetail(appUser.id, {
-    email,
-    password,
-    userType,
-    phone,
-    profileType,
-    fullName,
-    identityNo,
-    companyName,
-    koperasiName,
-    registrationNo,
-    firstName,
-    lastName,
-    name,
-  });
-
-  return {
-    message: "Signup successful",
-    user: appUser,
-  };
-};
-
-export const loginUser = async ({ email, password }: LoginPayload) => {
-  const normalizedEmail = normalizeEmail(email);
-
-  const clerkUser = await findClerkUserByEmail(normalizedEmail);
-  if (!clerkUser) {
-    const authError = new Error("Invalid credentials");
-    (authError as Error & { statusCode?: number }).statusCode = 401;
-    throw authError;
-  }
-
-  await clerkClient.users.verifyPassword({
-    userId: clerkUser.id,
-    password,
-  });
-
-  const session = await clerkClient.sessions.createSession({
-    userId: clerkUser.id,
-  });
-
-  const sessionToken = await clerkClient.sessions.getToken(session.id);
-
-  const appUser = await syncPostgresUser({
-    clerkId: clerkUser.id,
-    email: normalizedEmail,
-    phone: clerkUser.phoneNumbers?.[0]?.phoneNumber,
-  });
-
-  return {
-    message: "Login successful",
-    user: appUser,
-    sessionId: session.id,
-    sessionToken: sessionToken.jwt,
-  };
-};
-
-export const logoutUser = async (sessionId: string) => {
-  await clerkClient.sessions.revokeSession(sessionId);
-  return { message: "Logged out successfully" };
-};
-
-export const refreshSessionToken = async (sessionId: string) => {
-  try {
-    const sessionToken = await clerkClient.sessions.getToken(sessionId);
-    return {
-      message: "Session refreshed",
-      sessionToken: sessionToken.jwt,
-    };
-  } catch (error: unknown) {
-    const refreshError = new Error("Session expired or invalid");
-    (refreshError as Error & { statusCode?: number }).statusCode = 401;
-    throw refreshError;
-  }
-};
-
-export const syncCurrentUserByClerkId = async (clerkUserId: string) => {
-  const clerkUser = await clerkClient.users.getUser(clerkUserId);
-
-  const primaryEmail = clerkUser.emailAddresses.find(
-    (item) => item.id === clerkUser.primaryEmailAddressId
-  )?.emailAddress;
-
-  const appUser = await syncPostgresUser({
-    clerkId: clerkUser.id,
-    email: primaryEmail ?? `${clerkUser.id}@placeholder.clerk`,
-    phone: clerkUser.phoneNumbers?.[0]?.phoneNumber,
-  });
-
-  return appUser;
-};
-
 export const getUserById = async (id: string) => {
   const user = await db.user.findUnique({
     where: { id },
+  });
+
+  if (!user) {
+    const notFoundError = new Error("User not found");
+    (notFoundError as Error & { statusCode?: number }).statusCode = 404;
+    throw notFoundError;
+  }
+
+  return user;
+};
+
+export const getUserByEmail = async (email: string) => {
+  const normalizedEmail = normalizeEmail(email);
+  const user = await db.user.findFirst({
+    where: { email: normalizedEmail },
   });
 
   if (!user) {
@@ -418,27 +339,5 @@ export const deleteUserById = async (id: string) => {
     throw error;
   }
 
-  try {
-    await clerkClient.users.deleteUser(user.clerkId);
-  } catch {
-    // Best-effort cleanup in Clerk after successful local deletion.
-  }
-
   return { message: "User deleted successfully" };
-};
-
-export const getRequesterUserFromToken = async (token: string): Promise<User> => {
-  const { verifyToken } = await import("@clerk/backend");
-
-  const payload = await verifyToken(token, {
-    secretKey: process.env.CLERK_SECRET_KEY,
-  });
-
-  if (!payload.sub) {
-    const unauthorizedError = new Error("Unauthorized");
-    (unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
-    throw unauthorizedError;
-  }
-
-  return syncCurrentUserByClerkId(payload.sub);
 };
