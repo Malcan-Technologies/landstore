@@ -79,7 +79,7 @@ const propertyMapMarkers = [
 
 const infoLabelClass = "mb-2 text-[12px] font-medium text-white/50";
 const fieldLabelClass = "mb-2 text-[11px] font-medium text-white/35";
-const fieldBoxClass = "rounded-[9px] border border-white/6 bg-[#153127] px-4 py-3 text-[13px] font-medium text-white/56";
+const fieldBoxClass = "rounded-[9px] border border-white/6 bg-[#153127] px-4 py-3 text-[12px] font-medium text-white/56";
 
 export default function ReviewListingDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -101,7 +101,7 @@ export default function ReviewListingDetailPage({ params }) {
         </span>
       </div> */}
 
-      <section className="grid min-h-max gap-4 xl:grid-cols-[1.04fr_0.96fr]">
+      <section className="grid min-h-max gap-4 lg:grid-cols-[1.04fr_0.96fr]">
         <div className="overflow-hidden h-fit rounded-[18px] border border-[#E9EDF5] bg-white p-4 sm:p-5" style={{ backgroundColor: "#FFFFFF" }}>
           <div className="flex items-start justify-between gap-4 border-b border-[#E9EDF5] pb-4">
             <div>
@@ -111,7 +111,7 @@ export default function ReviewListingDetailPage({ params }) {
               </div>
               <p className="mt-1 text-[12px] text-gray5 sm:text-[13px]">As Visible to Marketplace Users</p>
             </div>
-            <span className="inline-flex items-center rounded-md bg-[#F7F7F8] px-3 py-1 text-[11px] font-medium text-[#8E8E8E]">
+            <span className="inline-flex items-center rounded-md bg-[#F1F1F1] px-3 py-1 text-[11px] font-medium text-gray5">
               {listingDetails.code}
             </span>
           </div>
@@ -119,7 +119,15 @@ export default function ReviewListingDetailPage({ params }) {
           <div className="mt-4 grid grid-cols-2 gap-3">
             {listingDetails.images.map((image, index) => (
               <div key={`${image}-${index}`} className="relative h-[156px] overflow-hidden rounded-[4px] sm:h-[176px]">
-                <Image src={image} alt={`Listing preview ${index + 1}`} fill className="object-cover" sizes="(min-width: 1280px) 25vw, 50vw" unoptimized />
+                <Image
+                  src={image}
+                  alt={`Listing preview ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 1280px) 25vw, 50vw"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  unoptimized
+                />
               </div>
             ))}
           </div>
@@ -186,11 +194,11 @@ export default function ReviewListingDetailPage({ params }) {
                 <Sheild size={16} color="var(--color-greenbg)" />
               </span>
               <div>
-                <h2 className="text-[18px] font-semibold leading-none text-activebg">Confidential Data</h2>
-                <p className="mt-1 text-[13px] text-white/45">Privileged Access Only</p>
+                <h2 className="text-[16px] sm:text-[18px] font-semibold leading-none text-activebg">Confidential Data</h2>
+                <p className="mt-1 text-[11px] sm:text-[13px] text-white/45">Privileged Access Only</p>
               </div>
             </div>
-            <span className="inline-flex items-center rounded-[4px] bg-greenbg px-2.5 py-1 text-[11px] font-medium text-font2-green">
+            <span className="inline-flex items-center rounded-[4px] bg-green-logo px-2.5 py-1 text-[10px] sm:text-[12px] font-semibold text-greenbg border border-[#17523F]/80">
               Verified Agent
             </span>
           </div>

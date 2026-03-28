@@ -14,7 +14,13 @@
           "name": "Login",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\"\r\n}",
@@ -25,13 +31,14 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/users/login",
+              "raw": "{{baseUrl}}/auth/sign-in/email",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "users",
-                "login"
+                "auth",
+                "sign-in",
+                "email"
               ]
             }
           },
@@ -41,33 +48,39 @@
           "name": "logout",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/users/logout",
+              "raw": "{{baseUrl}}/auth/sign-out",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "users",
-                "logout"
+                "auth",
+                "sign-out"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "refresh Token",
+          "name": "Get session",
           "request": {
-            "method": "POST",
+            "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/refresh",
+              "raw": "{{baseUrl}}/auth/get-session",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "users",
-                "refresh"
+                "auth",
+                "get-session"
               ]
             }
           },
@@ -80,7 +93,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Ahmad Faiz\",\r\n    \"identityNo\": \"900101-14-5678\",\r\n    \"firstName\": \"Ahmad\",\r\n    \"lastName\": \"Faiz\"\r\n}",
+              "raw": "{\r\n    \"name\": \"basit sheikh\",\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -88,13 +101,83 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/users/signup",
+              "raw": "{{baseUrl}}/auth/sign-up/email",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "users",
-                "signup"
+                "auth",
+                "sign-up",
+                "email"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"basit sheikh\",\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"currentPassword\": \"basit@123!Burak22\",\r\n    \"newPassword\": \"basit@123!Burak\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:5173",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
               ]
             }
           },
@@ -154,7 +237,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Ahmad Faiz\",\r\n    \"identityNo\": \"900101-14-5678\",\r\n    \"firstName\": \"Ahmad\",\r\n    \"lastName\": \"Faiz\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Basit Sheikh\",\r\n    \"identityNo\": \"123456-12-1234\",\r\n    \"firstName\": \"Basit\",\r\n    \"lastName\": \"Sheikh\",\r\n    \"name\": \"Basit Sheikh\",\r\n    \"companyName\": null,\r\n    \"koperasiName\": null,\r\n    \"registrationNo\": null\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -208,6 +291,36 @@
                   "key": ":id",
                   "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
                 }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete User Profile",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Basit Sheikh\",\r\n    \"identityNo\": \"123456-12-1234\",\r\n    \"firstName\": \"Basit\",\r\n    \"lastName\": \"Sheikh\",\r\n    \"name\": \"Basit Sheikh\",\r\n    \"companyName\": null,\r\n    \"koperasiName\": null,\r\n    \"registrationNo\": null\r\n}\r\n\r\n// {\r\n//   \"email\": \"company@example.com\",\r\n//   \"userType\": \"user\",\r\n//   \"phone\": \"+60123456789\",\r\n//   \"profileType\": \"company\",\r\n//   \"companyName\": \"ABC Properties Sdn Bhd\",\r\n//   \"registrationNo\": \"123456789\",\r\n//   \"name\": \"ABC Properties\",\r\n//   \"email\": \"company@example.com\",\r\n//   \"fullName\": null,\r\n//   \"identityNo\": null,\r\n//   \"firstName\": null,\r\n//   \"lastName\": null,\r\n//   \"koperasiName\": null\r\n// }\r\n\r\n// {\r\n//   \"email\": \"koperasi@example.com\",\r\n//   \"userType\": \"user\",\r\n//   \"phone\": \"+60123456789\",\r\n//   \"profileType\": \"koperasi\",\r\n//   \"koperasiName\": \"Koperasi Tanah ABC\",\r\n//   \"registrationNo\": \"987654321\",\r\n//   \"name\": \"Koperasi Tanah ABC\",\r\n//   \"fullName\": null,\r\n//   \"identityNo\": null,\r\n//   \"companyName\": null,\r\n//   \"firstName\": null,\r\n//   \"lastName\": null\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/complete-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "complete-profile"
               ]
             }
           },
@@ -344,7 +457,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "d487709c-8f8a-4b9c-9606-d924511fbbca"
+                  "value": "6896f9ce-43c6-47d5-9acb-570850f9c9a5"
                 }
               ]
             }
@@ -368,7 +481,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "d487709c-8f8a-4b9c-9606-d924511fbbca"
+                  "value": "6896f9ce-43c6-47d5-9acb-570850f9c9a5"
                 }
               ]
             }
@@ -1081,6 +1194,614 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "notifications",
+      "item": [
+        {
+          "name": "create notifications",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\" : \"{{userId}}\",\r\n    \"type\" : \"{{notificationType}}\",\r\n    \"content\" : \"{{notificationContent}}\",\r\n    \"isRead\" : false\r\n}   ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update notifications",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"userId\" : \"{{userId}}\",\r\n    \"type\" : \"{{notificationType}}\",\r\n    \"content\" : \"{{notificationContent}}\",\r\n    \"isRead\" : false\r\n}   ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "9625aa95-8422-4a9c-b166-7588829caa99"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete notifications",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "8dea6f6e-72da-455c-ba87-84dc2424acea"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get notifications By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "8dea6f6e-72da-455c-ba87-84dc2424acea"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Entity Type",
+      "item": [
+        {
+          "name": "create entity-types",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"LandOwner\"\r\n}   ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/entity-types/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "entity-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update entity-types",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Land owner\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/entity-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "entity-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "401e65a9-ba40-464a-8ca2-95a30f6b023a"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete entity-types",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/entity-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "entity-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "8dea6f6e-72da-455c-ba87-84dc2424acea"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get entity-types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/entity-types/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "entity-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get entity-types By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/entity-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "entity-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "401e65a9-ba40-464a-8ca2-95a30f6b023a"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Interest types",
+      "item": [
+        {
+          "name": "create interest-types",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Buy\"\r\n}   ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/interest-types/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "interest-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update interest-types",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"Sell\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/interest-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "interest-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "d76a3c76-0dc2-46e8-ac39-eeca8bd849f2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete interest-types",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/interest-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "interest-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "d76a3c76-0dc2-46e8-ac39-eeca8bd849f2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get interest-types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/interest-types/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "interest-types",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get interest-types By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/interest-types/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "interest-types",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "d76a3c76-0dc2-46e8-ac39-eeca8bd849f2"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Enquiries",
+      "item": [
+        {
+          "name": "Create Enquiry",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Enquiry",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Enquiry Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/::id/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                "::id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Enquiries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Enquiry By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Enquiry",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Enquiry By propertyId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/property/::propertyId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                "property",
+                "::propertyId"
+              ],
+              "variable": [
+                {
+                  "key": ":propertyId",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Enquiry By User Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/user/::userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                "user",
+                "::userId"
+              ],
+              "variable": [
+                {
+                  "key": ":userId",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [
@@ -1110,6 +1831,10 @@
   "variable": [
     {
       "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "Origin",
       "value": ""
     }
   ]

@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { getRequesterUserFromToken } from "../services/user.ts";
 import {
 	createUtilization,
 	getAllUtilizations,
@@ -8,21 +7,27 @@ import {
 	deleteUtilization,
 } from "../services/utilization.ts";
 
-const getTokenFromRequest = (req: Request): string | null => {
-	const authHeader = req.headers.authorization;
-	if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
-	return (req.cookies as Record<string, string>)?.["__session"] ?? null;
+const getErrorPayload = (error: unknown) => {
+	const err = error as
+		| { statusCode?: number; message?: string; errors?: Array<{ message?: string }> }
+		| undefined;
+
+	return {
+		statusCode: err?.statusCode ?? 500,
+		message: err?.errors?.[0]?.message ?? err?.message ?? "Internal server error",
+	};
 };
 
-const getRequesterUserOrThrow = async (req: Request) => {
-	const token = getTokenFromRequest(req);
-	if (!token) {
+const getRequesterUserOrThrow = (req: Request) => {
+	// Middleware already validated session and attached user
+	const user = (req as any).user;
+	if (!user) {
 		const unauthorizedError = new Error("Unauthorized");
 		(unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
 		throw unauthorizedError;
 	}
 
-	return getRequesterUserFromToken(token);
+	return user;
 };
 
 /**
@@ -33,7 +38,6 @@ export const createUtilizationController = async (
 	res: Response
 ) => {
 	try {
-		await getRequesterUserOrThrow(req);
 
 		const { name } = req.body;
 

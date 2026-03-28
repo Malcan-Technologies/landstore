@@ -8,6 +8,7 @@ import Bag from "@/components/svg/Bag";
 import Calendar from "@/components/svg/Calendar";
 import Chat from "@/components/svg/Chat";
 import Pointer from "@/components/svg/Pointer";
+import Building from "@/components/svg/Building";
 
 const statusStyles = {
   "Need More Info": "bg-[#FFECEE] text-[#E34854]",
@@ -56,7 +57,22 @@ const EnquiryCard = ({ enquiry }) => {
 
           <div className="min-w-0 flex-1 flex md:flex-row flex-col gap-3 justify-between items-start md:items-center ">
             <div>
-              <div className="flex flex-wrap items-center gap-2 sm:text-[11px] text-[9px] font-medium text-gray5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-semibold text-gray5 sm:hidden">
+                <span className="flex items-center gap-1.5">
+                  <Bag size={14} color="var(--color-gray5)" />
+                  {category}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Building size={14} color="var(--color-gray5)" />
+                  {area}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={14} color="var(--color-gray5)" />
+                  Updated {updatedAt}
+                </span>
+              </div>
+
+              <div className="hidden flex-wrap items-center gap-2 text-[11px] font-medium text-gray5 sm:flex">
                 <span className="rounded-sm bg-[#F5F5F5] px-2 py-1 text-[10px] font-medium tracking-[0.02em] text-gray5">
                   {code}
                 </span>
@@ -72,12 +88,20 @@ const EnquiryCard = ({ enquiry }) => {
                 <span className="truncate">{title}</span>
               </h2>
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 sm:text-[12px] text-[10px] font-semibold text-gray5">
-                <span className="flex items-center gap-1.5">
+              
+              
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 sm:text-[12px] text-[10px] font-semibold text-gray5">
+                 <span className="flex sm:hidden rounded-sm bg-[#F5F5F5] px-2 py-1 text-[10px] font-medium tracking-[0.02em] text-gray5">
+                  {code}
+                </span>
+                <span className="hidden items-center gap-1.5 sm:flex">
                   <Bag size={14} color="var(--color-gray5)" />
                   {category}
                 </span>
-                <span className="text-gray5">▥ {area}</span>
+                <span className="hidden items-center gap-1.5 sm:flex">
+                  <Building size={14} color="var(--color-gray5)" />
+                  {area}
+                </span>
                 {dealTags.map((tag) => (
                   <span
                     key={tag}
@@ -86,15 +110,15 @@ const EnquiryCard = ({ enquiry }) => {
                     {tag}
                   </span>
                 ))}
-                <span className="flex items-center gap-1.5">
+                <span className="hidden items-center gap-1.5 sm:flex">
                   <Calendar size={14} color="var(--color-gray5)" />
                   Updated {updatedAt}
                 </span>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 lg:pl-4">
+            <div className="flex flex-col-reverse sm:flex-row w-full items-center justify-end gap-2 lg:pl-4">
               <span
-                className={`inline-flex h-10 w-auto items-center justify-center gap-1.5 rounded-lg px-3 sm:text-[12px] text-[10px] font-semibold transition ${
+                className={`inline-flex h-10 w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg px-3 sm:text-[12px] text-[10px] font-semibold transition ${
                   hasUnread
                     ? "bg-green-secondary text-white hover:opacity-90"
                     : "bg-[#F5F6F7] text-[#B8B8B8]"
@@ -106,7 +130,7 @@ const EnquiryCard = ({ enquiry }) => {
                 ) : null}
               </span>
 
-              <span className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#E3F3EC] px-4 sm:text-[13px] text-[11px] font-medium text-green-secondary transition hover:bg-[#d7ede4]">
+              <span className="inline-flex h-10 w-full justify-center sm:justify-start  sm:w-auto items-center gap-2 rounded-lg bg-[#E3F3EC] px-4 sm:text-[13px] text-[11px] font-medium text-green-secondary transition hover:bg-[#d7ede4]">
                 View details
                 <Arrow size={14} color="var(--color-green-secondary)" />
               </span>

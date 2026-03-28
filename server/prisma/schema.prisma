@@ -45,11 +45,18 @@ enum FeatureTag {
 
 model User {
   id                String                 @id @default(uuid())
-  clerkId           String                 @unique
+  
+  // Better Auth fields
   email             String                 @unique
+  password          String                 @default("")  // Better Auth manages password hashing
+  name              String?
+  image             String?
+  emailVerified     Boolean                @default(false)
+  
+  // Custom business fields
   phone             String?
-  userType          UserType
-  profileMediaId    String?                // Changed to String
+  userType          UserType               @default(user)
+  profileMediaId    String?
 
   profileMedia      Media?                 @relation("UserProfileMedia", fields: [profileMediaId], references: [id])
   media             Media[]                @relation("UserMedia")
@@ -71,8 +78,65 @@ model User {
 
   shortlistFolders  ShortlistFolder[]
 
+  // Better Auth relations
+  accounts          Account[]
+  sessions          Session[]
+
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// BETTER AUTH
+//////////////////////////////////////////////////////
+
+model Account {
+  id                String                 @id @default(uuid())
+  userId            String                 // Changed to String
+  accountId         String
+  providerId        String
+  accessToken       String?
+  refreshToken      String?
+  idToken           String?
+  expiresAt         DateTime?
+  password          String?
+
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@unique([userId, providerId, accountId])
+  @@index([userId])
+}
+
+model Session {
+  id                String                 @id @default(uuid())
+  userId            String                 // Changed to String
+  token             String                 @unique
+  expiresAt         DateTime
+  ipAddress         String?
+  userAgent         String?
+
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id                String                 @id @default(uuid())
+  identifier        String
+  value             String
+  expiresAt         DateTime
+  token             String                 @unique
+
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@unique([identifier, token])
 }
 
 //////////////////////////////////////////////////////

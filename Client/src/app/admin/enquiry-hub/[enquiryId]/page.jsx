@@ -136,9 +136,9 @@ export default function EnquiryHubDetailPage({ params }) {
 
   return (
     <main className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto bg-background-primary px-4 py-5 no-scrollbar sm:px-5">
-      <section className="flex flex-col md:flex-row justify-between min-h-max gap-4 ">
-        <div className="rounded-[20px] border border-[#E9EDF5] bg-white p-4 shadow-none sm:p-5 md:w-[65%]">
-          <div className="flex items-start justify-between gap-4 border-b border-[#E9EDF5] pb-4">
+      <section className="flex flex-col lg:flex-row justify-between min-h-max gap-4 ">
+        <div className="rounded-[20px] border border-[#E9EDF5] bg-white p-4 py-3 shadow-none sm:p-5 sm:py-4 lg:w-[65%] h-fit">
+          <div className="flex items-center justify-between gap-4 border-b border-[#E9EDF5] pb-4">
             <div className="flex items-start gap-3">
               <div>
               <span className="relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-white bg-background-primary shadow-sm text-[#A1A1AA] ">
@@ -149,9 +149,9 @@ export default function EnquiryHubDetailPage({ params }) {
               </span>
 
               </div>
-              <div>
-                <h1 className="text-[20px] font-semibold leading-none text-[#111827]">{enquiryDetail.requester}</h1>
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#EAFBF1] px-2.5 py-1 text-[11px] font-medium text-[#15803D]">
+              <div className="min-w-0 flex h-full flex-col justify-between gap-2.5">
+                <h1 className="text-[14px] sm:text-[20px] lg:text-[18px] xl:text-[20px] font-semibold leading-none text-[#111827]">{enquiryDetail.requester}</h1>
+                <div className=" inline-flex items-center gap-1.5 rounded-full bg-[#EAFBF1] px-1.5 py-1 text-[7px] sm:text-[11px] lg:text-[9px] xl:text-[11px] font-medium text-[#15803D]">
                   <Sheild size={14} color="#298064" />
                   {enquiryDetail.verificationStatus}
                 </div>
@@ -178,7 +178,7 @@ export default function EnquiryHubDetailPage({ params }) {
 
           <div className="grid gap-4 border-b border-[#E9EDF5] py-4 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="rounded-[18px] bg-[#082B20] px-5 py-4 text-white shadow-none">
-              <p className="text-[16px] font-semibold italic leading-normal">
+              <p className="text-[12px] sm:text-[16px] lg:text-[14px] xl:text-[16px] font-semibold italic leading-normal">
                 “{enquiryDetail.quote}”
               </p>
             </div>
@@ -186,18 +186,18 @@ export default function EnquiryHubDetailPage({ params }) {
             <div className="grid rounded-[18px bg-white">
               <div className="grid grid-cols-[22px_1fr_auto] items-center gap-3 border-b border-[#EEF2F6] px-4 py-3">
                 <Bag2 size={16} color="#71717A" />
-                <span className="text-[13px] text-[#71717A]">Estimated budget</span>
-                <span className="text-[14px] font-semibold text-[#111827]">{enquiryDetail.estimatedBudget}</span>
+                <span className="text-[11px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">Estimated budget</span>
+                <span className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-semibold text-[#111827]">{enquiryDetail.estimatedBudget}</span>
               </div>
               <div className="grid grid-cols-[22px_1fr_auto] items-center gap-3 border-b border-[#EEF2F6] px-4 py-3">
                 <Clock2 size={16} color="#71717A" />
-                <span className="text-[13px] text-[#71717A]">Acquisition timeline</span>
-                <span className="text-[14px] font-semibold text-[#111827]">{enquiryDetail.acquisitionTimeline}</span>
+                <span className="text-[11px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">Acquisition timeline</span>
+                <span className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-semibold text-[#111827]">{enquiryDetail.acquisitionTimeline}</span>
               </div>
               <div className="grid grid-cols-[22px_1fr_auto] items-center gap-3 px-4 py-3">
                 <Bag3 size={16} color="#71717A" />
-                <span className="text-[13px] text-[#71717A]">Mediation mode</span>
-                <span className="text-[14px] font-semibold text-[#111827]">{enquiryDetail.mediationMode}</span>
+                <span className="text-[11px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">Mediation mode</span>
+                <span className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-semibold text-[#111827]">{enquiryDetail.mediationMode}</span>
               </div>
             </div>
           </div>
@@ -206,15 +206,15 @@ export default function EnquiryHubDetailPage({ params }) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-[#111827]">
                 <Chat2 size={16} color="#2F855A" />
-                <h2 className="text-[16px] font-semibold">Mediation Log</h2>
+                <h2 className="text-[12px] sm:text-[16px] lg:text-[14px] xl:text-[16px] font-semibold">Mediation Log</h2>
               </div>
-              <div className="flex items-center gap-2 text-[13px] text-[#71717A]">
+              <div className="flex items-center gap-2 text-[9px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">
                 <Sheild size={14} color="#10B981" />
                 <span>Secure Admin Mediation</span>
               </div>
             </div>
 
-            <div className="mt-5 rounded-[18px] bg-[#FAFAFA] p-5">
+            <div className="mt-5 rounded-[18px] bg-[#FAFAFA] p-5 md:h-[500px] xl:h-auto">
               <div className="flex gap-4">
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#18181B] text-white">
                   <Person size={14} color="#FFFFFF" />
@@ -222,13 +222,16 @@ export default function EnquiryHubDetailPage({ params }) {
                 <div className="flex-1 rounded-[16px] border border-[#E5E7EB] bg-white">
                   <div className="flex items-start justify-between gap-3 px-4 py-4">
                     <div>
-                      <h3 className="text-[14px] font-semibold text-[#111827]">Original Submission</h3>
-                      <p className="mt-3 max-w-[430px] text-[14px] italic leading-6 text-[#71717A]">“{enquiryDetail.originalMessage}”</p>
+                      <div className="flex justify-between">
+                      <h3 className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-semibold text-[#111827]">Original Submission</h3>
+                    <span className="text-[11px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">{enquiryDetail.originalDate}</span>
+
+                      </div>
+                      <p className="mt-3 max-w-[430px] text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] italic leading-6 text-[#71717A]">“{enquiryDetail.originalMessage}”</p>
                     </div>
-                    <span className="text-[13px] text-[#71717A]">{enquiryDetail.originalDate}</span>
                   </div>
                   <div className="mx-4 border-t border-[#E5E7EB]" />
-                  <div className="flex flex-wrap items-center gap-3 px-4 py-3 text-[13px] text-[#71717A]">
+                  <div className="flex flex-wrap items-center gap-3 px-4 py-3 text-[9px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">
                     <span>
                       Interest: <span className="font-semibold text-[#111827]">Buy</span>
                     </span>
@@ -240,13 +243,13 @@ export default function EnquiryHubDetailPage({ params }) {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-start gap-4">
+              <div className="mt-5 mb-7 flex items-start gap-4">
                 <div className="flex-1 rounded-[16px] border border-[#C9F7E8] bg-[#F1FFFA] px-4 py-3">
-                  <div className="flex items-start justify-between gap-3 text-[13px] text-[#2F855A]">
+                  <div className="flex items-start justify-between gap-3 text-[9px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#2F855A]">
                     <span>{enquiryDetail.adminDate}</span>
-                    <span className="font-semibold">Admin notification</span>
+                    <span className="font-semibold text-end">Admin notification</span>
                   </div>
-                  <p className="mt-2 max-w-[420px] text-right text-[14px] italic leading-6 text-[#2F855A]">“{enquiryDetail.adminMessage}”</p>
+                  <p className="mt-2 max-w-[420px] text-right text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] italic leading-6 text-[#2F855A]">“{enquiryDetail.adminMessage}”</p>
                 </div>
                 <button
                   type="button"
@@ -265,7 +268,7 @@ export default function EnquiryHubDetailPage({ params }) {
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder="Type a follow-up note to LandStore admin..."
-                className="h-[96px] w-full resize-none border-0 bg-transparent text-[15px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
+                className="h-[96px] w-full resize-none border-0 bg-transparent text-[11px] sm:text-[15px] lg:text-[13px] xl:text-[15px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
               />
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button
@@ -298,30 +301,28 @@ export default function EnquiryHubDetailPage({ params }) {
                 </button>
               </div>
             </div>
-            <div className="mt-3 flex items-center justify-center gap-2 text-[12px] text-[#A1A1AA]">
+            <div className="mt-3 flex items-center justify-center gap-2 text-[10px] sm:text-[12px] lg:text-[10px] xl:text-[12px] text-[#A1A1AA]">
               <LockIcon />
               <span>Encrypted communication</span>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4 md:w-[35%]">
+        <div className="space-y-4 lg:w-[35%]">
           <div className="overflow-hidden rounded-[20px] border border-[#0E3C2D] bg-[#082B20] text-white shadow-[0_12px_30px_rgba(6,36,26,0.18)]">
-            <div className="flex items-start justify-between border-b border-white/10 px-4 py-4">
-              <div className="flex items-start gap-2.5">
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+              <div className="flex items-center gap-2.5">
                 <span className="inline-flex h-5 w-5 items-center justify-center text-greenbg">
                   <Sheild size={16} color="var(--color-greenbg)" />
                 </span>
-                <div className="flex flex-1 justify-center">
-                  <h2 className="text-[18px] font-semibold leading-none text-activebg">Confidential Data</h2>
-                </div>
+                <h2 className="text-[12px] sm:text-[14px] lg:text-[14px] xl:text-[18px] font-semibold leading-none text-activebg">Confidential Data</h2>
               </div>
-              <span className="text-[12px] text-white/55">Admin Restricted</span>
+              <span className="relative -bottom-px inline-flex items-center text-[10px] sm:text-[12px] lg:text-[10px] xl:text-[12px] leading-none text-white/55">Admin Restricted</span>
             </div>
 
             <div className=" py-4">
-              <div className="flex gap-4 border-b border-white/10 pb-5 px-4">
-                <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-[12px]">
+              <div className="flex xl:flex-row lg:flex-col gap-1.5 sm:gap-4 border-b border-white/10 pb-5 px-4">
+                <div className="relative h-[88px] w-[88px] xl:h-[88px] xl:w-[88px] lg:h-[150px] lg:w-auto shrink-0 overflow-hidden rounded-[12px]">
                   <Image
                     src={enquiryDetail.image}
                     alt={enquiryDetail.listingTitle}
@@ -332,16 +333,16 @@ export default function EnquiryHubDetailPage({ params }) {
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="inline-flex items-center rounded-[4px] bg-[#0F5132] px-2.5 py-1 text-[11px] font-medium text-[#A7F3D0]">
+                  <span className="inline-flex items-center rounded-[4px] bg-[#0F5132] px-2.5 py-1 text-[7px] sm:text-[11px] lg:text-[9px] xl:text-[11px] font-medium text-[#A7F3D0]">
                     {enquiryDetail.listingCode}
                   </span>
-                  <div className="mt-3 flex items-center justify-start gap-2 ">
+                  <div className="mt-3 flex items-center justify-start gap-0.5 sm:gap-2 ">
                     <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
                       <Pointer size={14} color="#5EE9B5" />
                     </span>
-                    <h3 className="text-[22px] font-semibold leading-6 text-white">{enquiryDetail.location}</h3>
+                    <h3 className="text-[14px] sm:text-[14px] lg:text-[14px] xl:text-[18px] font-semibold leading-6 text-white">{enquiryDetail.location}</h3>
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-[13px] text-white/68">
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-[9px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-white/68">
                     <span className="inline-flex items-center gap-1.5">
                       <Building size={14} color="currentColor" />
                       {enquiryDetail.listingCategory}
@@ -355,20 +356,20 @@ export default function EnquiryHubDetailPage({ params }) {
               </div>
 
               <div className="border-b border-white/10 py-5 px-4">
-                <p className="text-[14px] text-white/55">Confidential Owner Data</p>
+                <p className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] text-white/55">Confidential Owner Data</p>
                 <div className="mt-4 rounded-[16px] border border-white/8 bg-[#123628] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-[14px] font-semibold text-white">{enquiryDetail.ownerName}</h3>
-                      <p className="mt-1 text-[12px] text-white/45">Member ID: {enquiryDetail.memberId}</p>
+                      <h3 className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-semibold text-white">{enquiryDetail.ownerName}</h3>
+                      <p className="mt-1 text-[10px] sm:text-[12px] lg:text-[10px] xl:text-[12px] text-white/45">Member ID: {enquiryDetail.memberId}</p>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0E2F24] px-2.5 py-1 text-[11px] font-medium text-activebg">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0E2F24] px-2.5 py-1 text-[9px] sm:text-[11px] lg:text-[9px] xl:text-[11px] font-medium text-activebg">
                       <Sheild size={14} color="#ffff" />
                       {enquiryDetail.ownerType}
                     </span>
                   </div>
                   <div className="mt-4 border-t border-white/10 pt-4">
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-[#A7F3D0]">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] sm:text-[12px] lg:text-[10px] xl:text-[12px] text-[#A7F3D0]">
                       <span className="inline-flex items-center gap-2">
                         <Telephone size={12} color="#5EE9B5" />
                         {enquiryDetail.phone}
@@ -383,7 +384,7 @@ export default function EnquiryHubDetailPage({ params }) {
               </div>
 
               <div className="border-b border-white/10 py-5 px-4">
-                <p className="text-[14px] text-white/55">Mediation Status</p>
+                <p className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] text-white/55">Mediation Status</p>
                 <div className="mt-3 relative">
                   <SelectDropdown
                     value={mediationStatus}
@@ -401,7 +402,8 @@ export default function EnquiryHubDetailPage({ params }) {
                     optionActiveClassName="bg-[#1B5A45] text-[#ECFDF3]"
                     optionInactiveClassName="text-[#D1FAE5]"
                     optionSelectedClassName="text-[#ECFDF3]"
-                    buttonClassName="h-11 rounded-[10px] px-4 text-[14px] focus-visible:border-[#2D6A56] focus-visible:ring-0"
+                    buttonClassName="h-11 rounded-[10px] px-4 text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] focus-visible:border-[#2D6A56] focus-visible:ring-0"
+                    optionClassName="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px]"
                   />
                 </div>
               </div>
@@ -409,14 +411,14 @@ export default function EnquiryHubDetailPage({ params }) {
               <div className="grid gap-3 py-5 px-4">
                 <button
                   type="button"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-[#58E7BE] px-4 text-[14px] font-medium text-[#0B3B2A] transition hover:opacity-95"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-[#58E7BE] px-4 text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-medium text-[#0B3B2A] transition hover:opacity-95"
                 >
                   <Calendar size={14} color="#0B3B2A" />
                   Schedule visit
                 </button>
                 <button
                   type="button"
-                  className="inline-flex h-11 items-center justify-center rounded-[10px] bg-[#30201D] px-4 text-[14px] font-medium text-[#F87171] transition hover:bg-[#382623]"
+                  className="inline-flex h-11 items-center justify-center rounded-[10px] bg-[#30201D] px-4 text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-medium text-[#F87171] transition hover:bg-[#382623]"
                 >
                   Terminate hub
                 </button>
@@ -427,17 +429,17 @@ export default function EnquiryHubDetailPage({ params }) {
           <div className="rounded-[20px] border border-[#E9EDF5] bg-white p-4 shadow-none">
             <div className="flex items-center gap-2 text-[#111827]">
               <Note size={15} color="#111827" />
-              <h2 className="text-[15px] font-medium">Admin Workspace Notes</h2>
+              <h2 className="text-[13px] sm:text-[15px] lg:text-[13px] xl:text-[15px] font-medium">Admin Workspace Notes</h2>
             </div>
             <div className="mt-4 rounded-[14px] border border-border-card bg-background-primary p-4">
               <textarea
                 value={adminNote}
                 onChange={(event) => setAdminNote(event.target.value)}
                 placeholder="Record buyer sentiment, owner’s stance or next mediation steps here..."
-                className="h-[130px] w-full resize-none border-0 bg-transparent text-[14px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
+                className="h-[130px] w-full resize-none border-0 bg-transparent text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
               />
             </div>
-            <div className="mt-3 flex items-center justify-between text-[12px] text-[#A1A1AA]">
+            <div className="mt-3 flex items-center justify-between text-[10px] sm:text-[12px] lg:text-[10px] xl:text-[12px] text-[#A1A1AA]">
               <span>Internal only</span>
               <button type="button" className="inline-flex items-center gap-1.5 font-medium text-[#2F855A] transition hover:opacity-90">
                 Save notes

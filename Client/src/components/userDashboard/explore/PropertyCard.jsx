@@ -195,18 +195,18 @@ const PropertyCard = ({
 
       <div className="mt-4 min-w-0 sm:space-y-3 space-y-2 p-4 px-3 pt-0">
         <div className="flex justify-between items-center md:gap-3 gap-1 sm:text-[11px] text-[9px] font-medium text-gray5">
-          <div className="flex min-w-0 flex-nowrap items-center md:gap-3 gap-1">
+          <div className="flex min-w-0 flex-nowrap items-center md:gap-3 gap-2">
 
-          <span className="flex items-center gap-1.5">
-            <Building size={14} color="currentColor" className="text-gray5" />
+          <span className="flex items-center sm:gap-1.5 gap-1">
+            <Bag size={14} color="currentColor" className="text-gray5" />
             {category}
           </span>
-          <span className="flex items-center gap-1.5">
-            <Bag size={14} color="currentColor" className="text-gray5" />
+          <span className="flex items-center sm:gap-1.5 gap-1">
+            <Building size={14} color="currentColor" className="text-gray5" />
             {area}
           </span>
           </div>
-          <span className="rounded-lg border border-border-card px-2 py-1 text-gray7">{code}</span>
+          <span className="rounded-sm bg-[#f1f1f1] px-2 py-1 text-gray5">{code}</span>
         </div>
 
         <h3 className="flex min-w-0 items-center gap-2 sm:text-[18px] text-[15px] font-bold text-gray2">
