@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Table from "@/components/common/Table";
+import UserViewModal from "@/components/adminDashboard/modals/UserViewModal";
 import Search from "@/components/svg/Search";
 import Person from "@/components/svg/Person";
 import EyeOpen from "@/components/svg/EyeOpen";
@@ -11,15 +13,19 @@ import RoundArrow from "@/components/svg/RoundArrow";
 
 const users = Array.from({ length: 8 }, (_, index) => ({
   id: `user-${index + 1}`,
-  userId: "#U-001",
+  userId: `#U-${String(index + 123).padStart(3, "0")}`,
   entityType: ["Individual", "Corporate", "Koperasi"][index % 3],
-  name: "Dato' Ridzuan",
-  company: "Corporate Entity",
+  name: ["Dato' Ridzuan Shah", "Aina Sofea", "Koperasi Makmur Jaya"][index % 3],
+  company: ["Ridzuan Holdings Sdn Bhd", "Individual Member", "Koperasi Makmur Jaya"][index % 3],
   email: "ridzuan.shah@estate.com",
-  phone: "+60 12-345 6789",
-  identityNo: "880101-10-5544",
+  phone: "+60 (555) 000-0000",
+  identityNo: ["202201012345", "900315-10-2048", "KPM-778812-A"][index % 3],
   status: index % 4 === 0 || index % 4 === 1 ? "Active" : "Suspended",
   actionVariant: index % 4 === 0 || index % 4 === 1 ? "deactivate" : "reactivate",
+  preferences: {
+    emailNotifications: true,
+    appAlerts: true,
+  },
 }));
 
 const statusStyles = {
@@ -31,6 +37,13 @@ const actionButtonBase =
   "inline-flex h-8 w-8 items-center justify-center rounded-[6px] transition border-0";
 
 export default function UsersPage() {
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
+  const selectedUser = useMemo(
+    () => users.find((user) => user.id === selectedUserId) ?? null,
+    [selectedUserId]
+  );
+
   const headers = [
     { label: "User ID" },
     { label: "Entity type" },
@@ -99,6 +112,7 @@ export default function UsersPage() {
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
+              onClick={() => setSelectedUserId(user.id)}
               className={`${actionButtonBase} bg-[#18181B] text-white`}
               aria-label="View user"
             >
@@ -159,6 +173,12 @@ export default function UsersPage() {
             rowClassName="hover:bg-[#FAFBFD]"
           />
         </div>
+
+        <UserViewModal
+          open={Boolean(selectedUser)}
+          onClose={() => setSelectedUserId(null)}
+          user={selectedUser}
+        />
       </section>
     </main>
   );
