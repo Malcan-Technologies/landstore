@@ -13,7 +13,7 @@ import Button from "@/components/common/Button";
 import LoginModal from "@/components/auth/LoginModal";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
 import { notificationItems } from "@/components/userDashboard/notifications/notificationData";
-import { logout } from "@/store/authSlice";
+import { logoutUser } from "@/store/authSlice";
 
 const ADMIN_AUTH_STORAGE_KEY = "landstore_admin_auth";
 
@@ -47,14 +47,16 @@ const AdminHeader = ({ onMenuClick }) => {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
     }
 
-    dispatch(logout());
     setProfileMenuOpen(false);
+    await dispatch(logoutUser());
     router.push("/");
+    setAuthTab("login");
+    setIsLoginOpen(true);
   };
 
   const handleOpenProfile = () => {

@@ -13,7 +13,7 @@ import LoginModal from "@/components/auth/LoginModal";
 import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
 import { notificationItems } from "@/components/userDashboard/notifications/notificationData";
-import { logout } from "@/store/authSlice";
+import { logoutUser } from "@/store/authSlice";
 
 const Header = () => {
   const router = useRouter();
@@ -46,10 +46,12 @@ const Header = () => {
     };
   }, []);
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async () => {
     setProfileMenuOpen(false);
+    await dispatch(logoutUser());
     router.push("/");
+    setAuthTab("login");
+    setIsLoginOpen(true);
   };
 
   const handleOpenProfile = () => {

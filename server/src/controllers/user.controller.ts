@@ -5,6 +5,7 @@ import {
 	getAllUsers,
 	getUserById,
 	updateUserById,
+	getUserCompleteProfile,
 } from "../services/user.ts";
 
 const getErrorPayload = (error: unknown) => {
@@ -70,6 +71,30 @@ export const getCurrentUserController = async (req: Request, res: Response) => {
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
 		return res.status(statusCode).json({ message });
+	}
+};
+
+export const getUserCompleteProfileController = async (req: Request, res: Response) => {
+	try {
+		// Better Auth provides user in request via middleware
+		const user = (req as any).user;
+		if (!user) {
+			return res.status(401).json({ message: "Unauthorized" });
+		}
+
+		const completeProfile = await getUserCompleteProfile(user.id);
+
+		return res.status(200).json({ 
+			success: true,
+			message: "User profile retrieved successfully", 
+			result: completeProfile 
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ 
+			success: false,
+			message 
+		});
 	}
 };
 

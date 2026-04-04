@@ -341,3 +341,54 @@ export const deleteUserById = async (id: string) => {
 
   return { message: "User deleted successfully" };
 };
+
+export const getUserCompleteProfile = async (userId: string) => {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    include: {
+      individual: true,
+      company: true,
+      koperasi: true,
+    },
+  });
+
+  if (!user) {
+    const notFoundError = new Error("User not found");
+    (notFoundError as Error & { statusCode?: number }).statusCode = 404;
+    throw notFoundError;
+  }
+
+  // Build complete profile response
+  const profile = {
+    // Basic user info from Better Auth and user table
+    id: user.id,
+    email: user.email,
+    userType: user.userType,
+    phone: user.phone,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+
+    // Profile type and specific details
+    profileType: user.individual ? "individual" : user.company ? "company" : user.koperasi ? "koperasi" : null,
+    
+    // Individual profile details
+    individual: user.individual ? {
+      fullName: user.individual.fullName,
+      identityNo: user.individual.identityNo,
+    } : null,
+
+    // Company profile details
+    company: user.company ? {
+      companyName: user.company.companyName,
+      registrationNo: user.company.registrationNo,
+    } : null,
+
+    // Koperasi profile details
+    koperasi: user.koperasi ? {
+      koperasiName: user.koperasi.koperasiName,
+      registrationNo: user.koperasi.registrationNo,
+    } : null,
+  };
+
+  return profile;
+};

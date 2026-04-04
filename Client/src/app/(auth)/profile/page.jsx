@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { userService } from "@/services/userService";
 
 import DualNote from "@/components/svg/DualNote";
 import Verify from "@/components/svg/Verify";
@@ -55,12 +57,37 @@ const inputClassName =
   "h-11 w-full rounded-lg border border-border-input bg-white px-4 text-[14px] text-gray2 outline-none transition focus:border-green-secondary focus:ring-1 focus:ring-border-green disabled:bg-background-primary disabled:text-gray5";
 
 const ProfilePage = () => {
+  const { user } = useSelector((state) => state.auth);
   const [isEditing, setIsEditing] = useState(false);
-  const [email, setEmail] = useState("ridzuan.shah@estate.com");
+  const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("MY");
-  const [phone, setPhone] = useState("+60 (555) 000-0000");
+  const [phone, setPhone] = useState("");
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [appAlerts, setAppAlerts] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        const response = await userService.getUserProfile();
+        
+        if (response.success && response.result) {
+          const profileData = response.result;
+          setProfile(profileData);
+          setEmail(profileData.email || "");
+          setPhone(profileData.phone || "");
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <main className="bg-background-primary pb-14 pt-10">
@@ -94,17 +121,20 @@ const ProfilePage = () => {
 
             <div className="max-w-155 items-center sm:items-start flex flex-col">
               <h2 className="text-[22px] font-semibold leading-tight text-gray2 sm:text-[24px] md:text-[26px]">
-                Dato' Ridzuan Shah
+                {isLoading ? "Loading..." : profile?.individual?.fullName || profile?.company?.companyName || profile?.koperasi?.koperasiName || "User"}
               </h2>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {verifiedBadge}
-                {memberBadge}
+                <span className="inline-flex items-center rounded-full bg-[#1F1F1F] px-2.5 py-1 text-[12px] font-medium text-white">
+                  Member ID: {profile?.id ? `U${profile.id.slice(0, 6)}` : "U123"}
+                </span>
               </div>
               <p className="mt-4 max-w-140 text-[14px] leading-6 text-gray5 md:text-[15px] text-center sm:text-left">
                 Registered as a{" "}
-                <span className="font-semibold text-gray2">Corporate</span>{" "}
-                user. Access limited to verified land assets and mediated
-                enquiries.
+                <span className="font-semibold text-gray2">
+                  {profile?.profileType === "individual" ? "Individual" : profile?.profileType === "company" ? "Company" : profile?.profileType === "koperasi" ? "Koperasi" : "User"}
+                </span>{" "}
+                user. Access limited to verified land assets and mediated enquiries.
               </p>
             </div>
           </div>
@@ -217,36 +247,94 @@ const ProfilePage = () => {
               <input
                 type="text"
                 className={inputClassName}
-                value="Corporate"
+                value={profile?.profileType === "individual" ? "Individual" : profile?.profileType === "company" ? "Company" : profile?.profileType === "koperasi" ? "Koperasi" : "-"}
                 disabled
               />
             </div>
 
-            <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
-              {" "}
-              <span className="text-[14px] font-semibold text-gray2">
-                Company Name
-              </span>
-              <input
-                type="text"
-                className={inputClassName}
-                value="Ridzuan Holdings Sdn Bhd"
-                disabled
-              />
-            </div>
+            {profile?.profileType === "individual" && (
+              <>
+                <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+                  <span className="text-[14px] font-semibold text-gray2">
+                    Full Name
+                  </span>
+                  <input
+                    type="text"
+                    className={inputClassName}
+                    value={profile?.individual?.fullName || "-"}
+                    disabled
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
-              {" "}
-              <span className="text-[14px] font-semibold text-gray2">
-                ID Number (SSM / IC)
-              </span>
-              <input
-                type="text"
-                className={inputClassName}
-                value="202201012345"
-                disabled
-              />
-            </div>
+                <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+                  <span className="text-[14px] font-semibold text-gray2">
+                    Identity Number (IC)
+                  </span>
+                  <input
+                    type="text"
+                    className={inputClassName}
+                    value={profile?.individual?.identityNo || "-"}
+                    disabled
+                  />
+                </div>
+              </>
+            )}
+
+            {profile?.profileType === "company" && (
+              <>
+                <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+                  <span className="text-[14px] font-semibold text-gray2">
+                    Company Name
+                  </span>
+                  <input
+                    type="text"
+                    className={inputClassName}
+                    value={profile?.company?.companyName || "-"}
+                    disabled
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+                  <span className="text-[14px] font-semibold text-gray2">
+                    Registration Number (SSM)
+                  </span>
+                  <input
+                    type="text"
+                    className={inputClassName}
+                    value={profile?.company?.registrationNo || "-"}
+                    disabled
+                  />
+                </div>
+              </>
+            )}
+
+            {profile?.profileType === "koperasi" && (
+              <>
+                <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+                  <span className="text-[14px] font-semibold text-gray2">
+                    Koperasi Name
+                  </span>
+                  <input
+                    type="text"
+                    className={inputClassName}
+                    value={profile?.koperasi?.koperasiName || "-"}
+                    disabled
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 items-center gap-2 md:gap-40 md:grid-cols-[180px_minmax(0,1fr)]">
+                  <span className="text-[14px] font-semibold text-gray2">
+                    Registration Number
+                  </span>
+                  <input
+                    type="text"
+                    className={inputClassName}
+                    value={profile?.koperasi?.registrationNo || "-"}
+                    disabled
+                  />
+                </div>
+              </>
+            )}
           </div>
         </section>
 
