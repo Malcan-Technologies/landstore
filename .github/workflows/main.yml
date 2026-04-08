@@ -30,7 +30,7 @@ jobs:
     - name: Set environment variables
       run: |
         echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-        echo "REPOSITORY=land-marketplace/client" >> $GITHUB_ENV
+        echo "REPOSITORY=landstore-client" >> $GITHUB_ENV
         echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
     # ✅ Build & Push Docker Image
