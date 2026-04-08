@@ -44,7 +44,7 @@ jobs:
     - name: Download task definition
       run: |
         aws ecs describe-task-definition \
-          --task-definition land-marketplace \
+          --task-definition landstore-client \
           --query taskDefinition > task-definition.json
 
     # ✅ Update image + ADD env vars (SAFE: append, not overwrite)
