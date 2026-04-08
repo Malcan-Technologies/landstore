@@ -10,12 +10,13 @@ import {
 	checkPropertyShortlistedController,
 } from "../controllers/folders.controller.ts";
 import requireApiAuth from "../middleware/requireApiAuth.ts";
+import { requireAdmin } from "../middleware/authorization.ts";
 
 const router = Router();
 
 // Folder CRUD routes
 router.post("/", requireApiAuth, createFolderController);
-router.get("/", requireApiAuth, getFoldersController);
+router.get("/", requireApiAuth, requireAdmin ,getFoldersController);
 router.get("/:id", requireApiAuth, getFolderByIdController);
 router.patch("/:id", requireApiAuth, updateFolderNameController);
 router.delete("/:id", requireApiAuth, deleteFolderController);
