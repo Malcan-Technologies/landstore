@@ -6,6 +6,7 @@ import {
   getCurrentUserController,
   getUserByIdController,
   updateUserController,
+  getUserCompleteProfileController,
 } from "../controllers/user.controller.ts";
 import requireApiAuth from "../middleware/requireApiAuth.ts";
 
@@ -16,6 +17,9 @@ userRouter.post("/complete-profile", completeProfileController);
 
 // Get current authenticated user (requires auth)
 userRouter.get("/me", requireApiAuth, getCurrentUserController);
+
+// Get complete user profile with all registration data (requires auth)
+userRouter.get("/profile", requireApiAuth, getUserCompleteProfileController);
 
 // User management (admin only)
 userRouter.get("/", requireApiAuth, getAllUsersController);

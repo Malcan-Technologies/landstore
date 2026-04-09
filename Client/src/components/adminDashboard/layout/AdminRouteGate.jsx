@@ -172,7 +172,7 @@ const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="admin-email" className="mb-2 block text-[15px] font-medium text-gray7 md:text-[16px]">
-              Username
+              Admin Email
             </label>
             <input
               id="admin-email"

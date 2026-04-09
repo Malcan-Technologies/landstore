@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "@/store/authSlice";
+import { authService } from "@/services/authService";
+import { validateForm, registerValidation, completeProfileValidation } from "@/validators";
 import Button from "@/components/common/Button";
 import EmailConfirmationModal from "@/components/auth/modals/EmailConfirmationModal";
 import PillCheckbox from "@/components/common/PillCheckbox";
@@ -28,6 +32,7 @@ const interestOptions = [
 ];
 
 const Register = () => {
+  const dispatch = useDispatch();
   const [entityType, setEntityType] = useState("individual");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -37,6 +42,22 @@ const Register = () => {
     "Interested to sell/rent/JV",
   ]);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  
+  // Form data state
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phone: "",
+    // Entity-specific fields
+    identityNo: "",
+    companyName: "",
+    koperasiName: "",
+    registrationNo: "",
+  });
 
   const fields = useMemo(() => {
     if (entityType === "company") {
@@ -73,9 +94,125 @@ const Register = () => {
     );
   };
 
-  const handleSubmit = (event) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setIsEmailModalOpen(true);
+    console.log('🚀 Form submitted!');
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      // Prepare all data first
+      const registerData = {
+        email: formData.email,
+        password: formData.password,
+        name: formData.fullName
+      };
+
+      const fullPhoneNumber = phoneNumber ? `+60${phoneNumber}` : (formData.phone ? `+60${formData.phone}` : '');
+      const profileData = {
+        email: formData.email,
+        profileType: entityType,
+        phone: fullPhoneNumber,
+        userType: "user",
+        interests: selectedInterests
+      };
+
+      // Add entity-specific fields
+      if (entityType === "individual") {
+        profileData.fullName = formData.fullName;
+        profileData.firstName = formData.fullName.split(' ')[0];
+        profileData.lastName = formData.fullName.split(' ').slice(1).join(' ');
+        profileData.identityNo = formData.identityNo || '';
+      } else if (entityType === "company") {
+        profileData.companyName = formData.companyName || '';
+        profileData.registrationNo = formData.registrationNo || '';
+      } else if (entityType === "koperasi") {
+        profileData.koperasiName = formData.koperasiName || '';
+        profileData.registrationNo = formData.registrationNo || '';
+      }
+
+      console.log('📋 Registration data:', registerData);
+      console.log('📋 Profile data:', profileData);
+
+      // VALIDATE EVERYTHING BEFORE MAKING ANY API CALLS
+      const validation = validateForm(registerData, registerValidation);
+      console.log('✅ Validation result:', validation);
+      
+      if (!validation.isValid) {
+        console.log('❌ Validation failed:', validation.errors);
+        setErrors(validation.errors);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check password confirmation
+      if (formData.password !== formData.confirmPassword) {
+        console.log('❌ Passwords do not match');
+        setErrors({ confirmPassword: 'Passwords do not match' });
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate profile data
+      const profileValidation = validateForm(profileData, completeProfileValidation);
+      console.log('✅ Profile validation result:', profileValidation);
+      
+      if (!profileValidation.isValid) {
+        console.log('❌ Profile validation failed:', profileValidation.errors);
+        setErrors(profileValidation.errors);
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('✅ All validations passed, proceeding with API calls...');
+
+      // Step 1: Register with Better Auth
+      console.log('📡 Calling register API...');
+      const registerResponse = await authService.register(registerData);
+      console.log('📥 Register response:', registerResponse);
+      
+      if (registerResponse.success || registerResponse.user) {
+        console.log('✅ Registration successful, completing profile...');
+
+        console.log('📡 Calling complete-profile API...');
+        const profileResponse = await authService.completeProfile(profileData);
+        console.log('📥 Profile response:', profileResponse);
+        
+        if (profileResponse.success || profileResponse.user) {
+          // Update Redux store with user data
+          const userData = profileResponse.user || profileResponse.result?.user || registerResponse.user;
+          if (userData) {
+            dispatch(loginSuccess(userData));
+          }
+          setIsEmailModalOpen(true);
+        } else {
+          setErrors({ submit: profileResponse.message || 'Failed to complete profile' });
+        }
+      } else {
+        setErrors({ submit: registerResponse.message || 'Registration failed' });
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrors({ submit: error.message || 'Registration failed. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCloseEmailModal = () => setIsEmailModalOpen(false);
@@ -85,6 +222,7 @@ const Register = () => {
 
   return (
     <>
+      {console.log("Register component rendered")}
       <form className="mt-4 space-y-3.5" onSubmit={handleSubmit}>
       <div>
         <p className="mb-2 block text-[14px] font-medium text-gray7 md:text-[15px]">Entity Type</p>
@@ -113,10 +251,14 @@ const Register = () => {
         </label>
         <input
           id="register-full-name"
+          name="fullName"
           type="text"
           placeholder="Enter name"
+          value={formData.fullName}
+          onChange={handleInputChange}
           className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
         />
+        {errors.fullName && <p className="mt-1 text-xs text-red-500">{errors.fullName}</p>}
       </div>
 
       <div>
@@ -125,10 +267,16 @@ const Register = () => {
         </label>
         <input
           id="register-second"
+          name={entityType === "individual" ? "identityNo" : entityType === "company" ? "companyName" : "koperasiName"}
           type="text"
           placeholder={fields.secondPlaceholder}
+          value={entityType === "individual" ? formData.identityNo : entityType === "company" ? formData.companyName : formData.koperasiName}
+          onChange={handleInputChange}
           className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
         />
+        {errors[entityType === "individual" ? "identityNo" : entityType === "company" ? "companyName" : "koperasiName"] && (
+          <p className="mt-1 text-xs text-red-500">{errors[entityType === "individual" ? "identityNo" : entityType === "company" ? "companyName" : "koperasiName"]}</p>
+        )}
       </div>
 
       {entityType !== "individual" ? (
@@ -138,10 +286,14 @@ const Register = () => {
           </label>
           <input
             id="register-third"
+            name="registrationNo"
             type="text"
             placeholder={fields.thirdPlaceholder}
+            value={formData.registrationNo}
+            onChange={handleInputChange}
             className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
           />
+          {errors.registrationNo && <p className="mt-1 text-xs text-red-500">{errors.registrationNo}</p>}
         </div>
       ) : null}
 
@@ -151,10 +303,14 @@ const Register = () => {
         </label>
         <input
           id="register-email"
+          name="email"
           type="email"
           placeholder="Enter email"
+          value={formData.email}
+          onChange={handleInputChange}
           className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
         />
+        {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
       </div>
 
       <div>
@@ -166,13 +322,18 @@ const Register = () => {
           <span className="pr-3 text-gray5">+60</span>
           <input
             id="register-phone"
+            name="phone"
             type="tel"
             value={phoneNumber}
-            onChange={(event) => setPhoneNumber(event.target.value)}
+            onChange={(event) => {
+              setPhoneNumber(event.target.value);
+              handleInputChange(event);
+            }}
             placeholder="Enter phone number"
             className="h-full w-full bg-transparent text-[14px] text-gray2 outline-none placeholder:text-gray5"
           />
         </div>
+        {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
       </div>
 
       <div>
@@ -182,8 +343,11 @@ const Register = () => {
         <div className="relative">
           <input
             id="register-password"
+            name="password"
             type={showPassword ? "text" : "password"}
             placeholder="**********"
+            value={formData.password}
+            onChange={handleInputChange}
             className="h-10 w-full rounded-xl border border-border-input px-3.5 pr-10 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
           />
           <button
@@ -195,6 +359,7 @@ const Register = () => {
             {showPassword ? <EyeOpen size={14} /> : <EyeClose size={14} />}
           </button>
         </div>
+        {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
       </div>
 
       <div>
@@ -204,8 +369,11 @@ const Register = () => {
         <div className="relative">
           <input
             id="register-confirm-password"
+            name="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
             placeholder="**********"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
             className="h-10 w-full rounded-xl border border-border-input px-3.5 pr-10 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
           />
           <button
@@ -217,6 +385,7 @@ const Register = () => {
             {showConfirmPassword ? <EyeOpen size={14} /> : <EyeClose size={14} />}
           </button>
         </div>
+        {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
       </div>
 
       <div>
@@ -239,17 +408,23 @@ const Register = () => {
       </div>
 
         <div className="pt-1">
+          {errors.submit && (
+            <div className="mb-3 rounded-lg bg-red-50 p-3 text-xs text-red-600">
+              {errors.submit}
+            </div>
+          )}
           <Button
             type="submit"
+            disabled={isLoading}
             className="h-10 w-full justify-center rounded-lg text-[14px] font-medium"
           >
             <span className="flex items-center gap-2">
-              <span>Create account</span>
-              <Arrow size={14} color="white" />
+              <span>{isLoading ? 'Creating account...' : 'Create account'}</span>
+              {!isLoading && <Arrow size={14} color="white" />}
             </span>
           </Button>
           <p className="mx-auto mt-2.5 max-w-[520px] text-center text-[11px] leading-4 text-gray5">
-            By continuing, you agree to Landstore's Professional Standards and Anti-Bypass Policy.
+            By continuing, you agree to Landstore&apos;s Professional Standards and Anti-Bypass Policy.
           </p>
         </div>
       </form>

@@ -1,24 +1,27 @@
 import React from "react";
 
 const EyeOpen = ({ size = 20, color = "var(--color-gray5)", className, ...props }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 20 20"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    {...props}
-  >
-    <path
-      d="M1.66699 10C2.91699 6.875 6.02532 4.16667 10.0003 4.16667C13.9753 4.16667 17.0837 6.875 18.3337 10C17.0837 13.125 13.9753 15.8333 10.0003 15.8333C6.02532 15.8333 2.91699 13.125 1.66699 10Z"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <circle cx="10.0003" cy="10" r="2.5" stroke={color} strokeWidth="1.5" />
-  </svg>
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 24 24"
+		fill="none"
+		xmlns="http://www.w3.org/2000/svg"
+		className={className}
+		{...props}
+	>
+		<path
+			d="M3.27489 15.2957C2.42496 14.1915 2 13.6394 2 12C2 10.3606 2.42496 9.80853 3.27489 8.70433C4.97196 6.49956 7.81811 4 12 4C16.1819 4 19.028 6.49956 20.7251 8.70433C21.575 9.80853 22 10.3606 22 12C22 13.6394 21.575 14.1915 20.7251 15.2957C19.028 17.5004 16.1819 20 12 20C7.81811 20 4.97196 17.5004 3.27489 15.2957Z"
+			stroke={color}
+			strokeWidth="1.5"
+		/>
+		<path
+			d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z"
+			stroke={color}
+			strokeWidth="1.5"
+		/>
+	</svg>
+
 );
 
 export default EyeOpen;

@@ -14,7 +14,7 @@ const StatCard = ({
       <div className=" w-full flex flex-col justify-between">
         <div className="flex items-end gap-1">
           <span className="text-[20px] font-semibold leading-none text-[#18181B] sm:text-[24px]">{value}</span>
-          <span className="text-[10px] sm:text-[12px] font-medium uppercase tracking-[0.02em] text-[#A1A1AA]">{label}</span>
+          <span className="text-[10px] leading-3 sm:text-[12px] sm:leading-3.5 font-medium uppercase tracking-[0.02em] text-[#A1A1AA]">{label}</span>
         </div>
         <p className="mt-1.5 sm:mt-1 text-[10px] sm:text-[12px] font-medium leading-none text-[#52525B]">{description}</p>
       </div>

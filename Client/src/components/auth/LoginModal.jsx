@@ -9,6 +9,8 @@ import Arrow from "@/components/svg/Arrow";
 import EyeClose from "@/components/svg/EyeClose";
 import EyeOpen from "@/components/svg/EyeOpen";
 import { loginSuccess } from "@/store/authSlice";
+import { authService } from "@/services/authService";
+import { validateForm, loginValidation } from "@/validators";
 
 const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const dispatch = useDispatch();
@@ -16,6 +18,8 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (open) {
@@ -23,31 +27,46 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
       setShowPassword(false);
       setEmail("");
       setPassword("");
+      setErrors({});
+      setIsLoading(false);
     }
   }, [open, initialTab]);
 
-  const handleLoginSubmit = (event) => {
+  const handleLoginSubmit = async (event) => {
     event.preventDefault();
+    setIsLoading(true);
+    setErrors({});
 
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
+    try {
+      const credentials = {
+        email: email.trim(),
+        password: password.trim()
+      };
 
-    if (!trimmedEmail && !trimmedPassword) {
-      return;
+      // Validate login data
+      const validation = validateForm(credentials, loginValidation);
+      if (!validation.isValid) {
+        setErrors(validation.errors);
+        setIsLoading(false);
+        return;
+      }
+
+      // Call Better Auth login API
+      const response = await authService.login(credentials);
+
+      // Better Auth returns { user, session }
+      if (response.user) {
+        dispatch(loginSuccess(response.user));
+        onClose();
+      } else {
+        setErrors({ submit: 'Login failed. Please try again.' });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({ submit: error.message || 'Invalid email or password' });
+    } finally {
+      setIsLoading(false);
     }
-
-    const fallbackName = trimmedEmail
-      ? trimmedEmail.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
-      : "Landstore User";
-
-    dispatch(
-      loginSuccess({
-        email: trimmedEmail || "no-email@landstore.my",
-        name: fallbackName,
-      })
-    );
-
-    onClose();
   };
 
   return (
@@ -94,8 +113,9 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
                 placeholder="Enter email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="h-11 w-full rounded-xl border border-border-input px-4 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
+                className={`h-11 w-full rounded-xl border px-4 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary ${errors.email ? 'border-red-500' : 'border-border-input'}`}
               />
+              {errors.email && <p className="mt-1 text-[13px] text-red-500">{errors.email}</p>}
             </div>
 
             <div>
@@ -109,7 +129,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
                   placeholder="**********"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="h-11 w-full rounded-xl border border-border-input px-4 pr-11 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
+                  className={`h-11 w-full rounded-xl border px-4 pr-11 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary ${errors.password ? 'border-red-500' : 'border-border-input'}`}
                 />
                 <button
                   type="button"
@@ -120,6 +140,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
                   {showPassword ? <EyeOpen size={16} /> : <EyeClose size={16} />}
                 </button>
               </div>
+              {errors.password && <p className="mt-1 text-[13px] text-red-500">{errors.password}</p>}
               <button
                 type="button"
                 className="mt-2 cursor-pointer text-[14px] font-medium text-gray5 underline underline-offset-2"
@@ -128,18 +149,25 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
               </button>
             </div>
 
+            {errors.submit && (
+              <div className="rounded-lg bg-red-50 p-3 text-[14px] text-red-600">
+                {errors.submit}
+              </div>
+            )}
+
             <div className="pt-2">
               <Button
                 type="submit"
+                disabled={isLoading}
                 className="h-11 w-full justify-center rounded-xl text-[16px] font-medium"
               >
                 <span className="flex items-center gap-2">
-                  <span>Sign in</span>
-                  <Arrow size={14} color="white" />
+                  <span>{isLoading ? 'Signing in...' : 'Sign in'}</span>
+                  {!isLoading && <Arrow size={14} color="white" />}
                 </span>
               </Button>
               <p className="mx-auto mt-3 max-w-130 text-center text-[14px] leading-5 text-gray5">
-                By continuing, you agree to Landstore's Professional Standards and Anti-Bypass Policy.
+                By continuing, you agree to Landstore&apos;s Professional Standards and Anti-Bypass Policy.
               </p>
             </div>
         </form>

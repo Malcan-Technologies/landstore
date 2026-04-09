@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: next_frontend_dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
