@@ -8,7 +8,7 @@ import {
 	updateEnquiry,
 	deleteEnquiry,
 	updateEnquiryStatus,
-} from "../services/enquiry.ts";
+} from "../services/enquiry.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

@@ -1,7 +1,7 @@
-import db from "../../config/prisma.ts";
+import db from "../../config/prisma.js";
 import { Prisma } from "@prisma/client";
 import type { User, UserType } from "@prisma/client";
-import { auth } from "../../config/auth.ts";
+import { auth } from "../../config/auth.js";
 
 type UpdateUserPayload = {
   email?: string;
@@ -11,17 +11,17 @@ type UpdateUserPayload = {
 
 type CreateUserProfilePayload = {
   email: string;
-  userType?: UserType;
-  phone?: string;
-  profileType?: "individual" | "company" | "koperasi";
-  fullName?: string;
-  identityNo?: string;
-  companyName?: string;
-  koperasiName?: string;
-  registrationNo?: string;
-  firstName?: string;
-  lastName?: string;
-  name?: string;
+  userType?: UserType | undefined;
+  phone?: string | undefined;
+  profileType?: "individual" | "company" | "koperasi" | undefined;
+  fullName?: string | undefined;
+  identityNo?: string | undefined;
+  companyName?: string | undefined;
+  koperasiName?: string | undefined;
+  registrationNo?: string | undefined;
+  firstName?: string | undefined;
+  lastName?: string | undefined;
+  name?: string | undefined;
 };
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -346,8 +346,8 @@ export const getUserCompleteProfile = async (userId: string) => {
   const user = await db.user.findUnique({
     where: { id: userId },
     include: {
-      individual: true,
-      company: true,
+      individuals: true,
+      companies: true,
       koperasi: true,
     },
   });
@@ -357,6 +357,40 @@ export const getUserCompleteProfile = async (userId: string) => {
     (notFoundError as Error & { statusCode?: number }).statusCode = 404;
     throw notFoundError;
   }
+
+  // Determine profile type
+  let profileType: "individual" | "company" | "koperasi" | null = null;
+  if (user.individuals) {
+    profileType = "individual";
+  } else if (user.companies) {
+    profileType = "company";
+  } else if (user.koperasi) {
+    profileType = "koperasi";
+  }
+
+  // Build individual profile if exists
+  const individual = user.individuals
+    ? {
+        fullName: user.individuals.fullName,
+        identityNo: user.individuals.identityNo,
+      }
+    : null;
+
+  // Build company profile if exists
+  const company = user.companies
+    ? {
+        companyName: user.companies.companyName,
+        registrationNo: user.companies.registrationNo,
+      }
+    : null;
+
+  // Build koperasi profile if exists
+  const koperasi = user.koperasi
+    ? {
+        koperasiName: user.koperasi.koperasiName,
+        registrationNo: user.koperasi.registrationNo,
+      }
+    : null;
 
   // Build complete profile response
   const profile = {
@@ -369,25 +403,10 @@ export const getUserCompleteProfile = async (userId: string) => {
     updatedAt: user.updatedAt,
 
     // Profile type and specific details
-    profileType: user.individual ? "individual" : user.company ? "company" : user.koperasi ? "koperasi" : null,
-    
-    // Individual profile details
-    individual: user.individual ? {
-      fullName: user.individual.fullName,
-      identityNo: user.individual.identityNo,
-    } : null,
-
-    // Company profile details
-    company: user.company ? {
-      companyName: user.company.companyName,
-      registrationNo: user.company.registrationNo,
-    } : null,
-
-    // Koperasi profile details
-    koperasi: user.koperasi ? {
-      koperasiName: user.koperasi.koperasiName,
-      registrationNo: user.koperasi.registrationNo,
-    } : null,
+    profileType,
+    individual,
+    company,
+    koperasi,
   };
 
   return profile;

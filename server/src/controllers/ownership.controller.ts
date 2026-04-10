@@ -5,7 +5,7 @@ import {
 	getOwnershipTypeById,
 	updateOwnershipType,
 	deleteOwnershipType,
-} from "../services/ownership.ts";
+} from "../services/ownership.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

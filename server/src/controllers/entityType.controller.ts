@@ -5,7 +5,7 @@ import {
 	getEntityTypeById,
 	updateEntityType,
 	deleteEntityType,
-} from "../services/entityType.ts";
+} from "../services/entityType.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

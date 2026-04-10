@@ -1,4 +1,4 @@
-import db from "../../config/prisma.ts";
+import db from "../../config/prisma.js";
 import { Prisma } from "@prisma/client";
 
 const createHttpError = (message: string, statusCode: number) => {
@@ -33,11 +33,11 @@ export type UpdateEnquiryPayload = {
 };
 
 type GetEnquiriesQuery = {
-	propertyId?: string;
-	userId?: string;
-	status?: string;
-	page?: number;
-	limit?: number;
+	propertyId?: string | undefined;
+	userId?: string | undefined;
+	status?: string | undefined;
+	page?: number | undefined;
+	limit?: number | undefined;
 };
 
 const includeEnquiryRelations = {

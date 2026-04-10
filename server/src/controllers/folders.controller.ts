@@ -8,7 +8,7 @@ import {
 	addPropertyToFolder,
 	removePropertyFromFolder,
 	isPropertyShortlisted,
-} from "../services/folders.ts";
+} from "../services/folders.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

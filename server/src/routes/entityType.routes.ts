@@ -5,8 +5,8 @@ import {
 	getEntityTypeByIdController,
 	updateEntityTypeController,
 	deleteEntityTypeController,
-} from "../controllers/entityType.controller.ts";
-import requireApiAuth from "../middleware/requireApiAuth.ts";
+} from "../controllers/entityType.controller.js";
+import requireApiAuth from "../middleware/requireApiAuth.js";
 
 const router = Router();
 

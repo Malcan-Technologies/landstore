@@ -7,8 +7,8 @@ import {
   getUserByIdController,
   updateUserController,
   getUserCompleteProfileController,
-} from "../controllers/user.controller.ts";
-import requireApiAuth from "../middleware/requireApiAuth.ts";
+} from "../controllers/user.controller.js";
+import requireApiAuth from "../middleware/requireApiAuth.js";
 
 const userRouter = Router();
 

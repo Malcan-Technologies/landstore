@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { dash } from "@better-auth/infra";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import db from "./prisma.ts";
+import db from "./prisma.js";
 
 // Initialize Better Auth with Prisma adapter
 export const auth = betterAuth({

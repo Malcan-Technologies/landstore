@@ -7,7 +7,8 @@ import {
 	updateListLandById,
 	uploadPropertyImages,
 	uploadPropertyDocuments,
-} from "../services/listLand.ts";
+} from "../services/listLand.js";
+import type { GetLandsQuery } from "../../types/express/land.types.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -109,16 +110,16 @@ export const getListLandsController = async (req: Request, res: Response) => {
 	try {
 		const requester = getRequesterUserOrThrow(req);
 
-		const page = req.query.page ? Number(req.query.page) : undefined;
-		const limit = req.query.limit ? Number(req.query.limit) : undefined;
-		const status =
-			typeof req.query.status === "string" ? req.query.status : undefined;
+		const page = parseInt(req.query.page as string) || 1
+		const limit = parseInt(req.query.limit as string) || 10
 
-		const result = await getListLands(requester.id, requester.userType, {
+		const query: GetLandsQuery = {
 			page,
 			limit,
-			status,
-		});
+			status: req.query.status as string
+		}
+
+		const result = await getListLands(requester.id, requester.userType, query);
 
 		return res.status(200).json(result);
 	} catch (error: unknown) {

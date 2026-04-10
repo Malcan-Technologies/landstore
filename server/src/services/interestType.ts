@@ -1,4 +1,4 @@
-import db from "../../config/prisma.ts";
+import db from "../../config/prisma.js";
 
 const createHttpError = (message: string, statusCode: number) => {
 	const error = new Error(message) as Error & { statusCode?: number };

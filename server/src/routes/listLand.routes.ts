@@ -1,13 +1,13 @@
 import { Router } from "express";
-import requireApiAuth from "../middleware/requireApiAuth.ts";
-import upload from "../middleware/multer.ts";
+import requireApiAuth from "../middleware/requireApiAuth.js";
+import upload from "../middleware/multer.js";
 import {
 	createListLandController,
 	deleteListLandController,
 	getListLandByIdController,
 	getListLandsController,
 	updateListLandController,
-} from "../controllers/listLand.controller.ts";
+} from "../controllers/listLand.controller.js";
 
 const listLandRouter = Router();
 

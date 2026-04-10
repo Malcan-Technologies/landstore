@@ -5,7 +5,7 @@ import {
 	getTitleTypeById,
 	updateTitleType,
 	deleteTitleType,
-} from "../services/titleType.ts";
+} from "../services/titleType.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

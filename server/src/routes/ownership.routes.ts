@@ -1,12 +1,12 @@
 import express from "express";
-import requireApiAuth from "../middleware/requireApiAuth";
+import requireApiAuth from "../middleware/requireApiAuth.js";
 import {
 	createOwnershipTypeController,
 	getAllOwnershipTypesController,
 	getOwnershipTypeByIdController,
 	updateOwnershipTypeController,
 	deleteOwnershipTypeController,
-} from "../controllers/ownership.controller";
+} from "../controllers/ownership.controller.js";
 
 const router = express.Router();
 

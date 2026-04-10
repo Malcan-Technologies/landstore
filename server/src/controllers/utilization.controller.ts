@@ -5,7 +5,7 @@ import {
 	getUtilizationById,
 	updateUtilization,
 	deleteUtilization,
-} from "../services/utilization.ts";
+} from "../services/utilization.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

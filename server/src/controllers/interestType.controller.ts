@@ -5,7 +5,7 @@ import {
 	getInterestTypeById,
 	updateInterestType,
 	deleteInterestType,
-} from "../services/interestType.ts";
+} from "../services/interestType.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

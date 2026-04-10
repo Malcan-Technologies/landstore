@@ -1,4 +1,4 @@
-import s3ClientConfig from "../../config/AWSs3";
+import s3ClientConfig from "../../config/AWSs3.js";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import { createReadStream } from "fs";

@@ -8,8 +8,8 @@ import {
 	updateEnquiryController,
 	updateEnquiryStatusController,
 	deleteEnquiryController,
-} from "../controllers/enquiry.controller.ts";
-import requireApiAuth from "../middleware/requireApiAuth.ts";
+} from "../controllers/enquiry.controller.js";
+import requireApiAuth from "../middleware/requireApiAuth.js";
 
 const router = Router();
 

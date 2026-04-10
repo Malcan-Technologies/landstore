@@ -1,6 +1,6 @@
 import { DealType, FeatureTag, Prisma, TerrainType } from "@prisma/client";
-import db from "../../config/prisma.ts";
-import { uploadFileToS3, deleteFileFromS3 } from "./s3Upload.ts";
+import db from "../../config/prisma.js";
+import { uploadFileToS3, deleteFileFromS3 } from "./s3Upload.js";
 
 type MulterFile = Express.Multer.File;
 
@@ -174,6 +174,7 @@ export const uploadPropertyImages = async (
 
 		for (const file of files) {
 			const fileUrl = await uploadFileToS3(file);
+			console.log(fileUrl);
 
 			const media = await db.media.create({
 				data: {
@@ -476,9 +477,7 @@ export const updateListLandById = async (
 			if (payload.agreementAccepted !== undefined)
 				updateData.agreementAccepted = payload.agreementAccepted;
 			if (payload.agreementAcceptedAt !== undefined) {
-				updateData.agreementAcceptedAt = toDateOrNull(
-					payload.agreementAcceptedAt
-				);
+				updateData.agreementAcceptedAt = payload.agreementAcceptedAt;
 			}
 
 			if (Object.keys(updateData).length > 0) {

@@ -5,8 +5,8 @@ import {
 	getCategoryByIdController,
 	updateCategoryController,
 	deleteCategoryController,
-} from "../controllers/category.controller.ts";
-import requireApiAuth  from "../middleware/requireApiAuth.ts";
+} from "../controllers/category.controller.js";
+import requireApiAuth  from "../middleware/requireApiAuth.js";
 
 const router = Router();
 

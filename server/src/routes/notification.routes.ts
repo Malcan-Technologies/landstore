@@ -10,8 +10,8 @@ import {
 	markAllAsReadController,
 	deleteNotificationController,
 	deleteAllNotificationsByUserIdController,
-} from "../controllers/notification.controller.ts";
-import requireApiAuth from "../middleware/requireApiAuth.ts";
+} from "../controllers/notification.controller.js";
+import requireApiAuth from "../middleware/requireApiAuth.js";
 
 const router = Router();
 

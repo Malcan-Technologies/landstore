@@ -1,12 +1,12 @@
 import express from "express";
-import requireApiAuth from "../middleware/requireApiAuth";
+import requireApiAuth from "../middleware/requireApiAuth.js";
 import {
 	createUtilizationController,
 	getAllUtilizationsController,
 	getUtilizationByIdController,
 	updateUtilizationController,
 	deleteUtilizationController,
-} from "../controllers/utilization.controller";
+} from "../controllers/utilization.controller.js";
 
 const router = express.Router();
 

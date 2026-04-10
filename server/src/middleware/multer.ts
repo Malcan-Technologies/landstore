@@ -1,5 +1,6 @@
-import multer, { StorageEngine } from "multer";
-import { Request } from "express";
+import multer from "multer";
+import type { StorageEngine } from "multer";
+import type { Request } from "express";
 
 const storage: StorageEngine = multer.diskStorage({
   filename: function (

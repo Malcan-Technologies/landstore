@@ -5,8 +5,8 @@ import {
 	getInterestTypeByIdController,
 	updateInterestTypeController,
 	deleteInterestTypeController,
-} from "../controllers/interestType.controller.ts";
-import requireApiAuth from "../middleware/requireApiAuth.ts";
+} from "../controllers/interestType.controller.js";
+import requireApiAuth from "../middleware/requireApiAuth.js";
 
 const router = Router();
 

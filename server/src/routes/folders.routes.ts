@@ -8,9 +8,9 @@ import {
 	addPropertyToFolderController,
 	removePropertyFromFolderController,
 	checkPropertyShortlistedController,
-} from "../controllers/folders.controller.ts";
-import requireApiAuth from "../middleware/requireApiAuth.ts";
-import { requireAdmin } from "../middleware/authorization.ts";
+} from "../controllers/folders.controller.js";
+import requireApiAuth from "../middleware/requireApiAuth.js";
+import { requireAdmin } from "../middleware/authorization.js";
 
 const router = Router();
 

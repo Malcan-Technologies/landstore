@@ -1,4 +1,4 @@
-import db from "../../config/prisma.ts";
+import db from "../../config/prisma.js";
 import { Prisma, NotificationType } from "@prisma/client";
 
 const createHttpError = (message: string, statusCode: number) => {
@@ -17,17 +17,17 @@ export type CreateNotificationPayload = {
 };
 
 export type UpdateNotificationPayload = {
-	type?: NotificationType;
-	content?: string;
-	isRead?: boolean;
+	type?: NotificationType | undefined;
+	content?: string | undefined;
+	isRead?: boolean | undefined;
 };
 
 type GetNotificationsQuery = {
-	userId?: string;
-	type?: NotificationType;
-	isRead?: boolean;
-	page?: number;
-	limit?: number;
+	userId?: string | undefined;
+	type?: NotificationType | undefined;
+	isRead?: boolean | undefined;
+	page?: number | undefined;
+	limit?: number | undefined;
 };
 
 const includeNotificationRelations = {

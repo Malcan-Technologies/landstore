@@ -6,7 +6,7 @@ import {
 	getUserById,
 	updateUserById,
 	getUserCompleteProfile,
-} from "../services/user.ts";
+} from "../services/user.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

@@ -1,12 +1,12 @@
 import express from "express";
-import requireApiAuth from "../middleware/requireApiAuth";
+import requireApiAuth from "../middleware/requireApiAuth.js";
 import {
 	createTitleTypeController,
 	getAllTitleTypesController,
 	getTitleTypeByIdController,
 	updateTitleTypeController,
 	deleteTitleTypeController,
-} from "../controllers/titleType.controller";
+} from "../controllers/titleType.controller.js";
 
 const router = express.Router();
 

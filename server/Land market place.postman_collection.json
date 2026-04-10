@@ -90,7 +90,13 @@
           "name": "Register",
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\r\n    \"name\": \"basit sheikh\",\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\"\r\n}",
@@ -542,7 +548,77 @@
             "header": [],
             "body": {
               "mode": "formdata",
-              "formdata": []
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Any",
+                  "type": "text",
+                  "uuid": "008976aa-243b-4cbd-8994-12e529a14ffa"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "b1819389-fd34-490b-a364-737024174ad9",
+                  "type": "text",
+                  "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e"
+                },
+                {
+                  "key": "ownershipTypeId",
+                  "value": "3051e2b7-06f1-4709-b12f-cf3469f86963",
+                  "type": "text",
+                  "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e"
+                },
+                {
+                  "key": "utilizationId",
+                  "value": "c2e136fb-85db-4ebe-8ef3-9836de0a2c14",
+                  "type": "text",
+                  "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391"
+                },
+                {
+                  "key": "titleTypeId",
+                  "value": "b8014b54-cd4d-4115-955e-f852ab5546da",
+                  "type": "text",
+                  "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad"
+                },
+                {
+                  "key": "landAreaUnit",
+                  "value": "km",
+                  "type": "text",
+                  "uuid": "38a78f65-281b-4355-ae3d-cb501205a75b"
+                },
+                {
+                  "key": "listingCode",
+                  "value": "LAND-2026-005",
+                  "type": "text",
+                  "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
+                },
+                {
+                  "key": "landArea",
+                  "value": "5000",
+                  "type": "text",
+                  "uuid": "2a4c37b1-f4ef-47b9-a8c6-abefe71ba879"
+                },
+                {
+                  "key": "price",
+                  "value": "400000",
+                  "type": "text",
+                  "uuid": "eaefa9e7-2ec3-4631-8073-9ccdfc1950ab"
+                },
+                {
+                  "key": "pricePerSqrft",
+                  "value": "1250",
+                  "type": "text",
+                  "uuid": "36d4ab24-5df2-4a36-8bf4-09b827255eeb"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
+                  "src": [
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
+                  ]
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/list-lands/",

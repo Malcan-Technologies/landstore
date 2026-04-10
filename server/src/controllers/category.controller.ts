@@ -5,7 +5,7 @@ import {
 	getCategoryById,
 	updateCategory,
 	deleteCategory,
-} from "../services/category.ts";
+} from "../services/category.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

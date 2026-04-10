@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { UserType } from "@prisma/client";
-import db from "../../config/prisma.ts";
+import db from "../../config/prisma.js";
 
 /**
  * Middleware to check user role
