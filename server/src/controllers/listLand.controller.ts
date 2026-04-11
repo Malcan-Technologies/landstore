@@ -7,6 +7,7 @@ import {
 	updateListLandById,
 	uploadPropertyImages,
 	uploadPropertyDocuments,
+	getUploadedMediaAndDocuments,
 } from "../services/listLand.js";
 import type { GetLandsQuery } from "../../types/express/land.types.js";
 
@@ -90,11 +91,13 @@ export const createListLandController = async (req: Request, res: Response) => {
 		// Create property with images, documents and all other details
 		const property = await createListLand(requester.id, payload);
 
+		// Fetch uploaded media and documents with their URLs
+		const uploadedAssets = await getUploadedMediaAndDocuments(mediaIds, documentIds);
+
 		return res.status(201).json({
 			message: "Property created successfully with images and documents",
 			property,
-			imageCount: mediaIds.length,
-			documentCount: documentIds.length,
+			uploadedAssets,
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);

@@ -68,14 +68,27 @@ const parseDecimal = (value: string | number, fieldName: string) => {
 };
 
 const parseEnumArray = <T extends string>(
-	value: string[] | undefined,
+	value: string[] | string | undefined,
 	fieldName: string,
 	allowedValues: readonly T[]
 ): T[] => {
 	if (value === undefined) return [];
 
+	// Convert string to array if needed
+	let arrayValue: string[];
+	if (typeof value === "string") {
+		arrayValue = [value];
+	} else if (Array.isArray(value)) {
+		arrayValue = value;
+	} else {
+		throw createHttpError(
+			`${fieldName} must be a string or array`,
+			400
+		);
+	}
+
 	const allowedSet = new Set<string>(allowedValues);
-	const normalized = value.map((item) => item.trim());
+	const normalized = arrayValue.map((item) => item.trim());
 	const invalid = normalized.filter((item) => !allowedSet.has(item));
 
 	if (invalid.length > 0) {
@@ -98,6 +111,26 @@ const toDateOrNull = (value?: string | Date | null) => {
 	return parsed;
 };
 
+const parseBoolean = (value: boolean | string | undefined | null): boolean | null | undefined => {
+	if (value === undefined) return undefined;
+	if (value === null) return null;
+	if (typeof value === "boolean") return value;
+	if (typeof value === "string") {
+		if (value.toLowerCase() === "true") return true;
+		if (value.toLowerCase() === "false") return false;
+		throw createHttpError(
+			`Boolean value must be 'true' or 'false', received '${value}'`,
+			400
+		);
+	}
+	return undefined;
+};
+
+const normalizeBoolean = (value: boolean | null | undefined): boolean | null => {
+	if (value === undefined) return null;
+	return value;
+};
+
 const includePropertyRelations = {
 	category: true,
 	ownershipType: true,
@@ -107,6 +140,53 @@ const includePropertyRelations = {
 	leaseholdDetails: true,
 	media: true,
 } as const;
+
+/**
+ * Get uploaded media and documents with their file URLs
+ */
+export const getUploadedMediaAndDocuments = async (
+	mediaIds: string[],
+	documentIds: string[]
+) => {
+	const uploadedImages = mediaIds.length > 0 
+		? await db.media.findMany({
+				where: { id: { in: mediaIds } },
+				select: {
+					id: true,
+					fileUrl: true,
+					mediaType: true,
+					mediaCategory: true,
+					createdAt: true,
+				},
+			})
+		: [];
+
+	const uploadedDocuments = documentIds.length > 0
+		? await db.document.findMany({
+				where: { id: { in: documentIds } },
+				select: {
+					id: true,
+					verificationStatus: true,
+					media: {
+						select: {
+							fileUrl: true,
+						},
+					},
+					createdAt: true,
+				},
+			})
+		: [];
+
+	return {
+		images: uploadedImages,
+		documents: uploadedDocuments.map((doc) => ({
+			id: doc.id,
+			fileUrl: doc.media?.fileUrl,
+			verificationStatus: doc.verificationStatus,
+			createdAt: doc.createdAt,
+		})),
+	};
+};
 
 /**
  * Upload multiple property documents (Geran) to S3 and create document records
@@ -242,7 +322,7 @@ export const createListLand = async (
 					utilizationId: payload.utilizationId,
 					titleTypeId: payload.titleTypeId,
 					landMediaId: payload.landMediaIds?.[0] ?? null,
-					tanahRizabMelayu: payload.tanahRizabMelayu ?? null,
+					tanahRizabMelayu: normalizeBoolean(parseBoolean(payload.tanahRizabMelayu)),
 					dealTypes: parseEnumArray(
 						payload.dealTypes,
 						"dealTypes",
@@ -270,7 +350,7 @@ export const createListLand = async (
 					price: parseDecimal(payload.price, "price"),
 					pricePerSqrft: parseDecimal(payload.pricePerSqrft, "pricePerSqrft"),
 					status: payload.status ?? null,
-					agreementAccepted: payload.agreementAccepted ?? false,
+					agreementAccepted: normalizeBoolean(parseBoolean(payload.agreementAccepted)) ?? false,
 					agreementAcceptedAt: toDateOrNull(payload.agreementAcceptedAt) ?? null,
 				},
 			});
@@ -286,7 +366,7 @@ export const createListLand = async (
 						section: payload.location.section ?? null,
 						latitude: parseDecimal(payload.location.latitude, "location.latitude"),
 						longitude: parseDecimal(payload.location.longitude, "location.longitude"),
-						isApproximate: payload.location.isApproximate ?? false,
+						isApproximate: normalizeBoolean(parseBoolean(payload.location.isApproximate)) ?? false,
 					},
 				});
 			}
@@ -428,8 +508,12 @@ export const updateListLandById = async (
 				updateData.titleTypeId = payload.titleTypeId;
 			if (payload.landMediaIds !== undefined)
 				updateData.landMediaId = payload.landMediaIds[0] ?? null;
-			if (payload.tanahRizabMelayu !== undefined)
-				updateData.tanahRizabMelayu = payload.tanahRizabMelayu;
+			if (payload.tanahRizabMelayu !== undefined) {
+				const normalizedValue = normalizeBoolean(parseBoolean(payload.tanahRizabMelayu));
+				if (normalizedValue !== null) {
+					updateData.tanahRizabMelayu = normalizedValue;
+				}
+			}
 			if (payload.dealTypes !== undefined) {
 				updateData.dealTypes = parseEnumArray(
 					payload.dealTypes,
@@ -474,8 +558,12 @@ export const updateListLandById = async (
 				);
 			}
 			if (payload.status !== undefined) updateData.status = payload.status;
-			if (payload.agreementAccepted !== undefined)
-				updateData.agreementAccepted = payload.agreementAccepted;
+			if (payload.agreementAccepted !== undefined) {
+				const normalizedValue = normalizeBoolean(parseBoolean(payload.agreementAccepted));
+				if (normalizedValue !== null) {
+					updateData.agreementAccepted = normalizedValue;
+				}
+			}
 			if (payload.agreementAcceptedAt !== undefined) {
 				updateData.agreementAcceptedAt = payload.agreementAcceptedAt;
 			}
@@ -507,23 +595,23 @@ export const updateListLandById = async (
 								payload.location.longitude,
 								"location.longitude"
 							),
-							isApproximate: payload.location.isApproximate ?? false,
-						},
-						create: {
-							propertyId,
-							state: payload.location.state,
-							district: payload.location.district,
-							mukim: payload.location.mukim ?? null,
-							section: payload.location.section ?? null,
-							latitude: parseDecimal(
-								payload.location.latitude,
-								"location.latitude"
-							),
-							longitude: parseDecimal(
-								payload.location.longitude,
-								"location.longitude"
-							),
-							isApproximate: payload.location.isApproximate ?? false,
+						isApproximate: normalizeBoolean(parseBoolean(payload.location.isApproximate)) ?? false,
+					},
+					create: {
+						propertyId,
+						state: payload.location.state,
+						district: payload.location.district,
+						mukim: payload.location.mukim ?? null,
+						section: payload.location.section ?? null,
+						latitude: parseDecimal(
+							payload.location.latitude,
+							"location.latitude"
+						),
+						longitude: parseDecimal(
+							payload.location.longitude,
+							"location.longitude"
+						),
+						isApproximate: normalizeBoolean(parseBoolean(payload.location.isApproximate)) ?? false,
 						},
 					});
 				}

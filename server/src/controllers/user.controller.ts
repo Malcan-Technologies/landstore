@@ -6,6 +6,7 @@ import {
 	getUserById,
 	updateUserById,
 	getUserCompleteProfile,
+	registerAndCompleteProfile,
 } from "../services/user.js";
 
 const getErrorPayload = (error: unknown) => {
@@ -19,8 +20,75 @@ const getErrorPayload = (error: unknown) => {
 	};
 };
 
+// Register and complete profile in one step (combined endpoint)
+export const registerAndCompleteProfileController = async (req: Request, res: Response) => {
+	try {
+		const {
+			email,
+			password,
+			userType,
+			phone,
+			profileType,
+			fullName,
+			identityNo,
+			companyName,
+			koperasiName,
+			registrationNo,
+			firstName,
+			lastName,
+			name,
+		} = req.body;
+
+		// Validate required fields
+		if (!email || typeof email !== "string" || !email.trim()) {
+			return res.status(400).json({ message: "Valid email is required" });
+		}
+		if (!password || typeof password !== "string" || password.length < 8) {
+			return res.status(400).json({ message: "Password must be at least 8 characters" });
+		}
+		if (userType && !["admin", "user"].includes(userType)) {
+			return res.status(400).json({ message: "Invalid userType. Must be 'admin' or 'user'" });
+		}
+		if (profileType && !["individual", "company", "koperasi"].includes(profileType)) {
+			return res.status(400).json({ 
+				message: "Invalid profileType. Must be 'individual', 'company', or 'koperasi'" 
+			});
+		}
+
+		// Register and complete profile in transaction
+		const result = await registerAndCompleteProfile(email, password, {
+			userType,
+			phone,
+			profileType,
+			fullName,
+			identityNo,
+			companyName,
+			koperasiName,
+			registrationNo,
+			firstName,
+			lastName,
+			name,
+		});
+
+		// Fetch complete profile with all details
+		const completeProfile = await getUserCompleteProfile(result.userId);
+
+		return res.status(201).json({
+			success: true,
+			message: "User registered and profile completed successfully",
+			profile: completeProfile,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ 
+			success: false,
+			message 
+		});
+	}
+};
+
 // Complete user profile after Better Auth signup
-// Better Auth has already created the User record, this adds business-specific data
+// Better Auth has already created the User record
 export const completeProfileController = async (req: Request, res: Response) => {
 	try {
 		const { email, userType, phone, profileType, fullName, identityNo, companyName, koperasiName, registrationNo, firstName, lastName, name } = req.body;
