@@ -356,8 +356,8 @@ model Location {
   mukim         String?
   section       String?
 
-  latitude      Decimal  @db.Decimal(10,8)
-  longitude     Decimal  @db.Decimal(10,8)
+  latitude      Decimal  @db.Decimal(11,8)
+  longitude     Decimal  @db.Decimal(11,8)
 
   isApproximate Boolean  @default(false)
 
@@ -497,15 +497,21 @@ model Message {
 //////////////////////////////////////////////////////
 
 model ShortlistFolder {
-  id         String              @id @default(uuid())
-  userId     String              // Changed to String
-  name       String
+  id              String              @id @default(uuid())
+  userId          String              // Changed to String
+  name            String
+  parentFolderId  String?             // Parent folder for nested structure
+  
+  user            User                @relation(fields: [userId], references: [id])
+  parentFolder    ShortlistFolder?    @relation("SubFolders", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  subFolders      ShortlistFolder[]   @relation("SubFolders")
+  properties      ShortlistProperty[]
 
-  user       User                @relation(fields: [userId], references: [id])
-  properties ShortlistProperty[]
-
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([userId])
+  @@index([parentFolderId])
 }
 
 model ShortlistProperty {

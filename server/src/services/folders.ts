@@ -156,7 +156,7 @@ export const getFolderById = async (
 			id: folder.id,
 			name: folder.name,
 			propertyCount: folder.properties.length,
-			properties: folder.properties.map((sp) => ({
+			properties: folder.properties.map((sp: any) => ({
 				id: sp.property.id,
 				title: sp.property.title,
 				listingCode: sp.property.listingCode,
@@ -410,5 +410,300 @@ export const isPropertyShortlisted = async (
 		return !!shortlist;
 	} catch (error: unknown) {
 		return false;
+	}
+};
+
+/**
+ * Create a subfolder inside a parent folder
+ */
+export const createSubfolder = async (
+	parentFolderId: string,
+	subfoldername: string,
+	userId: string
+): Promise<{ id: string; name: string; parentFolderId: string; createdAt: Date }> => {
+	if (!subfoldername || subfoldername.trim().length === 0) {
+		throw createHttpError("Subfolder name is required", 400);
+	}
+
+	try {
+		// Verify parent folder exists and belongs to user
+		const parentFolder = await db.shortlistFolder.findUnique({
+			where: { id: parentFolderId },
+		});
+
+		if (!parentFolder) {
+			throw createHttpError("Parent folder not found", 404);
+		}
+
+		if (parentFolder.userId !== userId) {
+			throw createHttpError(
+				"You do not have permission to create a subfolder in this folder",
+				403
+			);
+		}
+
+		// Create subfolder
+		const subfolder = await db.shortlistFolder.create({
+			data: {
+				userId,
+				name: subfoldername.trim(),
+				parentFolderId,
+			},
+		});
+
+		return {
+			id: subfolder.id,
+			name: subfolder.name,
+			parentFolderId: subfolder.parentFolderId || "",
+			createdAt: subfolder.createdAt,
+		};
+	} catch (error: unknown) {
+		throw error;
+	}
+};
+
+/**
+ * Get folder hierarchy (includes subfolders and properties)
+ */
+export const getFolderHierarchy = async (
+	folderId: string,
+	userId: string
+): Promise<any> => {
+	try {
+		// Get the main folder
+		const folder = await db.shortlistFolder.findUnique({
+			where: { id: folderId },
+			include: {
+				subFolders: {
+					include: {
+						properties: {
+							include: {
+								property: {
+									select: {
+										id: true,
+										title: true,
+										listingCode: true,
+										price: true,
+										landArea: true,
+										landAreaUnit: true,
+										location: {
+											select: {
+												state: true,
+												district: true,
+											},
+										},
+										media: {
+											select: {
+												fileUrl: true,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				properties: {
+					include: {
+						property: {
+							select: {
+								id: true,
+								title: true,
+								listingCode: true,
+								price: true,
+								landArea: true,
+								landAreaUnit: true,
+								location: {
+									select: {
+										state: true,
+										district: true,
+									},
+								},
+								media: {
+									select: {
+										fileUrl: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		});
+
+		if (!folder) {
+			throw createHttpError("Folder not found", 404);
+		}
+
+		if (folder.userId !== userId) {
+			throw createHttpError(
+				"You do not have permission to access this folder",
+				403
+			);
+		}
+
+		// Build hierarchical structure
+		return {
+			id: folder.id,
+			name: folder.name,
+			parentFolderId: folder.parentFolderId,
+			propertyCount: folder.properties.length,
+			properties: folder.properties.map((sp: any) => ({
+				id: sp.property.id,
+				title: sp.property.title,
+				listingCode: sp.property.listingCode,
+				price: sp.property.price,
+				landArea: sp.property.landArea,
+				landAreaUnit: sp.property.landAreaUnit,
+				location: sp.property.location,
+				imageUrl: sp.property.media?.fileUrl,
+				shortlistedAt: sp.createdAt,
+			})),
+			subFolders: folder.subFolders.map((sf: any) => ({
+				id: sf.id,
+				name: sf.name,
+				parentFolderId: sf.parentFolderId,
+				propertyCount: sf.properties.length,
+				properties: sf.properties.map((sp: any) => ({
+					id: sp.property.id,
+					title: sp.property.title,
+					listingCode: sp.property.listingCode,
+					price: sp.property.price,
+					landArea: sp.property.landArea,
+					landAreaUnit: sp.property.landAreaUnit,
+					location: sp.property.location,
+					imageUrl: sp.property.media?.fileUrl,
+					shortlistedAt: sp.createdAt,
+				})),
+				createdAt: sf.createdAt,
+				updatedAt: sf.updatedAt,
+			})),
+			createdAt: folder.createdAt,
+			updatedAt: folder.updatedAt,
+		};
+	} catch (error: unknown) {
+		throw error;
+	}
+};
+
+/**
+ * Move a folder under another parent folder
+ */
+export const moveFolder = async (
+	folderId: string,
+	newParentFolderId: string,
+	userId: string
+): Promise<{ id: string; parentFolderId: string; updatedAt: Date }> => {
+	try {
+		// Verify the folder exists and belongs to user
+		const folder = await db.shortlistFolder.findUnique({
+			where: { id: folderId },
+		});
+
+		if (!folder) {
+			throw createHttpError("Folder not found", 404);
+		}
+
+		if (folder.userId !== userId) {
+			throw createHttpError(
+				"You do not have permission to move this folder",
+				403
+			);
+		}
+
+		// Prevent moving to itself
+		if (folderId === newParentFolderId) {
+			throw createHttpError("Cannot move a folder to itself", 400);
+		}
+
+		// Verify new parent folder exists and belongs to user
+		const newParentFolder = await db.shortlistFolder.findUnique({
+			where: { id: newParentFolderId },
+		});
+
+		if (!newParentFolder) {
+			throw createHttpError("New parent folder not found", 404);
+		}
+
+		if (newParentFolder.userId !== userId) {
+			throw createHttpError(
+				"You do not have permission to move to this folder",
+				403
+			);
+		}
+
+		// Prevent circular reference (moving parent to child)
+		let current = newParentFolder;
+		while (current.parentFolderId) {
+			if (current.parentFolderId === folderId) {
+				throw createHttpError(
+					"Cannot move a parent folder under its subfolder (circular reference)",
+					400
+				);
+			}
+			current = await db.shortlistFolder.findUniqueOrThrow({
+				where: { id: current.parentFolderId },
+			});
+		}
+
+		// Move the folder
+		const movedFolder = await db.shortlistFolder.update({
+			where: { id: folderId },
+			data: { parentFolderId: newParentFolderId },
+		});
+
+		return {
+			id: movedFolder.id,
+			parentFolderId: movedFolder.parentFolderId || "",
+			updatedAt: movedFolder.updatedAt,
+		};
+	} catch (error: unknown) {
+		throw error;
+	}
+};
+
+/**
+ * Get all root folders and their hierarchy for a user
+ */
+export const getAllFoldersHierarchy = async (
+	userId: string
+): Promise<any[]> => {
+	try {
+		// Get only root folders (parentFolderId is null)
+		const rootFolders = await db.shortlistFolder.findMany({
+			where: {
+				userId,
+				parentFolderId: null,
+			},
+			include: {
+				subFolders: {
+					include: {
+						properties: true,
+						subFolders: true,
+					},
+				},
+				properties: true,
+			},
+			orderBy: { createdAt: "desc" },
+		});
+
+		return rootFolders.map((folder: any) => ({
+			id: folder.id,
+			name: folder.name,
+			parentFolderId: folder.parentFolderId,
+			propertyCount: folder.properties.length,
+			subFolderCount: folder.subFolders.length,
+			subFolders: folder.subFolders.map((sf: any) => ({
+				id: sf.id,
+				name: sf.name,
+				parentFolderId: sf.parentFolderId,
+				propertyCount: sf.properties.length,
+				subFolderCount: sf.subFolders.length,
+			})),
+			createdAt: folder.createdAt,
+			updatedAt: folder.updatedAt,
+		}));
+	} catch (error: unknown) {
+		throw error;
 	}
 };

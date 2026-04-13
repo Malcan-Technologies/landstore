@@ -11,7 +11,7 @@ import {
 	deleteNotification,
 	deleteAllNotificationsByUserId,
 } from "../services/notification.js";
-import { NotificationType } from "@prisma/client";
+import type { NotificationType } from "@prisma/client";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as

@@ -88,7 +88,7 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			registrationNo,
 			firstName,
 			lastName,
-			name,
+			name
 		} = req.body;
 
 		// Validate required fields
@@ -120,7 +120,7 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			registrationNo,
 			firstName,
 			lastName,
-			name,
+			name
 		});
 
 		// Fetch complete profile with all details

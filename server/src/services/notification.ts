@@ -1,5 +1,5 @@
 import db from "../../config/prisma.js";
-import { Prisma, NotificationType } from "@prisma/client";
+import type { NotificationType } from "@prisma/client";
 
 const createHttpError = (message: string, statusCode: number) => {
 	const error = new Error(message) as Error & { statusCode?: number };
@@ -113,7 +113,7 @@ export const getNotifications = async (query: GetNotificationsQuery) => {
 		const pageNumber = query.page ?? 1;
 		const skip = (pageNumber - 1) * pageSize;
 
-		const where: Prisma.NotificationWhereInput = {};
+		const where: Record<string, any> = {};
 
 		if (query.userId) {
 			where.userId = query.userId;
@@ -141,7 +141,7 @@ export const getNotifications = async (query: GetNotificationsQuery) => {
 		]);
 
 		return {
-			data: notifications.map((notification) => ({
+			data: notifications.map((notification: any) => ({
 				id: notification.id,
 				userId: notification.userId,
 				type: notification.type,
@@ -237,7 +237,7 @@ export const getNotificationsByUserId = async (
 		]);
 
 		return {
-			data: notifications.map((notification) => ({
+			data: notifications.map((notification: any) => ({
 				id: notification.id,
 				userId: notification.userId,
 				type: notification.type,
@@ -308,7 +308,7 @@ export const updateNotification = async (
 			throw createHttpError("Notification not found", 404);
 		}
 
-		const updateData: Prisma.NotificationUpdateInput = {};
+		const updateData: Record<string, any> = {};
 
 		if (payload.type !== undefined) {
 			// Validate notification type
