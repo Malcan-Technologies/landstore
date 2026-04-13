@@ -37,7 +37,7 @@ export const authService = {
   // Register and complete profile in one request (new Postman flow)
   register: async (userData) => {
     try {
-      const response = await api.post('/users/register-complete', userData, withOriginAndNo401Redirect());
+      const response = await api.post('/users/register', userData, withOriginAndNo401Redirect());
       return response.data;
     } catch (error) {
       throw error;
