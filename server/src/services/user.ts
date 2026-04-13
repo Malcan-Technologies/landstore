@@ -86,61 +86,163 @@ export const getRequesterUserFromToken = async (token: string): Promise<User> =>
   }
 };
 
+/**
+ * Register and complete profile in one transaction
+ * Combines sign-up and profile completion into a single operation
+ */
+export const registerAndCompleteProfile = async (
+	email: string,
+	password: string,
+	profileData: Omit<CreateUserProfilePayload, "email">
+) => {
+	const normalizedEmail = normalizeEmail(email);
+
+	// Step 1: Create user directly (Better Auth handles password hashing)
+	try {
+		const user = await db.user.create({
+			data: {
+				email: normalizedEmail,
+				password, // Better Auth middleware should hash this
+				name: profileData.name || 
+					`${profileData.firstName || ""} ${profileData.lastName || ""}`.trim() || 
+					normalizedEmail,
+			},
+		});
+
+		if (!user?.id) {
+			throw new Error("Failed to create user account");
+		}
+
+		const userId = user.id;
+
+		// Step 2: Complete profile in transaction
+		const completeProfileResult = await db.$transaction(async (trx) => {
+			// Update user with business fields
+			const updatedUser = await trx.user.update({
+				where: { id: userId },
+				data: {
+					phone: normalizePhone(profileData.phone),
+					userType: profileData.userType ?? "user",
+				},
+			});
+
+			// Create appropriate profile type
+			await createUserProfileType(trx, userId, profileData);
+
+			return updatedUser;
+		});
+
+		return {
+			userId: userId,
+			user: completeProfileResult,
+			success: true,
+		};
+	} catch (error: unknown) {
+		const errorMessage = (error as any)?.message || "Failed to register user";
+		
+		// Check for duplicate email
+		if ((error as any)?.code === "P2002") {
+			const err = new Error("Email already exists");
+			(err as Error & { statusCode?: number }).statusCode = 409;
+			throw err;
+		}
+
+		const err = new Error(errorMessage);
+		(err as Error & { statusCode?: number }).statusCode = 400;
+		throw err;
+	}
+};
+
+/**
+ * Helper: Create user profile based on profile type
+ */
+const createUserProfileType = async (
+	trx: any, // Prisma transaction
+	userId: string,
+	profileData: Omit<CreateUserProfilePayload, "email">
+) => {
+	const profileType =
+		profileData.profileType ??
+		(profileData.companyName ? "company" : profileData.koperasiName ? "koperasi" : "individual");
+
+	if (profileType === "individual") {
+		const fullName =
+			profileData.fullName ??
+			buildDisplayName(profileData.firstName, profileData.lastName, profileData.name);
+
+		if (!fullName) {
+			throw new Error("fullName is required for individual profile");
+		}
+
+		await trx.individual.create({
+			data: {
+				userId,
+				fullName,
+				identityNo: profileData.identityNo ?? null,
+			},
+		});
+	} else if (profileType === "company") {
+		const companyName = profileData.companyName ?? profileData.name?.trim();
+
+		if (!companyName) {
+			throw new Error("companyName is required for company profile");
+		}
+
+		await trx.company.create({
+			data: {
+				userId,
+				companyName,
+				registrationNo: profileData.registrationNo ?? null,
+			},
+		});
+	} else if (profileType === "koperasi") {
+		const koperasiName = profileData.koperasiName ?? profileData.name?.trim();
+
+		if (!koperasiName) {
+			throw new Error("koperasiName is required for koperasi profile");
+		}
+
+		await trx.koperasi.create({
+			data: {
+				userId,
+				koperasiName,
+				registrationNo: profileData.registrationNo ?? null,
+			},
+		});
+	}
+};
+
 // Update user profile after Better Auth signup
 // Better Auth has already created the User record
-export const completeUserProfile = async ({
-  email,
-  userType,
-  phone,
-  profileType,
-  fullName,
-  identityNo,
-  companyName,
-  koperasiName,
-  registrationNo,
-  firstName,
-  lastName,
-  name,
-}: CreateUserProfilePayload) => {
-  const normalizedEmail = normalizeEmail(email);
+export const completeUserProfile = async (
+	payload: CreateUserProfilePayload
+) => {
+	const normalizedEmail = normalizeEmail(payload.email);
 
-  // Find user created by Better Auth
-  const user = await db.user.findUnique({
-    where: { email: normalizedEmail },
-  });
+	// Find user created by Better Auth
+	const user = await db.user.findUnique({
+		where: { email: normalizedEmail },
+	});
 
-  if (!user) {
-    const notFoundError = new Error("User not found. Please sign up first.");
-    (notFoundError as Error & { statusCode?: number }).statusCode = 404;
-    throw notFoundError;
-  }
+	if (!user) {
+		const notFoundError = new Error("User not found. Please sign up first.");
+		(notFoundError as Error & { statusCode?: number }).statusCode = 404;
+		throw notFoundError;
+	}
 
-  // Update user with business fields
-  const updatedUser = await db.user.update({
-    where: { id: user.id },
-    data: {
-      phone: normalizePhone(phone),
-      userType: userType ?? "user",
-    },
-  });
+	// Update user with business fields
+	const updatedUser = await db.user.update({
+		where: { id: user.id },
+		data: {
+			phone: normalizePhone(payload.phone),
+			userType: payload.userType ?? "user",
+		},
+	});
 
-  // Create user profile details
-  await upsertUserProfileDetail(user.id, {
-    email,
-    userType,
-    phone,
-    profileType,
-    fullName,
-    identityNo,
-    companyName,
-    koperasiName,
-    registrationNo,
-    firstName,
-    lastName,
-    name,
-  });
+	// Create user profile details
+	await upsertUserProfileDetail(user.id, payload);
 
-  return updatedUser;
+	return updatedUser;
 };
 
 const upsertUserProfileDetail = async (

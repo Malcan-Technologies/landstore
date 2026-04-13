@@ -7,13 +7,17 @@ import {
   getUserByIdController,
   updateUserController,
   getUserCompleteProfileController,
+  registerAndCompleteProfileController,
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 
 const userRouter = Router();
 
-// Complete profile after Better Auth signup
-userRouter.post("/complete-profile", completeProfileController);
+// Register and complete profile in one step (combined endpoint)
+userRouter.post("/register-complete", registerAndCompleteProfileController);
+
+// Complete profile after Better Auth signup (keep for backward compatibility)
+// userRouter.post("/complete-profile", completeProfileController);
 
 // Get current authenticated user (requires auth)
 userRouter.get("/me", requireApiAuth, getCurrentUserController);
