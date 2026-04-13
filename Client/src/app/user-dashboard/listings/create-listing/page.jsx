@@ -45,6 +45,24 @@ const toNumberOrZero = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const getStartOfToday = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+const parseDateAtStartOfDay = (value) => {
+  if (!value) return null;
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  parsedDate.setHours(0, 0, 0, 0);
+  return parsedDate;
+};
+
 const getLeasePeriodYears = (leasePeriod) => {
   const match = String(leasePeriod || "").match(/\d+/);
   return match ? Number(match[0]) : null;
@@ -170,9 +188,18 @@ const CreateListingPage = () => {
       if (!String(values.mukim || "").trim()) stepErrors.mukim = "Please enter mukim.";
       if (!String(values.seksyen || "").trim()) stepErrors.seksyen = "Please enter seksyen.";
       if (!values.titleType) stepErrors.titleType = "Please select a title type.";
-      if (isLeaseholdSelected(values.titleType) && !values.leaseStartDate) {
-        stepErrors.leaseStartDate = "Please select leasehold start year.";
+
+      if (isLeaseholdSelected(values.titleType) && values.leaseStartDate) {
+        const leaseStartDate = parseDateAtStartOfDay(values.leaseStartDate);
+        const today = getStartOfToday();
+
+        if (!leaseStartDate) {
+          stepErrors.leaseStartDate = "Please select a valid leasehold start date.";
+        } else if (leaseStartDate < today) {
+          stepErrors.leaseStartDate = "Leasehold start date cannot be before today.";
+        }
       }
+
       if (isLeaseholdSelected(values.titleType) && !values.leasePeriod) {
         stepErrors.leasePeriod = "Please select leasehold period.";
       }
@@ -315,22 +342,17 @@ const CreateListingPage = () => {
     payload.append("location.longitude", String(formData.longitude));
     payload.append("location.isApproximate", "true");
 
-    const selectedTitleType = referenceOptions.titleTypes.find((option) => option.value === formData.titleType);
-    const isLeasehold = selectedTitleType
-      ? selectedTitleType.label.toLowerCase().includes("leasehold")
-      : String(formData.titleType).toLowerCase().includes("leasehold");
+    const leaseStartDate = parseDateAtStartOfDay(formData.leaseStartDate);
+    const startYear = leaseStartDate ? leaseStartDate.getFullYear() : null;
+    const leasePeriodYears = getLeasePeriodYears(formData.leasePeriod);
 
-    if (isLeasehold) {
-      const startYear = formData.leaseStartDate ? new Date(formData.leaseStartDate).getFullYear() : null;
-      const leasePeriodYears = getLeasePeriodYears(formData.leasePeriod);
+    if (leaseStartDate) {
+      payload.append("leaseStartDate", leaseStartDate.toISOString());
+    }
 
-      if (startYear) {
-        payload.append("leaseholdDetails.startYear", String(startYear));
-      }
-
-      if (leasePeriodYears) {
-        payload.append("leaseholdDetails.leasePeriodYears", String(leasePeriodYears));
-      }
+    if (startYear && leasePeriodYears) {
+      payload.append("leaseholdDetails.startYear", String(startYear));
+      payload.append("leaseholdDetails.leasePeriodYears", String(leasePeriodYears));
     }
 
     (formData.photos || []).forEach((file) => {

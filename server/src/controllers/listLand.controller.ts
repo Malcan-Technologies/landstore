@@ -45,6 +45,92 @@ const getPropertyIdParamOrThrow = (req: Request): string => {
 	return param;
 };
 
+const toNumberOrUndefined = (value: unknown): number | undefined => {
+	if (value === undefined || value === null || value === "") return undefined;
+
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const buildNestedMultipartPayload = (body: Record<string, unknown>) => {
+	const payload: Record<string, unknown> = { ...body };
+
+	if (typeof payload.location === "string") {
+		try {
+			payload.location = JSON.parse(payload.location);
+		} catch {
+			// Keep original value when not valid JSON.
+		}
+	}
+
+	if (typeof payload.leaseholdDetails === "string") {
+		try {
+			payload.leaseholdDetails = JSON.parse(payload.leaseholdDetails);
+		} catch {
+			// Keep original value when not valid JSON.
+		}
+	}
+
+	const hasDottedLocation =
+		payload["location.state"] !== undefined ||
+		payload["location.district"] !== undefined ||
+		payload["location.mukim"] !== undefined ||
+		payload["location.section"] !== undefined ||
+		payload["location.latitude"] !== undefined ||
+		payload["location.longitude"] !== undefined ||
+		payload["location.isApproximate"] !== undefined;
+
+	if (hasDottedLocation) {
+		payload.location = {
+			...(payload["location.state"] !== undefined ? { state: payload["location.state"] } : {}),
+			...(payload["location.district"] !== undefined ? { district: payload["location.district"] } : {}),
+			...(payload["location.mukim"] !== undefined ? { mukim: payload["location.mukim"] } : {}),
+			...(payload["location.section"] !== undefined ? { section: payload["location.section"] } : {}),
+			...(payload["location.latitude"] !== undefined ? { latitude: payload["location.latitude"] } : {}),
+			...(payload["location.longitude"] !== undefined ? { longitude: payload["location.longitude"] } : {}),
+			...(payload["location.isApproximate"] !== undefined
+				? { isApproximate: payload["location.isApproximate"] }
+				: {}),
+		};
+	}
+
+	delete payload["location.state"];
+	delete payload["location.district"];
+	delete payload["location.mukim"];
+	delete payload["location.section"];
+	delete payload["location.latitude"];
+	delete payload["location.longitude"];
+	delete payload["location.isApproximate"];
+
+	const startYearFromLeaseDate =
+		typeof payload.leaseStartDate === "string"
+			? (() => {
+					const parsedDate = new Date(payload.leaseStartDate);
+					return Number.isNaN(parsedDate.getTime()) ? undefined : parsedDate.getFullYear();
+			  })()
+			: undefined;
+
+	const hasDottedLeasehold =
+		payload["leaseholdDetails.startYear"] !== undefined ||
+		payload["leaseholdDetails.leasePeriodYears"] !== undefined;
+
+	const startYear =
+		toNumberOrUndefined(payload["leaseholdDetails.startYear"]) ?? startYearFromLeaseDate;
+	const leasePeriodYears = toNumberOrUndefined(payload["leaseholdDetails.leasePeriodYears"]);
+
+	if (hasDottedLeasehold && startYear !== undefined && leasePeriodYears !== undefined) {
+		payload.leaseholdDetails = {
+			startYear,
+			leasePeriodYears,
+		};
+	}
+
+	delete payload["leaseholdDetails.startYear"];
+	delete payload["leaseholdDetails.leasePeriodYears"];
+
+	return payload;
+};
+
 /**
  * Create property listing endpoint
  * Flow: Images & Documents uploaded (multipart) -> Upload to S3 -> Media/Document records created -> Property created with all details
@@ -81,9 +167,11 @@ export const createListLandController = async (req: Request, res: Response) => {
 			}
 		}
 
+		const normalizedBody = buildNestedMultipartPayload(req.body as Record<string, unknown>);
+
 		// Add uploaded media IDs and document IDs to payload
 		const payload = {
-			...req.body,
+			...normalizedBody,
 			landMediaIds: mediaIds.length > 0 ? mediaIds : req.body.landMediaIds,
 			documentIds: documentIds.length > 0 ? documentIds : req.body.documentIds,
 		};
@@ -189,9 +277,11 @@ export const updateListLandController = async (req: Request, res: Response) => {
 			}
 		}
 
+		const normalizedBody = buildNestedMultipartPayload(req.body as Record<string, unknown>);
+
 		// Add uploaded media IDs and document IDs to payload
 		const payload = {
-			...req.body,
+			...normalizedBody,
 			...(mediaIds.length > 0 && { landMediaIds: mediaIds }),
 			...(documentIds.length > 0 && { documentIds }),
 		};

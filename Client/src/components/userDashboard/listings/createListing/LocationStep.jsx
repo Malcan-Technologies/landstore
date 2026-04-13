@@ -146,7 +146,7 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
           <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.titleType}</p>
         ) : null}
         <div className="flex flex-col sm:flex-row sm:gap-3 gap-1">
-          {isLeasehold && (
+          {!isLeasehold && (
             <>
               <div className="relative mt-3 flex-1">
                 <LeaseholdCalendarInput
