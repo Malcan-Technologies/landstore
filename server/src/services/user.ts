@@ -40,6 +40,7 @@ type CreateUserProfilePayload = {
   firstName?: string | undefined;
   lastName?: string | undefined;
   name?: string | undefined;
+  entityTypes?: string[] | undefined;  // Array of entity type names (will be created/fetched and linked)
 };
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -226,6 +227,43 @@ const createUserProfileType = async (
 				registrationNo: profileData.registrationNo ?? null,
 			},
 		});
+	}
+
+	// Store entity types if provided
+	// Entity type names are provided - create them if they don't exist and link to user
+	if (profileData.entityTypes && profileData.entityTypes.length > 0) {
+		for (const entityTypeName of profileData.entityTypes) {
+			// Find or create entity type
+			let entityType = await trx.entityType.findFirst({
+				where: {
+					name: entityTypeName.trim(),
+				},
+			});
+
+			if (!entityType) {
+				// Create new entity type
+				entityType = await trx.entityType.create({
+					data: {
+						name: entityTypeName.trim(),
+					},
+				});
+			}
+
+			// Create user entity type association (avoid duplicates)
+			await trx.userEntityType.upsert({
+				where: {
+					userId_entityTypeId: {
+						userId,
+						entityTypeId: entityType.id,
+					},
+				},
+				update: {},
+				create: {
+					userId,
+					entityTypeId: entityType.id,
+				},
+			});
+		}
 	}
 };
 
@@ -548,6 +586,11 @@ export const getUserCompleteProfile = async (userId: string) => {
       individuals: true,
       companies: true,
       koperasi: true,
+      entityTypes: {
+        include: {
+          entityType: true,
+        },
+      },
     },
   });
 
@@ -591,6 +634,12 @@ export const getUserCompleteProfile = async (userId: string) => {
       }
     : null;
 
+  // Build entity types array
+  const entityTypes = user.entityTypes.map((ue) => ({
+    id: ue.entityType.id,
+    name: ue.entityType.name,
+  }));
+
   // Build complete profile response
   const profile = {
     // Basic user info from Better Auth and user table
@@ -606,6 +655,7 @@ export const getUserCompleteProfile = async (userId: string) => {
     individual,
     company,
     koperasi,
+    entityTypes,
   };
 
   return profile;

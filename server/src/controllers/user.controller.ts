@@ -68,10 +68,11 @@ const getErrorPayload = (error: unknown) => {
  *   identityNo: "123456789",         // for individual
  *   companyName: "Acme Corp",        // for company
  *   koperasiName: "Koperasi ABC",    // for koperasi
- *   registrationNo: "REG123"         // for company/koperasi
+ *   registrationNo: "REG123",        // for company/koperasi
+ *   entityTypes: ["Land Seller", "Developer", "Investor"]  // Array of entity type names (auto-created if needed)
  * }
  * 
- * Response: Complete user profile with all details
+ * Response: Complete user profile with all details and populated entityTypes
  */
 export const registerAndCompleteProfileController = async (req: Request, res: Response) => {
 	try {
@@ -89,6 +90,7 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			firstName,
 			lastName,
 			name,
+			entityTypes
 		} = req.body;
 
 		// Validate required fields
@@ -106,6 +108,11 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 				message: "Invalid profileType. Must be 'individual', 'company', or 'koperasi'" 
 			});
 		}
+		if (entityTypes && !Array.isArray(entityTypes)) {
+			return res.status(400).json({ 
+				message: "entityTypes must be an array of entity type names" 
+			});
+		}
 
 		// Sign up with password AND complete profile in ONE transaction
 		// Better Auth automatically hashes password before database storage
@@ -121,9 +128,10 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			firstName,
 			lastName,
 			name,
+			entityTypes
 		});
 
-		// Fetch complete profile with all details
+		// Fetch complete profile with all details and populated entityTypes
 		const completeProfile = await getUserCompleteProfile(result.userId);
 
 		return res.status(201).json({
