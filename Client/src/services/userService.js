@@ -3,9 +3,10 @@ import api from '@/utils/axios';
 // User management service
 export const userService = {
   // Get complete user profile (authenticated user)
-  getUserProfile: async () => {
+  // Get all users
+  getAllUsers: async (params = {}) => {
     try {
-      const response = await api.get('/users/profile');
+      const response = await api.get('/users/', { params });
       return response.data;
     } catch (error) {
       throw error;
@@ -22,10 +23,10 @@ export const userService = {
     }
   },
 
-  // Update user profile
+  // Update user profile (PATCH per Postman)
   updateUserProfile: async (id, profileData) => {
     try {
-      const response = await api.put(`/users/${id}`, profileData);
+      const response = await api.patch(`/users/${id}`, profileData);
       return response.data;
     } catch (error) {
       throw error;
@@ -126,10 +127,10 @@ export const userService = {
     }
   },
 
-  // Delete user account
-  deleteAccount: async (id) => {
+  // Delete (or deactivate) user account — server expects PATCH per Postman
+  deleteAccount: async (id, data = {}) => {
     try {
-      const response = await api.delete(`/users/${id}`);
+      const response = await api.patch(`/users/${id}`, data);
       return response.data;
     } catch (error) {
       throw error;
