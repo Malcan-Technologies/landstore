@@ -17,6 +17,8 @@ import enquiryRoutes from "./src/routes/enquiry.routes.js";
 import interestTypeRoutes from "./src/routes/interestType.routes.js";
 import entityTypeRoutes from "./src/routes/entityType.routes.js";
 import notificationRoutes from "./src/routes/notification.routes.js";
+import locationRoutes from "./src/routes/location.routes.js";
+import leaseholdRoutes from "./src/routes/leasehold.routes.js";
 
 const app: Application = express();
 
@@ -94,6 +96,8 @@ app.use("/api/enquiries", requireApiAuth, enquiryRoutes);
 app.use("/api/interest-types", requireApiAuth, interestTypeRoutes);
 app.use("/api/entity-types", requireApiAuth, entityTypeRoutes);
 app.use("/api/notifications", requireApiAuth, notificationRoutes);
+app.use("/api/locations", requireApiAuth, locationRoutes);
+app.use("/api/leaseholds", requireApiAuth, leaseholdRoutes);
 
 // Global error handler middleware
 app.use((err: any, req: express.Request, res: express.Response, next: Function) => {

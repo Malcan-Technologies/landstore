@@ -8,6 +8,10 @@ import {
 	addPropertyToFolder,
 	removePropertyFromFolder,
 	isPropertyShortlisted,
+	createSubfolder,
+	getFolderHierarchy,
+	moveFolder,
+	getAllFoldersHierarchy,
 } from "../services/folders.js";
 
 const getErrorPayload = (error: unknown) => {
@@ -289,6 +293,138 @@ export const checkPropertyShortlistedController = async (
 			data: {
 				isShortlisted,
 			},
+		});
+	} catch (error: unknown) {
+		const errorPayload = getErrorPayload(error);
+		res.status(errorPayload.statusCode).json({
+			success: false,
+			message: errorPayload.message,
+		});
+	}
+};
+
+/**
+ * Create a subfolder inside a parent folder
+ * POST /api/folders/:id/subfolders
+ */
+export const createSubfolderController = async (
+	req: Request,
+	res: Response
+): Promise<void> => {
+	try {
+		const requester = getRequesterUserOrThrow(req);
+		const parentFolderId = getFolderIdParamOrThrow(req);
+		const { name } = req.body;
+
+		if (!name || typeof name !== "string" || !name.trim()) {
+			const badRequestError = new Error("Subfolder name is required");
+			(badRequestError as Error & { statusCode?: number }).statusCode = 400;
+			throw badRequestError;
+		}
+
+		const subfolder = await createSubfolder(
+			parentFolderId,
+			name.trim(),
+			requester.id
+		);
+
+		res.status(201).json({
+			success: true,
+			message: "Subfolder created successfully",
+			data: subfolder,
+		});
+	} catch (error: unknown) {
+		const errorPayload = getErrorPayload(error);
+		res.status(errorPayload.statusCode).json({
+			success: false,
+			message: errorPayload.message,
+		});
+	}
+};
+
+/**
+ * Get folder hierarchy (with subfolders and properties)
+ * GET /api/folders/:id/hierarchy
+ */
+export const getFolderHierarchyController = async (
+	req: Request,
+	res: Response
+): Promise<void> => {
+	try {
+		const requester = getRequesterUserOrThrow(req);
+		const folderId = getFolderIdParamOrThrow(req);
+
+		const hierarchy = await getFolderHierarchy(folderId, requester.id);
+
+		res.status(200).json({
+			success: true,
+			data: hierarchy,
+		});
+	} catch (error: unknown) {
+		const errorPayload = getErrorPayload(error);
+		res.status(errorPayload.statusCode).json({
+			success: false,
+			message: errorPayload.message,
+		});
+	}
+};
+
+/**
+ * Move a folder under another parent folder
+ * PUT /api/folders/:id/move
+ */
+export const moveFolderController = async (
+	req: Request,
+	res: Response
+): Promise<void> => {
+	try {
+		const requester = getRequesterUserOrThrow(req);
+		const folderId = getFolderIdParamOrThrow(req);
+		const { parentFolderId } = req.body;
+
+		if (!parentFolderId || typeof parentFolderId !== "string" || !parentFolderId.trim()) {
+			const badRequestError = new Error("Parent folder ID is required");
+			(badRequestError as Error & { statusCode?: number }).statusCode = 400;
+			throw badRequestError;
+		}
+
+		const movedFolder = await moveFolder(
+			folderId,
+			parentFolderId.trim(),
+			requester.id
+		);
+
+		res.status(200).json({
+			success: true,
+			message: "Folder moved successfully",
+			data: movedFolder,
+		});
+	} catch (error: unknown) {
+		const errorPayload = getErrorPayload(error);
+		res.status(errorPayload.statusCode).json({
+			success: false,
+			message: errorPayload.message,
+		});
+	}
+};
+
+/**
+ * Get all folders with hierarchy for authenticated user
+ * GET /api/folders/hierarchy/all
+ */
+export const getAllFoldersHierarchyController = async (
+	req: Request,
+	res: Response
+): Promise<void> => {
+	try {
+		const requester = getRequesterUserOrThrow(req);
+
+		const hierarchy = await getAllFoldersHierarchy(requester.id);
+
+		res.status(200).json({
+			success: true,
+			data: hierarchy,
+			count: hierarchy.length,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);

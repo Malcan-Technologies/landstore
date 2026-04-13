@@ -8,18 +8,27 @@ import {
 	addPropertyToFolderController,
 	removePropertyFromFolderController,
 	checkPropertyShortlistedController,
+	createSubfolderController,
+	getFolderHierarchyController,
+	moveFolderController,
+	getAllFoldersHierarchyController,
 } from "../controllers/folders.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
-import { requireAdmin } from "../middleware/authorization.js";
 
 const router = Router();
 
 // Folder CRUD routes
 router.post("/", requireApiAuth, createFolderController);
-router.get("/", requireApiAuth, requireAdmin ,getFoldersController);
+router.get("/", requireApiAuth, getFoldersController);
+router.get("/hierarchy/all", requireApiAuth, getAllFoldersHierarchyController);
 router.get("/:id", requireApiAuth, getFolderByIdController);
+router.get("/:id/hierarchy", requireApiAuth, getFolderHierarchyController);
 router.patch("/:id", requireApiAuth, updateFolderNameController);
+router.put("/:id/move", requireApiAuth, moveFolderController);
 router.delete("/:id", requireApiAuth, deleteFolderController);
+
+// Subfolder routes
+router.post("/:id/subfolders", requireApiAuth, createSubfolderController);
 
 // Shortlist routes
 router.post("/:id/shortlist", requireApiAuth, addPropertyToFolderController);

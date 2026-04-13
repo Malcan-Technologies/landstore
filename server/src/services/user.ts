@@ -17,9 +17,8 @@
  */
 
 import db from "../../config/prisma.js";
-import { Prisma } from "@prisma/client";
-import type { User, UserType } from "@prisma/client";
 import { auth } from "../../config/auth.js";
+import type { User, UserType } from "@prisma/client";
 
 type UpdateUserPayload = {
   email?: string;
@@ -40,7 +39,6 @@ type CreateUserProfilePayload = {
   firstName?: string | undefined;
   lastName?: string | undefined;
   name?: string | undefined;
-  entityTypes?: string[] | undefined;  // Array of entity type names (will be created/fetched and linked)
 };
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -134,7 +132,7 @@ export const registerAndCompleteProfile = async (
 		const userId = user.id;
 
 		// Step 2: Complete profile in transaction
-		const completeProfileResult = await db.$transaction(async (trx) => {
+		const completeProfileResult = await db.$transaction(async (trx: any) => {
 			// Update user with business fields
 			const updatedUser = await trx.user.update({
 				where: { id: userId },
@@ -175,7 +173,7 @@ export const registerAndCompleteProfile = async (
  * Helper: Create user profile based on profile type
  */
 const createUserProfileType = async (
-	trx: any, // Prisma transaction
+	trx: any,
 	userId: string,
 	profileData: Omit<CreateUserProfilePayload, "email">
 ) => {
@@ -227,43 +225,6 @@ const createUserProfileType = async (
 				registrationNo: profileData.registrationNo ?? null,
 			},
 		});
-	}
-
-	// Store entity types if provided
-	// Entity type names are provided - create them if they don't exist and link to user
-	if (profileData.entityTypes && profileData.entityTypes.length > 0) {
-		for (const entityTypeName of profileData.entityTypes) {
-			// Find or create entity type
-			let entityType = await trx.entityType.findFirst({
-				where: {
-					name: entityTypeName.trim(),
-				},
-			});
-
-			if (!entityType) {
-				// Create new entity type
-				entityType = await trx.entityType.create({
-					data: {
-						name: entityTypeName.trim(),
-					},
-				});
-			}
-
-			// Create user entity type association (avoid duplicates)
-			await trx.userEntityType.upsert({
-				where: {
-					userId_entityTypeId: {
-						userId,
-						entityTypeId: entityType.id,
-					},
-				},
-				update: {},
-				create: {
-					userId,
-					entityTypeId: entityType.id,
-				},
-			});
-		}
 	}
 };
 
@@ -421,7 +382,7 @@ export const signUpAndCompleteProfile = async (
     const userId = response.user.id;
 
     // Step 2: Complete profile in transaction
-    const completeProfileResult = await db.$transaction(async (trx) => {
+    const completeProfileResult = await db.$transaction(async (trx: any) => {
       // Update user with business fields
       const updatedUser = await trx.user.update({
         where: { id: userId },
@@ -525,19 +486,14 @@ export const updateUserById = async (id: string, payload: UpdateUserPayload) => 
       data: updateData,
     });
   } catch (error: unknown) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
+    const err = error as Error & { code?: string };
+    if (err?.code === "P2025") {
       const notFoundError = new Error("User not found");
       (notFoundError as Error & { statusCode?: number }).statusCode = 404;
       throw notFoundError;
     }
 
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
+    if (err?.code === "P2002") {
       const conflictError = new Error("Email already exists");
       (conflictError as Error & { statusCode?: number }).statusCode = 409;
       throw conflictError;
@@ -564,10 +520,8 @@ export const deleteUserById = async (id: string) => {
       db.user.delete({ where: { id } }),
     ]);
   } catch (error: unknown) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2003"
-    ) {
+    const err = error as Error & { code?: string };
+    if (err?.code === "P2003") {
       const conflictError = new Error("Cannot delete user due to related records");
       (conflictError as Error & { statusCode?: number }).statusCode = 409;
       throw conflictError;
@@ -586,11 +540,6 @@ export const getUserCompleteProfile = async (userId: string) => {
       individuals: true,
       companies: true,
       koperasi: true,
-      entityTypes: {
-        include: {
-          entityType: true,
-        },
-      },
     },
   });
 
@@ -634,12 +583,6 @@ export const getUserCompleteProfile = async (userId: string) => {
       }
     : null;
 
-  // Build entity types array
-  const entityTypes = user.entityTypes.map((ue) => ({
-    id: ue.entityType.id,
-    name: ue.entityType.name,
-  }));
-
   // Build complete profile response
   const profile = {
     // Basic user info from Better Auth and user table
@@ -655,7 +598,6 @@ export const getUserCompleteProfile = async (userId: string) => {
     individual,
     company,
     koperasi,
-    entityTypes,
   };
 
   return profile;

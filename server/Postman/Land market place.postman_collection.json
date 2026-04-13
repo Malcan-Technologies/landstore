@@ -430,6 +430,40 @@
           "response": []
         },
         {
+          "name": "Create Sub Folder",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\" : \"New Folder\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/folders/:id/subfolders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                ":id",
+                "subfolders"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "86235d68-e933-4c50-b8b3-ea72e2f178fc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Add to folder",
           "request": {
             "method": "POST",
@@ -578,6 +612,50 @@
           "response": []
         },
         {
+          "name": "Get All Folders hirarchy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/folders/hierarchy/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                "hierarchy",
+                "all"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sub folder tree",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/folders/:id/hierarchy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "folders",
+                ":id",
+                "hierarchy"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "86235d68-e933-4c50-b8b3-ea72e2f178fc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get Folder By Id",
           "request": {
             "method": "GET",
@@ -622,25 +700,25 @@
                 },
                 {
                   "key": "categoryId",
-                  "value": "b1819389-fd34-490b-a364-737024174ad9",
+                  "value": "99f16847-4681-4984-b0cc-e9debe0c2c64",
                   "type": "text",
                   "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e"
                 },
                 {
                   "key": "ownershipTypeId",
-                  "value": "3051e2b7-06f1-4709-b12f-cf3469f86963",
+                  "value": "a5a937da-bb18-4157-bdf6-a42c3df0b947",
                   "type": "text",
                   "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e"
                 },
                 {
                   "key": "utilizationId",
-                  "value": "c2e136fb-85db-4ebe-8ef3-9836de0a2c14",
+                  "value": "162a0a33-7531-4e5b-b668-4992a8ba139f",
                   "type": "text",
                   "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391"
                 },
                 {
                   "key": "titleTypeId",
-                  "value": "b8014b54-cd4d-4115-955e-f852ab5546da",
+                  "value": "2a56fa5d-781d-46e6-86ea-335fef8e1e7b",
                   "type": "text",
                   "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad"
                 },
@@ -652,7 +730,7 @@
                 },
                 {
                   "key": "listingCode",
-                  "value": "LAND-2026-009",
+                  "value": "LAND-2026-002",
                   "type": "text",
                   "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
                 },
@@ -679,15 +757,15 @@
                   "type": "file",
                   "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
                   "src": [
-                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile.jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile2.jpeg"
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
                   ]
                 },
                 {
                   "key": "documents",
                   "type": "file",
                   "uuid": "625f394d-38e2-459a-9dca-278290853ba4",
-                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/spm docs.pdf"
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Database Students.pdf"
                 },
                 {
                   "key": "tanahRizabMelayu",
@@ -732,64 +810,8 @@
                 {
                   "key": "status",
                   "value": "draft",
-                  "description": "draft/published/sold/archived/pending_approval",
                   "type": "text",
-                  "uuid": "318bc2f0-b8ee-4fac-b46c-0a8dbf810c92"
-                },
-                {
-                  "key": "location.state",
-                  "value": "landjie",
-                  "type": "text",
-                  "uuid": "2eec3ac2-50ba-43f6-a96a-fede4b50b9f0"
-                },
-                {
-                  "key": "location.district",
-                  "value": "hfuhfufud",
-                  "type": "text",
-                  "uuid": "9d62b785-315a-4afd-9a3c-e696ef031a1b"
-                },
-                {
-                  "key": "location.mukim",
-                  "value": "jfjdsfdsf",
-                  "type": "text",
-                  "uuid": "dadefba6-3832-4fbf-b025-f269eb75ff2d"
-                },
-                {
-                  "key": "location.section",
-                  "value": "jhfjdhfau",
-                  "type": "text",
-                  "uuid": "f10a2fc3-4ce8-4097-9cac-aea4dc35a250"
-                },
-                {
-                  "key": "location.latitude",
-                  "value": "jhfjdsfu",
-                  "type": "text",
-                  "uuid": "98fbe8e8-e468-401d-be2e-d2f1f3b8c165"
-                },
-                {
-                  "key": "location.longitude",
-                  "value": "jhjdshfs",
-                  "type": "text",
-                  "uuid": "42bd18ad-4f9a-4dd4-b539-330a4b4e1e08"
-                },
-                {
-                  "key": "location.isApproximate",
-                  "value": "true",
-                  "description": "false / true",
-                  "type": "text",
-                  "uuid": "98410fc2-39c8-481a-9f45-f3fd2c89ee1b"
-                },
-                {
-                  "key": "leaseholdDetails.startYear",
-                  "value": "2020",
-                  "type": "text",
-                  "uuid": "ceb9a938-5cb0-4498-baf4-bf24b1741215"
-                },
-                {
-                  "key": "leaseholdDetails.leasePeriodYears",
-                  "value": "100",
-                  "type": "text",
-                  "uuid": "16780bd7-e34d-40be-b9b2-ed62cf32a872"
+                  "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024"
                 }
               ]
             },
@@ -1454,7 +1476,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"userId\" : \"{{userId}}\",\r\n    \"type\" : \"{{notificationType}}\",\r\n    \"content\" : \"{{notificationContent}}\",\r\n    \"isRead\" : false\r\n}   ",
+              "raw": "{\r\n    \"userId\" : \"{{userId}}\",\r\n    \"type\" : \"{{notificationType}}\",     // welcome, urgent\r\n    \"content\" : \"{{notificationContent}}\",\r\n    \"isRead\" : false\r\n}   ",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1481,7 +1503,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"userId\" : \"{{userId}}\",\r\n    \"type\" : \"{{notificationType}}\",\r\n    \"content\" : \"{{notificationContent}}\",\r\n    \"isRead\" : false\r\n}   ",
+              "raw": "{\r\n    \"type\" : \"{{notificationType}}\",\r\n    \"content\" : \"{{notificationContent}}\",\r\n    \"isRead\" : false\r\n}   ",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1500,7 +1522,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "9625aa95-8422-4a9c-b166-7588829caa99"
+                  "value": "e84bfe61-8525-4565-9ad8-580a58953516"
                 }
               ]
             }
@@ -1524,7 +1546,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "8dea6f6e-72da-455c-ba87-84dc2424acea"
+                  "value": "e84bfe61-8525-4565-9ad8-580a58953516"
                 }
               ]
             }
@@ -1838,6 +1860,137 @@
       ]
     },
     {
+      "name": "Lease Hold",
+      "item": [
+        {
+          "name": "create Lease Hold",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\",\r\n    \"startYear\": 2010,\r\n    \"leasePeriodYears\": 99\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leaseholds/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaseholds",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Lease Hold",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\",\r\n    \"startYear\": 2010,\r\n    \"leasePeriodYears\": 99\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/leaseholds/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaseholds",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "48d71845-8562-4ea9-a1ea-af74712a9357"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete leasehold",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leaseholds/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaseholds",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get leasehold",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leaseholds/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaseholds",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get leasehold By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leaseholds/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leaseholds",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "48d71845-8562-4ea9-a1ea-af74712a9357"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Enquiries",
       "item": [
         {
@@ -2044,6 +2197,160 @@
                 {
                   "key": ":userId",
                   "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "Create Location",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\",\r\n    \"state\": \"Selangor\",\r\n    \"district\": \"Petaling Jaya\",\r\n    \"mukim\": \"Petaling\",\r\n    \"section\": \"PJ 7\",\r\n    \"latitude\": 3.1738,\r\n    \"longitude\": 101.5950,\r\n    \"isApproximate\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Location",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\",\r\n    \"state\": \"Selangor\",\r\n    \"district\": \"Petaling Jaya\",\r\n    \"mukim\": \"Petaling\",\r\n    \"section\": \"PJ 7\",\r\n    \"latitude\": 3.1738,\r\n    \"longitude\": 101.5950,\r\n    \"isApproximate\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/locations/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "7aeaa321-6e92-457c-ba1c-3bbeeb4fbaba"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Location",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/locations/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "7aeaa321-6e92-457c-ba1c-3bbeeb4fbaba"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Locations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Locations By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/locations/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "7aeaa321-6e92-457c-ba1c-3bbeeb4fbaba"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Locations By Property Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/locations/property/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "locations",
+                "property",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "ad53afb9-459b-43e8-8681-0794e0bd4999"
                 }
               ]
             }
