@@ -6,6 +6,9 @@ import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
 import Register from "@/components/auth/Register";
 import ForgotPasswordModal from "@/components/auth/modals/forgotPasswordModal";
+import CheckMailModal from "@/components/auth/modals/checkmailModel";
+import SetNewPasswordModal from "@/components/auth/modals/setNewPasswordModel";
+import ResetPasswordSuccessModal from "@/components/auth/modals/resetpasswordsuccessModel";
 import Arrow from "@/components/svg/Arrow";
 import EyeClose from "@/components/svg/EyeClose";
 import EyeOpen from "@/components/svg/EyeOpen";
@@ -18,6 +21,10 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [checkMailOpen, setCheckMailOpen] = useState(false);
+  const [setNewPasswordOpen, setSetNewPasswordOpen] = useState(false);
+  const [resetPasswordSuccessOpen, setResetPasswordSuccessOpen] = useState(false);
+  const [checkMailEmail, setCheckMailEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -36,8 +43,28 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
       setActiveTab(initialTab);
       resetLoginState();
       setForgotPasswordOpen(false);
+      setCheckMailOpen(false);
+      setSetNewPasswordOpen(false);
+      setResetPasswordSuccessOpen(false);
+      setCheckMailEmail("");
     }
   }, [open, initialTab]);
+
+  const handleForgotPasswordSuccess = (submittedEmail) => {
+    setForgotPasswordOpen(false);
+    setCheckMailEmail(submittedEmail);
+    setCheckMailOpen(true);
+  };
+
+  const handleCheckMailContinue = () => {
+    setCheckMailOpen(false);
+    setSetNewPasswordOpen(true);
+  };
+
+  const handleSetNewPasswordSuccess = () => {
+    setSetNewPasswordOpen(false);
+    setResetPasswordSuccessOpen(true);
+  };
 
   const handleLoginSubmit = async (event) => {
     event.preventDefault();
@@ -85,7 +112,11 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
 
   return (
     <>
-      <Modal open={open && !forgotPasswordOpen} onClose={onClose} showCloseButton>
+      <Modal
+        open={open && !forgotPasswordOpen && !checkMailOpen && !setNewPasswordOpen && !resetPasswordSuccessOpen}
+        onClose={onClose}
+        showCloseButton
+      >
       <div className="text-center">
         <h2 className="text-[24px] font-bold text-gray2 md:text-[28px]">
           {activeTab === "login" ? "Welcome back" : "Join Landstore"}
@@ -198,6 +229,40 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
         open={forgotPasswordOpen}
         onClose={() => setForgotPasswordOpen(false)}
         onBackToLogin={() => setForgotPasswordOpen(false)}
+        onSuccess={handleForgotPasswordSuccess}
+      />
+
+      <CheckMailModal
+        open={checkMailOpen}
+        email={checkMailEmail}
+        onClose={() => setCheckMailOpen(false)}
+        onContinue={handleCheckMailContinue}
+        onBackToLogin={() => {
+          setCheckMailOpen(false);
+          setForgotPasswordOpen(false);
+        }}
+      />
+
+      <SetNewPasswordModal
+        open={setNewPasswordOpen}
+        onClose={() => setSetNewPasswordOpen(false)}
+        onSuccess={handleSetNewPasswordSuccess}
+        onBackToLogin={() => {
+          setSetNewPasswordOpen(false);
+          setForgotPasswordOpen(false);
+          setCheckMailOpen(false);
+        }}
+      />
+
+      <ResetPasswordSuccessModal
+        open={resetPasswordSuccessOpen}
+        onClose={() => setResetPasswordSuccessOpen(false)}
+        onBackToLogin={() => {
+          setResetPasswordSuccessOpen(false);
+          setSetNewPasswordOpen(false);
+          setForgotPasswordOpen(false);
+          setCheckMailOpen(false);
+        }}
       />
     </>
   );

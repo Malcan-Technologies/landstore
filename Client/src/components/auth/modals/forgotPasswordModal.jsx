@@ -3,21 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import Modal from "@/components/common/Modal";
 import Key from "@/components/svg/key";
-import { authService } from "@/services/authService";
 
-const ForgotPasswordModal = ({ open, onClose, onBackToLogin }) => {
+const ForgotPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
   const inputRef = useRef(null);
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setEmail("");
       setError("");
-      setIsLoading(false);
-      setIsSubmitted(false);
     }
   }, [open]);
 
@@ -29,19 +24,9 @@ const ForgotPasswordModal = ({ open, onClose, onBackToLogin }) => {
       setError("Email address is required");
       return;
     }
-
-    setIsLoading(true);
     setError("");
 
-    try {
-      await authService.forgotPassword(trimmedEmail);
-      setIsSubmitted(true);
-    } catch (err) {
-      const message = err?.response?.data?.message || err?.message || "Unable to send reset instructions";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
+    onSuccess?.(trimmedEmail);
   };
 
   return (
@@ -80,16 +65,13 @@ const ForgotPasswordModal = ({ open, onClose, onBackToLogin }) => {
           />
 
           {error ? <p className="mt-2 text-[13px] text-red-500">{error}</p> : null}
-          {isSubmitted ? (
-            <p className="mt-2 text-[13px] text-green-secondary">Reset instructions sent. Check your email.</p>
-          ) : null}
 
           <button
             type="submit"
-            disabled={isLoading || !email.trim()}
+            disabled={!email.trim()}
             className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-green-primary px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:opacity-60"
           >
-            {isLoading ? "Sending..." : "Reset password"}
+            Reset password
           </button>
 
           <button
