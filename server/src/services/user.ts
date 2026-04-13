@@ -1,3 +1,21 @@
+/**
+ * USER SERVICE
+ * 
+ * UNIFIED REGISTRATION FLOW (Better Auth):
+ * 1. Client calls POST /api/users/register with ALL data (email, password, profile info)
+ *    → Better Auth hashes password and stores encrypted in Account.password
+ *    → User record created with email
+ *    → User profile completed with phone, userType, and custom fields
+ *    → Returns full user profile with all details
+ * 
+ * 2. Client signs in via POST /api/auth/sign-in with email & password
+ *    → Better Auth verifies password against Account.password (hashed comparison)
+ *    → Session created and returned
+ * 
+ * ⚠️ IMPORTANT: Passwords are ALWAYS hashed by Better Auth before database storage.
+ * Account.password field stores ONLY hashed passwords, never plain text.
+ */
+
 import db from "../../config/prisma.js";
 import { Prisma } from "@prisma/client";
 import type { User, UserType } from "@prisma/client";
@@ -89,20 +107,19 @@ export const getRequesterUserFromToken = async (token: string): Promise<User> =>
 /**
  * Register and complete profile in one transaction
  * Combines sign-up and profile completion into a single operation
+ * Note: Password is managed by Better Auth through /api/auth endpoints
  */
 export const registerAndCompleteProfile = async (
 	email: string,
-	password: string,
 	profileData: Omit<CreateUserProfilePayload, "email">
 ) => {
 	const normalizedEmail = normalizeEmail(email);
 
-	// Step 1: Create user directly (Better Auth handles password hashing)
+	// Step 1: Create user directly (Better Auth handles password hashing via sign-up)
 	try {
 		const user = await db.user.create({
 			data: {
 				email: normalizedEmail,
-				password, // Better Auth middleware should hash this
 				name: profileData.name || 
 					`${profileData.firstName || ""} ${profileData.lastName || ""}`.trim() || 
 					normalizedEmail,
@@ -321,6 +338,86 @@ const upsertUserProfileDetail = async (
       registrationNo: payload.registrationNo ?? null,
     },
   });
+};
+
+/**
+ * UNIFIED REGISTRATION: Sign up with password hash + complete profile in ONE call
+ * 
+ * This function:
+ * 1. Creates user with email & hashed password via Better Auth
+ * 2. Completes user profile (phone, userType, custom fields)
+ * 3. Returns full profile
+ * 
+ * Password is automatically hashed by Better Auth before database storage
+ */
+export const signUpAndCompleteProfile = async (
+  email: string,
+  password: string,
+  profileData: Omit<CreateUserProfilePayload, "email">
+) => {
+  const normalizedEmail = normalizeEmail(email);
+
+  try {
+    // Step 1: Create user and account with password via Better Auth
+    // Better Auth automatically hashes the password
+    // The signUpEmail endpoint returns { token, user }
+    const displayName = profileData.name || 
+      `${profileData.firstName || ""} ${profileData.lastName || ""}`.trim() || 
+      normalizedEmail;
+
+    const response = await auth.api.signUpEmail({
+      body: {
+        email: normalizedEmail,
+        password,
+        name: displayName,
+      },
+    });
+
+    // Check if user was created successfully
+    if (!response?.user?.id) {
+      const err = new Error("Failed to sign up. Email may already be registered.");
+      (err as Error & { statusCode?: number }).statusCode = 409;
+      throw err;
+    }
+
+    const userId = response.user.id;
+
+    // Step 2: Complete profile in transaction
+    const completeProfileResult = await db.$transaction(async (trx) => {
+      // Update user with business fields
+      const updatedUser = await trx.user.update({
+        where: { id: userId },
+        data: {
+          phone: normalizePhone(profileData.phone),
+          userType: profileData.userType ?? "user",
+        },
+      });
+
+      // Create appropriate profile type
+      await createUserProfileType(trx, userId, profileData);
+
+      return updatedUser;
+    });
+
+    return {
+      userId: userId,
+      user: completeProfileResult,
+      success: true,
+    };
+  } catch (error: unknown) {
+    const errorMessage = (error as any)?.message || "Failed to register user";
+    
+    // Check for duplicate email
+    if ((error as any)?.code === "P2002" || errorMessage.includes("already exists") || errorMessage.includes("already been registered")) {
+      const err = new Error("Email already registered. Please sign in instead.");
+      (err as Error & { statusCode?: number }).statusCode = 409;
+      throw err;
+    }
+
+    const err = new Error(errorMessage);
+    (err as Error & { statusCode?: number }).statusCode = (error as any)?.statusCode || 400;
+    throw err;
+  }
 };
 
 export const getUserById = async (id: string) => {

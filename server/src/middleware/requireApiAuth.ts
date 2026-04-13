@@ -13,15 +13,22 @@ const requireApiAuth = async (
       headers: fromNodeHeaders(req.headers),
     });
     if (!session || !session.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ 
+        error: "Unauthorized",
+        message: "Authentication required. Please log in to access this resource." 
+      });
     }
 
     // Attach user and session to request
     (req as any).user = session.user;
     (req as any).session = session.session;
     return next();
-  } catch {
-    return res.status(401).json({ message: "Unauthorized" });
+  } catch (error) {
+    console.error("Authentication error:", error);
+    return res.status(401).json({ 
+      error: "Unauthorized",
+      message: "Invalid or expired authentication credentials. Please log in again." 
+    });
   }
 };
 

@@ -1,3 +1,32 @@
+/**
+ * USER CONTROLLER
+ * 
+ * UNIFIED REGISTRATION & PROFILE COMPLETION:
+ * 
+ * Single endpoint for complete registration:
+ * POST /api/users/register
+ * 
+ * Request:
+ * {
+ *   email: "user@example.com",
+ *   password: "SecurePassword123!",
+ *   name: "John Doe",
+ *   phone: "+1234567890",
+ *   userType: "user",
+ *   profileType: "individual",
+ *   firstName: "John",
+ *   lastName: "Doe",
+ *   ...
+ * }
+ * 
+ * Response: Complete user profile
+ * 
+ * PASSWORD HANDLING:
+ * - Password is hashed by Better Auth (never stored as plain text)
+ * - Account.password stores encrypted hash
+ * - User.password field does NOT exist
+ */
+
 import type { Request, Response } from "express";
 import {
 	completeUserProfile,
@@ -6,7 +35,7 @@ import {
 	getUserById,
 	updateUserById,
 	getUserCompleteProfile,
-	registerAndCompleteProfile,
+	signUpAndCompleteProfile,
 } from "../services/user.js";
 
 const getErrorPayload = (error: unknown) => {
@@ -20,7 +49,30 @@ const getErrorPayload = (error: unknown) => {
 	};
 };
 
-// Register and complete profile in one step (combined endpoint)
+/**
+ * UNIFIED REGISTRATION ENDPOINT
+ * 
+ * Complete registration in ONE call with ALL user data
+ * 
+ * Request body:
+ * {
+ *   email: "user@example.com",
+ *   password: "SecurePassword123!",  // Will be hashed by Better Auth
+ *   name: "John Doe",
+ *   phone: "+1234567890",
+ *   userType: "user",                // or "admin"
+ *   profileType: "individual",       // or "company", "koperasi"
+ *   firstName: "John",               // for individual
+ *   lastName: "Doe",                 // for individual
+ *   fullName: "John Doe",            // for individual
+ *   identityNo: "123456789",         // for individual
+ *   companyName: "Acme Corp",        // for company
+ *   koperasiName: "Koperasi ABC",    // for koperasi
+ *   registrationNo: "REG123"         // for company/koperasi
+ * }
+ * 
+ * Response: Complete user profile with all details
+ */
 export const registerAndCompleteProfileController = async (req: Request, res: Response) => {
 	try {
 		const {
@@ -55,8 +107,9 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			});
 		}
 
-		// Register and complete profile in transaction
-		const result = await registerAndCompleteProfile(email, password, {
+		// Sign up with password AND complete profile in ONE transaction
+		// Better Auth automatically hashes password before database storage
+		const result = await signUpAndCompleteProfile(email, password, {
 			userType,
 			phone,
 			profileType,
@@ -75,7 +128,7 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 
 		return res.status(201).json({
 			success: true,
-			message: "User registered and profile completed successfully",
+			message: "User registered successfully with hashed password",
 			profile: completeProfile,
 		});
 	} catch (error: unknown) {
@@ -132,7 +185,10 @@ export const getCurrentUserController = async (req: Request, res: Response) => {
 		// Better Auth provides user in request via middleware
 		const user = (req as any).user;
 		if (!user) {
-			return res.status(401).json({ message: "Unauthorized" });
+			return res.status(401).json({ 
+				error: "Unauthorized",
+				message: "Authentication required. Please log in to access your profile." 
+			});
 		}
 
 		return res.status(200).json({ user });
@@ -147,7 +203,10 @@ export const getUserCompleteProfileController = async (req: Request, res: Respon
 		// Better Auth provides user in request via middleware
 		const user = (req as any).user;
 		if (!user) {
-			return res.status(401).json({ message: "Unauthorized" });
+			return res.status(401).json({ 
+				error: "Unauthorized",
+				message: "Authentication required. Please log in to access your profile." 
+			});
 		}
 
 		const completeProfile = await getUserCompleteProfile(user.id);
@@ -191,10 +250,11 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 	try {
 		const requester = (req as any).user;
 		if (!requester) {
-			return res.status(401).json({ message: "Unauthorized" });
+			return res.status(401).json({ 
+				error: "Unauthorized",
+				message: "Authentication required. Please log in to access this resource." 
+			});
 		}
-
-		assertAdminOrThrow(requester.userType);
 
 		const users = await getAllUsers();
 		return res.status(200).json({ users });
@@ -208,7 +268,10 @@ export const getUserByIdController = async (req: Request, res: Response) => {
 	try {
 		const requester = (req as any).user;
 		if (!requester) {
-			return res.status(401).json({ message: "Unauthorized" });
+			return res.status(401).json({ 
+				error: "Unauthorized",
+				message: "Authentication required. Please log in to access this resource." 
+			});
 		}
 
 		assertAdminOrThrow(requester.userType);
@@ -226,17 +289,26 @@ export const updateUserController = async (req: Request, res: Response) => {
 	try {
 		const requester = (req as any).user;
 		if (!requester) {
-			return res.status(401).json({ message: "Unauthorized" });
+			return res.status(401).json({ 
+				error: "Unauthorized",
+				message: "Authentication required. Please log in to access this resource." 
+			});
 		}
 
 		const targetUserId = getUserIdParamOrThrow(req);
 
 		if (requester.userType !== "admin" && requester.id !== targetUserId) {
-			return res.status(403).json({ message: "Forbidden" });
+			return res.status(403).json({ 
+				error: "Forbidden",
+				message: "You do not have permission to modify this user account." 
+			});
 		}
 
 		if (requester.userType !== "admin" && req.body.userType !== undefined) {
-			return res.status(403).json({ message: "Only admin can update userType" });
+			return res.status(403).json({ 
+				error: "Forbidden",
+				message: "Only administrators can modify user roles. Contact support if you need role changes." 
+			});
 		}
 
 		const user = await updateUserById(targetUserId, {

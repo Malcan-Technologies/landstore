@@ -15,7 +15,7 @@ export const requireRole = (role: "admin" | "user") =>
       if (!user || !user.id) {
         return res.status(401).json({ 
           error: "Unauthorized",
-          message: "No valid user session found. Please authenticate first."
+          message: "Authentication required. Valid user session not found. Please log in again."
         });
       }
 
@@ -25,23 +25,24 @@ export const requireRole = (role: "admin" | "user") =>
         select: { id: true, userType: true, email: true },
       });
 
+      console.log(dbUser);
       // Check if user exists in database
       if (!dbUser) {
         console.warn(`User with ID ${user.id} not found in database`);
         return res.status(401).json({ 
           error: "Unauthorized",
-          message: "User account no longer exists or has been deleted."
+          message: "User account not found. Your account may have been deleted or suspended."
         });
       }
 
       // Check if user has required role
-      if (dbUser.userType !== role) {
+      if (dbUser.userType.toLowerCase() !== role) {
         console.warn(
           `Access denied: User ${dbUser.email} (${dbUser.id}) has role '${dbUser.userType}', required '${role}'`
         );
         return res.status(403).json({ 
           error: "Forbidden",
-          message: `Access denied. Your account has '${dbUser.userType}' role, but this endpoint requires '${role}' role.`,
+          message: `Access denied. This resource requires '${role}' permissions, but your account is configured as '${dbUser.userType}'. Contact an administrator if you need access level changes.`,
           userRole: dbUser.userType,
           requiredRole: role
         });
@@ -78,7 +79,7 @@ export const requireUser = async (
     if (!user || !user.id) {
       return res.status(401).json({ 
         error: "Unauthorized",
-        message: "No valid user session found. Please authenticate first."
+        message: "Authentication required. Valid user session not found. Please log in again."
       });
     }
 
@@ -91,7 +92,7 @@ export const requireUser = async (
       console.warn(`User with ID ${user.id} not found in database`);
       return res.status(401).json({ 
         error: "Unauthorized",
-        message: "User account no longer exists or has been deleted."
+        message: "User account not found. Your account may have been deleted or suspended."
       });
     }
 
@@ -100,7 +101,7 @@ export const requireUser = async (
       console.error(`Invalid user type '${dbUser.userType}' for user ${dbUser.email}`);
       return res.status(403).json({ 
         error: "Forbidden",
-        message: `User account has invalid role '${dbUser.userType}'. Contact support.`,
+        message: `Invalid account configuration detected. Please contact support for assistance.`,
         userRole: dbUser.userType
       });
     }

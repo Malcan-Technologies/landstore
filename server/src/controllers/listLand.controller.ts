@@ -26,7 +26,7 @@ const getRequesterUserOrThrow = (req: Request) => {
 	// Middleware already validated session and attached user
 	const user = (req as any).user;
 	if (!user) {
-		const unauthorizedError = new Error("Unauthorized");
+		const unauthorizedError = new Error("Authentication required. Please log in to access this resource.");
 		(unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
 		throw unauthorizedError;
 	}

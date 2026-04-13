@@ -22,7 +22,7 @@ const getRequesterUserOrThrow = (req: Request) => {
 	// Middleware already validated session and attached user
 	const user = (req as any).user;
 	if (!user) {
-		const unauthorizedError = new Error("Unauthorized");
+		const unauthorizedError = new Error("Authentication required. Please log in to access this resource.");
 		(unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
 		throw unauthorizedError;
 	}
@@ -50,10 +50,10 @@ export const createTitleTypeController = async (
 			data: result,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to create land title type",
+			message,
 		});
 	}
 };
@@ -74,10 +74,10 @@ export const getAllTitleTypesController = async (
 			data: types,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to retrieve land title types",
+			message,
 		});
 	}
 };
@@ -100,10 +100,10 @@ export const getTitleTypeByIdController = async (
 			data: titleType,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to retrieve land title type",
+			message,
 		});
 	}
 };
@@ -129,10 +129,10 @@ export const updateTitleTypeController = async (
 			data: result,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to update land title type",
+			message,
 		});
 	}
 };
@@ -156,10 +156,10 @@ export const deleteTitleTypeController = async (
 			message: "Land title type deleted successfully",
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to delete land title type",
+			message,
 		});
 	}
 };

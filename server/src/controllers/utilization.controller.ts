@@ -22,7 +22,7 @@ const getRequesterUserOrThrow = (req: Request) => {
 	// Middleware already validated session and attached user
 	const user = (req as any).user;
 	if (!user) {
-		const unauthorizedError = new Error("Unauthorized");
+		const unauthorizedError = new Error("Authentication required. Please log in to access this resource.");
 		(unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
 		throw unauthorizedError;
 	}
@@ -49,10 +49,10 @@ export const createUtilizationController = async (
 			data: result,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to create utilization",
+			message,
 		});
 	}
 };
@@ -73,10 +73,10 @@ export const getAllUtilizationsController = async (
 			data: utilizations,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to retrieve utilizations",
+			message,
 		});
 	}
 };
@@ -99,10 +99,10 @@ export const getUtilizationByIdController = async (
 			data: utilization,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to retrieve utilization",
+			message,
 		});
 	}
 };
@@ -128,10 +128,10 @@ export const updateUtilizationController = async (
 			data: result,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to update utilization",
+			message,
 		});
 	}
 };
@@ -155,10 +155,10 @@ export const deleteUtilizationController = async (
 			message: "Utilization deleted successfully",
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to delete utilization",
+			message,
 		});
 	}
 };
