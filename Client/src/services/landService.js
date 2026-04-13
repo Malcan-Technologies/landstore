@@ -2,9 +2,18 @@ import api from '@/utils/axios';
 
 // Land/Property service
 export const landService = {
-  // Get all land listings with pagination and filters
-  // Get all land listings with pagination and filters
-  getAllLands: async (params = {}) => {
+  // Create listing (multipart/form-data supported)
+  createListing: async (listingData, config = {}) => {
+    try {
+      const response = await api.post('/list-lands/', listingData, config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get all listings
+  getAllListings: async (params = {}) => {
     try {
       const response = await api.get('/list-lands/', { params });
       return response.data;
@@ -13,8 +22,8 @@ export const landService = {
     }
   },
 
-  // Get land by ID
-  getLandById: async (id) => {
+  // Get listing by ID
+  getListingById: async (id) => {
     try {
       const response = await api.get(`/list-lands/${id}`);
       return response.data;
@@ -23,28 +32,18 @@ export const landService = {
     }
   },
 
-  // Create new land listing (formdata supported)
-  createLand: async (landData, config = {}) => {
+  // Update listing
+  updateListing: async (id, listingData, config = {}) => {
     try {
-      const response = await api.post('/list-lands/', landData, config);
+      const response = await api.patch(`/list-lands/${id}`, listingData, config);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Update land listing (PATCH per Postman)
-  updateLand: async (id, landData, config = {}) => {
-    try {
-      const response = await api.patch(`/list-lands/${id}`, landData, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Delete land listing
-  deleteLand: async (id) => {
+  // Delete listing
+  deleteListing: async (id) => {
     try {
       const response = await api.delete(`/list-lands/${id}`);
       return response.data;
@@ -53,7 +52,7 @@ export const landService = {
     }
   },
 
-  // Upload land images (attach while creating/updating using formdata)
+  // Upload/replace listing media using update endpoint
   uploadLandImages: async (id, formData) => {
     try {
       const response = await api.patch(`/list-lands/${id}`, formData, {
@@ -67,65 +66,24 @@ export const landService = {
     }
   },
 
-  // Delete land image
-  deleteLandImage: async (landId, imageId) => {
-    try {
-      const response = await api.delete(`/lands/${landId}/images/${imageId}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  // Backward-compatible aliases
+  createLand: async (landData, config = {}) => {
+    return landService.createListing(landData, config);
   },
 
-  // Get user's land listings
-  getUserLands: async (userId, params = {}) => {
-    try {
-      const response = await api.get(`/list-lands/user/${userId}`, { params });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  getAllLands: async (params = {}) => {
+    return landService.getAllListings(params);
   },
 
-  // Search lands
-  searchLands: async (searchParams) => {
-    try {
-      const response = await api.get('/list-lands/search', { params: searchParams });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  getLandById: async (id) => {
+    return landService.getListingById(id);
   },
 
-  // Get featured lands
-  getFeaturedLands: async () => {
-    try {
-      const response = await api.get('/list-lands/featured');
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  updateLand: async (id, landData, config = {}) => {
+    return landService.updateListing(id, landData, config);
   },
 
-  // Get lands by location
-  getLandsByLocation: async (location, params = {}) => {
-    try {
-      const response = await api.get(`/list-lands/location/${location}`, { params });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Get lands by price range
-  getLandsByPriceRange: async (minPrice, maxPrice, params = {}) => {
-    try {
-      const response = await api.get('/list-lands/price-range', {
-        params: { minPrice, maxPrice, ...params }
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  deleteLand: async (id) => {
+    return landService.deleteListing(id);
   }
 };

@@ -1,64 +1,109 @@
 import api from '@/utils/axios';
 
-// Contact and messaging service
+// Enquiry service
 export const contactService = {
-  // Send contact message
+  // Create enquiry
+  createEnquiry: async (data) => {
+    try {
+      const response = await api.post('/enquiries/', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update enquiry
+  updateEnquiry: async (id, data) => {
+    try {
+      const response = await api.patch(`/enquiries/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update enquiry status
+  updateEnquiryStatus: async (id, data) => {
+    try {
+      const response = await api.patch(`/enquiries/${id}/status`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get all enquiries
+  getAllEnquiries: async (params = {}) => {
+    try {
+      const response = await api.get('/enquiries/', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get enquiry by ID
+  getEnquiryById: async (id) => {
+    try {
+      const response = await api.get(`/enquiries/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Delete enquiry
+  deleteEnquiry: async (id) => {
+    try {
+      const response = await api.delete(`/enquiries/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get enquiries by property ID
+  getEnquiryByPropertyId: async (propertyId, params = {}) => {
+    try {
+      const response = await api.get(`/enquiries/property/${propertyId}`, { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get enquiries by user ID
+  getEnquiryByUserId: async (userId, params = {}) => {
+    try {
+      const response = await api.get(`/enquiries/user/${userId}`, { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Backward-compatible aliases
   sendContactMessage: async (messageData) => {
-    try {
-      const response = await api.post('/contact', messageData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    return contactService.createEnquiry(messageData);
   },
 
-  // Get user's conversations
-  getConversations: async (userId, params = {}) => {
-    try {
-      const response = await api.get(`/conversations/user/${userId}`, { params });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  getConversations: async (_userId, params = {}) => {
+    return contactService.getAllEnquiries(params);
   },
 
-  // Get conversation by ID
   getConversationById: async (id) => {
-    try {
-      const response = await api.get(`/conversations/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    return contactService.getEnquiryById(id);
   },
 
-  // Send message in conversation
-  sendMessage: async (conversationId, messageData) => {
-    try {
-      const response = await api.post(`/conversations/${conversationId}/messages`, messageData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  sendMessage: async (enquiryId, messageData) => {
+    return contactService.updateEnquiry(enquiryId, messageData);
   },
 
-  // Create new conversation
   createConversation: async (conversationData) => {
-    try {
-      const response = await api.post('/conversations', conversationData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    return contactService.createEnquiry(conversationData);
   },
 
-  // Mark messages as read
-  markMessagesAsRead: async (conversationId, userId) => {
-    try {
-      const response = await api.put(`/conversations/${conversationId}/read`, { userId });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  markMessagesAsRead: async (enquiryId, _userId) => {
+    return contactService.updateEnquiryStatus(enquiryId, { status: 'read' });
   }
 };
