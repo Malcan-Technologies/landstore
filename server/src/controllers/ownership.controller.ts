@@ -22,7 +22,7 @@ const getRequesterUserOrThrow = (req: Request) => {
 	// Middleware already validated session and attached user
 	const user = (req as any).user;
 	if (!user) {
-		const unauthorizedError = new Error("Unauthorized");
+		const unauthorizedError = new Error("Authentication required. Please log in to access this resource.");
 		(unauthorizedError as Error & { statusCode?: number }).statusCode = 401;
 		throw unauthorizedError;
 	}
@@ -50,10 +50,10 @@ export const createOwnershipTypeController = async (
 			data: result,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to create ownership type",
+			message,
 		});
 	}
 };
@@ -74,10 +74,10 @@ export const getAllOwnershipTypesController = async (
 			data: types,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to retrieve ownership types",
+			message,
 		});
 	}
 };
@@ -100,10 +100,10 @@ export const getOwnershipTypeByIdController = async (
 			data: type,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to retrieve ownership type",
+			message,
 		});
 	}
 };
@@ -129,10 +129,10 @@ export const updateOwnershipTypeController = async (
 			data: result,
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to update ownership type",
+			message,
 		});
 	}
 };
@@ -156,10 +156,10 @@ export const deleteOwnershipTypeController = async (
 			message: "Ownership type deleted successfully",
 		});
 	} catch (error: any) {
-		const statusCode = error?.statusCode || 500;
+		const { statusCode, message } = getErrorPayload(error);
 		res.status(statusCode).json({
 			success: false,
-			message: error?.message || "Failed to delete ownership type",
+			message,
 		});
 	}
 };

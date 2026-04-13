@@ -20,6 +20,37 @@ import notificationRoutes from "./src/routes/notification.routes.js";
 
 const app: Application = express();
 
+/**
+ * AUTHENTICATION ARCHITECTURE:
+ * 
+ * This application uses Better Auth for secure authentication.
+ * Passwords are ALWAYS hashed before database storage.
+ * 
+ * UNIFIED REGISTRATION FLOW:
+ * 1. POST /api/users/register (ONE endpoint for complete sign-up)
+ *    {
+ *      email, password, name, phone, userType,
+ *      profileType, firstName, lastName, ...
+ *    }
+ *    → Better Auth hashes password (Account.password stores encrypted hash)
+ *    → User created with email (no password field)
+ *    → Profile completed (phone, userType, custom fields)
+ *    → Returns full user profile
+ * 
+ * 2. POST /api/auth/sign-in (to get session/JWT)
+ *    { email, password }
+ *    → Better Auth verifies password against hashed Account.password
+ *    → Session/JWT returned
+ * 
+ * 3. Protected Routes: All with requireApiAuth middleware use Better Auth sessions
+ * 
+ * ⚠️ PASSWORD SECURITY:
+ * - Passwords ONLY accepted at /api/users/register or /api/auth endpoints
+ * - Account.password stores ENCRYPTED hash (never plain text)
+ * - User.password field removed entirely (removed for security)
+ * - All errors return generic "Internal server error" on 500
+ */
+
 const PORT: number | string = process.env.PORT || 5000;
 const allowedOrigins = (
   process.env.FRONTEND_URL || "http://localhost:3000,http://localhost:5173"
@@ -63,6 +94,16 @@ app.use("/api/enquiries", requireApiAuth, enquiryRoutes);
 app.use("/api/interest-types", requireApiAuth, interestTypeRoutes);
 app.use("/api/entity-types", requireApiAuth, entityTypeRoutes);
 app.use("/api/notifications", requireApiAuth, notificationRoutes);
+
+// Global error handler middleware
+app.use((err: any, req: express.Request, res: express.Response, next: Function) => {
+  console.error("Unhandled error:", err);
+  const statusCode = err?.statusCode || 500;
+  return res.status(statusCode).json({
+    error: statusCode === 500 ? "Internal server error" : err?.error || "Error",
+    message: err?.message || "Internal server error",
+  });
+});
 
 // Test database connection
 db.$connect()

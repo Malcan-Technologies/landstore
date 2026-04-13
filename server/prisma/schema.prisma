@@ -48,7 +48,6 @@ model User {
   
   // Better Auth fields
   email             String                 @unique
-  password          String                 @default("")  // Better Auth manages password hashing
   name              String?
   image             String?
   emailVerified     Boolean                @default(false)
@@ -95,11 +94,11 @@ model Account {
   userId            String                 // Changed to String
   accountId         String
   providerId        String
+  password          String?                // Required for emailAndPassword authentication (hashed by Better Auth)
   accessToken       String?
   refreshToken      String?
   idToken           String?
   expiresAt         DateTime?
-  password          String?
 
   user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
