@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -99,7 +99,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"user12@example.com\",\r\n    \"password\": \"securePassword123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitshykh888@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\r\n        \"Land owner\"\r\n    ]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -107,13 +107,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/users/register-complete",
+              "raw": "{{baseUrl}}/users/register",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
-                "register-complete"
+                "register"
               ]
             }
           },
@@ -132,7 +132,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"company13@business.com\",\r\n    \"password\": \"CompanyPass123\",\r\n    \"name\": \"John Doe\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"company\",\r\n    \"companyName\": \"ABC Development Sdn Bhd\",\r\n    \"registrationNo\": \"REG123456\"\r\n}",
+              "raw": "{\r\n    \"email\": \"company13@business.com\",\r\n    \"password\": \"CompanyPass123\",\r\n    \"name\": \"John Doe\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"company\",\r\n    \"companyName\": \"ABC Development Sdn Bhd\",\r\n    \"registrationNo\": \"REG123456\",\r\n    \"entityTypes\": [\"Land owner\"]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -140,13 +140,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/users/register-complete",
+              "raw": "{{baseUrl}}/users/register",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
-                "register-complete"
+                "register"
               ]
             }
           },
@@ -165,7 +165,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"koperasi123@example.com\",\r\n    \"password\": \"SecurePass123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\", // ← System role (admin or user)\r\n    \"profileType\": \"koperasi\", // ← Business profile type\r\n    \"koperasiName\": \"Koperasi ABC\",\r\n    \"registrationNo\": \"REG789\"\r\n}",
+              "raw": "{\r\n    \"email\": \"koperasi52@example.com\",\r\n    \"password\": \"SecurePass123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"phone\": \"1234567890\", // ← Optional\r\n    \"userType\": \"user\", // ← System role (admin or user)\r\n    \"profileType\": \"koperasi\", // ← Business profile type\r\n    \"koperasiName\": \"Koperasi ABC\",\r\n    \"registrationNo\": \"REG789\",\r\n    \"entityTypes\": [\"Land owner\"]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -173,13 +173,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/users/register-complete",
+              "raw": "{{baseUrl}}/users/register",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
-                "register-complete"
+                "register"
               ]
             }
           },
