@@ -55,8 +55,8 @@ const AdminHeader = ({ onMenuClick }) => {
     setProfileMenuOpen(false);
     await dispatch(logoutUser());
     router.push("/");
-    setAuthTab("login");
-    setIsLoginOpen(true);
+    // setAuthTab("login");
+    // setIsLoginOpen(true);
   };
 
   const handleOpenProfile = () => {
