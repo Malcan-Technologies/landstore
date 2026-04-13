@@ -3,7 +3,7 @@ import { useRef } from "react";
 import DangerSheild from "@/components/svg/DangerSheild";
 import Upload from "@/components/svg/Upload";
 
-const ReviewStep = ({ formData, updateField }) => {
+const ReviewStep = ({ formData, updateField, errors = {} }) => {
   const documentInputRef = useRef(null);
   const documents = formData.documents ?? [];
 
@@ -22,19 +22,29 @@ const ReviewStep = ({ formData, updateField }) => {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <button
-        type="button"
-        onClick={() => documentInputRef.current?.click()}
-        className="flex min-h-35 w-full flex-col items-center justify-center rounded-2xl border border-dashed border-green-secondary/50 bg-[#F4FBF7] px-4 text-center sm:min-h-40 sm:px-5 md:min-h-43.75 md:px-6"
-      >
-        <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border-input bg-white text-gray7 sm:mb-4 sm:h-9 sm:w-9 sm:rounded-xl md:h-10 md:w-10">
-          <Upload size={16} color="var(--color-green-secondary)" />
-        </span>
-        <p className="text-[16px] font-semibold text-gray2 sm:text-[18px] md:text-[20px]">Geran Upload</p>
-        <p className="mt-2 max-w-105 text-[11px] leading-5 text-gray5 sm:text-[12px] md:text-[13px] md:leading-6">
-          Upload the official Geran document for verification. This is for admin review only and will never be shown publicly.
-        </p>
-      </button>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => documentInputRef.current?.click()}
+          className={`flex min-h-35 w-full flex-col items-center justify-center rounded-2xl border border-dashed px-4 text-center sm:min-h-40 sm:px-5 md:min-h-43.75 md:px-6 ${
+            errors.documents
+              ? "border-red-400 bg-red-50"
+              : "border-green-secondary/50 bg-[#F4FBF7]"
+          }`.trim()}
+        >
+          <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border-input bg-white text-gray7 sm:mb-4 sm:h-9 sm:w-9 sm:rounded-xl md:h-10 md:w-10">
+            <Upload size={16} color="var(--color-green-secondary)" />
+          </span>
+          <p className="text-[16px] font-semibold text-gray2 sm:text-[18px] md:text-[20px]">Geran Upload</p>
+          <p className="mt-2 max-w-105 text-[11px] leading-5 text-gray5 sm:text-[12px] md:text-[13px] md:leading-6">
+            Upload the official Geran document for verification. This is for admin review only and will never be shown publicly.
+          </p>
+        </button>
+
+        {errors.documents ? (
+          <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.documents}</p>
+        ) : null}
+      </div>
 
       <input
         ref={documentInputRef}
@@ -78,15 +88,22 @@ const ReviewStep = ({ formData, updateField }) => {
           </div>
         </div>
 
-        <label className="mt-4 flex items-start gap-2.5 text-[11px] font-medium text-white sm:mt-5 sm:items-center sm:gap-3 sm:text-[12px] md:text-[13px]">
-          <input
-            type="checkbox"
-            checked={formData.acceptedTerms}
-            onChange={(event) => updateField("acceptedTerms", event.target.checked)}
-            className="mt-0.5 h-3.5 w-3.5 rounded border border-white/50 bg-transparent accent-greenbg sm:mt-0 sm:h-4 sm:w-4"
-          />
-          I accept the terms and professional conduct guidelines
-        </label>
+        <div className="relative mt-4 sm:mt-5">
+          <label className="flex items-start gap-2.5 text-[11px] font-medium text-white sm:items-center sm:gap-3 sm:text-[12px] md:text-[13px]">
+            <input
+              type="checkbox"
+              checked={formData.acceptedTerms}
+              onChange={(event) => updateField("acceptedTerms", event.target.checked)}
+              className="mt-0.5 h-3.5 w-3.5 rounded border border-white/50 bg-transparent accent-greenbg sm:mt-0 sm:h-4 sm:w-4"
+            />
+            I accept the terms and professional conduct guidelines
+          </label>
+          {errors.acceptedTerms ? (
+            <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-[#FFD6D6] sm:text-[12px]">
+              {errors.acceptedTerms}
+            </p>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -26,9 +26,12 @@ const SelectDropdown = ({
   optionActiveClassName = "bg-activebg text-green-primary",
   optionInactiveClassName = "text-gray2",
   optionSelectedClassName = "text-green-primary",
+  error = "",
+  errorClassName = "left-0",
   renderValue,
   ...props
 }) => {
+  const hasError = Boolean(error);
   const selectedOption = options.find((option) => option.value === value);
 
   return (
@@ -40,7 +43,7 @@ const SelectDropdown = ({
           </Listbox.Label>
         ) : null}
         <Listbox.Button
-          className={`flex w-full items-center justify-between gap-3 rounded-lg border ${buttonBorderClassName} ${buttonBgClassName} px-3.5 py-2 text-left text-[14px] outline-none transition focus-visible:border-green-primary focus-visible:ring-2 focus-visible:ring-green-primary/40 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-background-primary disabled:text-gray5 ${buttonTextClassName} ${buttonClassName}`.trim()}
+          className={`flex w-full items-center justify-between gap-3 rounded-lg border ${buttonBorderClassName} ${buttonBgClassName} px-3.5 py-2 text-left text-[14px] outline-none transition focus-visible:border-green-primary focus-visible:ring-2 focus-visible:ring-green-primary/40 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:bg-background-primary disabled:text-gray5 ${hasError ? "border-red-400 focus-visible:border-red-400 focus-visible:ring-red-200" : ""} ${buttonTextClassName} ${buttonClassName}`.trim()}
         >
           <span className="flex-1 truncate">
             {selectedOption ? (
@@ -76,6 +79,7 @@ const SelectDropdown = ({
           leaveTo="opacity-0"
         >
           <Listbox.Options
+            modal={false}
             className={`absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border ${optionsBorderClassName} ${optionsBgClassName} py-1 shadow-xl focus:outline-none ${optionsClassName}`.trim()}
           >
             {options.map((option) => (
@@ -105,6 +109,12 @@ const SelectDropdown = ({
             ))}
           </Listbox.Options>
         </Transition>
+
+        {hasError ? (
+          <p className={`pointer-events-none absolute top-full mt-1 text-[11px] text-red-500 ${errorClassName}`.trim()}>
+            {error}
+          </p>
+        ) : null}
       </div>
     </Listbox>
   );

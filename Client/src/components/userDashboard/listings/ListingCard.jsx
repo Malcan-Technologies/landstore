@@ -14,6 +14,7 @@ const statusStyles = {
 };
 
 const ListingCard = ({ listing, showFooter = true }) => {
+  const fallbackImage = "/Land.jpg";
   const statusClassName =
     statusStyles[listing.statusKey] ?? statusStyles.active;
 
@@ -22,9 +23,13 @@ const ListingCard = ({ listing, showFooter = true }) => {
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative h-auto sm:w-54  lg:w-60 xl:w-60 w-auto overflow-hidden rounded-xl">
           <img
-            src={listing.image}
+            src={listing.image || fallbackImage}
             alt={listing.title}
             className="h-full w-full object-cover"
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = fallbackImage;
+            }}
           />
           <span
             className={`absolute left-2 top-2 z-10 rounded-full px-2 py-1 text-[9px] font-medium capitalize sm:hidden ${statusClassName}`}

@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import EyeOpen from "@/components/svg/EyeOpen";
 import Star from "@/components/svg/Star";
 import UpRight from "@/components/svg/UpRight";
 import ListingCard from "@/components/userDashboard/listings/ListingCard";
+import { landService } from "@/services/landService";
 
 const listingStats = [
   {
@@ -32,84 +33,161 @@ const listingTabs = [
   { id: "inactive", label: "Inactive / History (10)" },
 ];
 
-const listings = [
-  {
-    id: "listing-1",
-    code: "LS - 000128",
-    statusKey: "active",
-    statusLabel: "Active",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy", "Financing"],
-    updatedAt: "05/20/2025",
-    price: "RM 1.2M",
-    views: 12,
-    interests: 3,
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "delete", label: "Delete" }],
-  },
-  {
-    id: "listing-2",
-    code: "LS - 000128",
-    statusKey: "draft",
-    statusLabel: "Draft",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy", "Financing"],
-    updatedAt: "05/20/2025",
-    price: "RM 1.2M",
-    views: 12,
-    interests: 3,
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80",
-    actions: [
-      { type: "default", label: "Edit" },
-      { type: "delete", label: "Delete" },
-    ],
-  },
-  {
-    id: "listing-3",
-    code: "LS - 000128",
-    statusKey: "review",
-    statusLabel: "Under review",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy", "Financing"],
-    updatedAt: "05/20/2025",
-    price: "RM 1.2M",
-    views: 12,
-    interests: 3,
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80",
-    actions: [
-      { type: "default", label: "Edit" },
-      { type: "delete", label: "Delete" },
-    ],
-  },
-  {
-    id: "listing-4",
-    code: "LS - 000128",
-    statusKey: "reserved",
-    statusLabel: "Reserved",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy", "Financing"],
-    updatedAt: "05/20/2025",
-    price: "RM 1.2M",
-    views: 12,
-    interests: 3,
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80",
-    actions: [
+const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
+
+const dealTagMap = {
+  buy: "Buy",
+  jv: "JV",
+  financing: "Financing",
+};
+
+const extractListingItems = (response) => {
+  if (Array.isArray(response?.items)) return response.items;
+  if (Array.isArray(response?.data?.items)) return response.data.items;
+  if (Array.isArray(response?.result?.items)) return response.result.items;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response)) return response;
+  return [];
+};
+
+const formatDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatPrice = (value) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return "RM 0";
+
+  const absoluteValue = Math.abs(numericValue);
+  const formatCompact = (divisor, suffix) => {
+    const compactValue = numericValue / divisor;
+    return `RM ${compactValue.toLocaleString("en-US", {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    })}${suffix}`;
+  };
+
+  if (absoluteValue > 1_000_000_000_000) {
+    return formatCompact(1_000_000_000_000, "T");
+  }
+
+  if (absoluteValue > 1_000_000_000) {
+    return formatCompact(1_000_000_000, "B");
+  }
+
+  if (absoluteValue > 1_000_000) {
+    return formatCompact(1_000_000, "M");
+  }
+
+  if (absoluteValue > 1_000) {
+    return formatCompact(1_000, "K");
+  }
+
+  return `RM ${numericValue.toLocaleString("en-US")}`;
+};
+
+const formatArea = (landArea, landAreaUnit) => {
+  const numericValue = Number(landArea);
+  const area = Number.isFinite(numericValue) ? numericValue.toLocaleString("en-US") : String(landArea || "-");
+  const unit = landAreaUnit ? ` ${landAreaUnit}` : "";
+  return `${area}${unit}`;
+};
+
+const toStatusKey = (status) => {
+  const normalizedStatus = String(status || "").toLowerCase();
+
+  if (normalizedStatus === "draft") return "draft";
+  if (normalizedStatus === "review" || normalizedStatus === "under_review" || normalizedStatus === "under review") {
+    return "review";
+  }
+  if (normalizedStatus === "reserved" || normalizedStatus === "inactive" || normalizedStatus === "history") {
+    return "reserved";
+  }
+
+  return "active";
+};
+
+const toStatusLabel = (statusKey) => {
+  if (statusKey === "draft") return "Draft";
+  if (statusKey === "review") return "Under review";
+  if (statusKey === "reserved") return "Reserved";
+  return "Active";
+};
+
+const toListingActions = (statusKey) => {
+  if (statusKey === "reserved") {
+    return [
       { type: "request", label: "Request status change" },
       { type: "view", label: "View" },
-    ],
-  },
-];
+    ];
+  }
+
+  if (statusKey === "active") {
+    return [{ type: "delete", label: "Delete" }];
+  }
+
+  return [
+    { type: "default", label: "Edit" },
+    { type: "delete", label: "Delete" },
+  ];
+};
+
+const mapListingToCard = (item) => {
+  const statusKey = toStatusKey(item?.status);
+
+  return {
+    id: item?.id,
+    code: item?.listingCode || "-",
+    statusKey,
+    statusLabel: toStatusLabel(statusKey),
+    title: item?.title || "-",
+    category: item?.category?.name || "-",
+    area: formatArea(item?.landArea, item?.landAreaUnit),
+    dealTags: Array.isArray(item?.dealTypes)
+      ? item.dealTypes.map((tag) => dealTagMap[String(tag).toLowerCase()] || String(tag || ""))
+      : [],
+    updatedAt: formatDate(item?.updatedAt),
+    price: formatPrice(item?.estimatedValuation ?? item?.price),
+    views: Number(item?.viewsCount ?? 0),
+    interests: Number(item?.clicksCount ?? 0),
+    image: item?.media?.fileUrl || fallbackListingImage,
+    actions: toListingActions(statusKey),
+  };
+};
 
 const ListingsPage = () => {
   const [activeTab, setActiveTab] = useState("all");
+  const [listings, setListings] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadListings = async () => {
+      try {
+        const response = await landService.getAllListings();
+        const items = extractListingItems(response);
+
+        if (!isMounted) return;
+        setListings(items.map(mapListingToCard));
+      } catch {
+        if (!isMounted) return;
+        setListings([]);
+      }
+    };
+
+    loadListings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredListings = useMemo(() => {
     switch (activeTab) {
@@ -124,7 +202,7 @@ const ListingsPage = () => {
       default:
         return listings;
     }
-  }, [activeTab]);
+  }, [activeTab, listings]);
 
   return (
     <main className="bg-background-primary py-14">

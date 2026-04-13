@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import CreateListingLayout from "@/components/userDashboard/listings/createListing/CreateListingLayout";
 import BasicInfoStep from "@/components/userDashboard/listings/createListing/BasicInfoStep";
@@ -8,6 +8,7 @@ import LocationStep from "@/components/userDashboard/listings/createListing/Loca
 import ReviewStep from "@/components/userDashboard/listings/createListing/ReviewStep";
 import { adminService } from "@/services/adminService";
 import { landService } from "@/services/landService";
+import { revokeFilePreviewUrl } from "@/utils/filePreview";
 
 const dealTypeEnumMap = {
   Buy: "buy",
@@ -84,6 +85,12 @@ const initialFormData = {
   acceptedTerms: false,
 };
 
+const stepFieldMap = {
+  1: ["photos", "ownership", "utilization", "category", "landArea", "pricePerSqft"],
+  2: ["negeri", "daerah", "mukim", "seksyen", "titleType", "leaseStartDate", "leasePeriod"],
+  3: ["documents", "acceptedTerms"],
+};
+
 const CreateListingPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState(initialFormData);
@@ -97,16 +104,108 @@ const CreateListingPage = () => {
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const updateField = (field, value) => {
+    if (submitError) setSubmitError("");
+    if (submitSuccess) setSubmitSuccess("");
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setFieldErrors((prev) => {
+      if (!prev[field] && !(field === "titleType" && (prev.leaseStartDate || prev.leasePeriod))) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[field];
+
+      if (field === "titleType" && !isLeaseholdSelected(value)) {
+        delete next.leaseStartDate;
+        delete next.leasePeriod;
+      }
+
+      return next;
+    });
   };
 
   const toggleArrayValue = (field, value) => {
+    if (submitError) setSubmitError("");
+    if (submitSuccess) setSubmitSuccess("");
     setFormData((prev) => ({
       ...prev,
       [field]: prev[field].includes(value) ? prev[field].filter((item) => item !== value) : [...prev[field], value],
     }));
+  };
+
+  const isLeaseholdSelected = (titleTypeValue = formData.titleType) => {
+    const selectedTitleType = referenceOptions.titleTypes.find((option) => option.value === titleTypeValue);
+
+    if (selectedTitleType?.label) {
+      return selectedTitleType.label.toLowerCase().includes("leasehold");
+    }
+
+    return String(titleTypeValue).toLowerCase().includes("leasehold");
+  };
+
+  const getStepFieldErrors = (step, values = formData) => {
+    const stepErrors = {};
+
+    if (step === 1) {
+      if (!Array.isArray(values.photos) || values.photos.length < 1) {
+        stepErrors.photos = "Please upload at least one photo.";
+      }
+      if (!values.category) stepErrors.category = "Please select a category.";
+      if (!values.ownership) stepErrors.ownership = "Please select ownership relationship.";
+      if (!values.utilization) stepErrors.utilization = "Please select utilization.";
+      if (!values.landArea || toNumberOrZero(values.landArea) <= 0) {
+        stepErrors.landArea = "Please enter a valid land area.";
+      }
+      if (!values.pricePerSqft || toNumberOrZero(values.pricePerSqft) <= 0) {
+        stepErrors.pricePerSqft = "Please select a valid price per sqft.";
+      }
+    }
+
+    if (step === 2) {
+      if (!values.negeri) stepErrors.negeri = "Please select negeri.";
+      if (!values.daerah) stepErrors.daerah = "Please select daerah.";
+      if (!String(values.mukim || "").trim()) stepErrors.mukim = "Please enter mukim.";
+      if (!String(values.seksyen || "").trim()) stepErrors.seksyen = "Please enter seksyen.";
+      if (!values.titleType) stepErrors.titleType = "Please select a title type.";
+      if (isLeaseholdSelected(values.titleType) && !values.leaseStartDate) {
+        stepErrors.leaseStartDate = "Please select leasehold start year.";
+      }
+      if (isLeaseholdSelected(values.titleType) && !values.leasePeriod) {
+        stepErrors.leasePeriod = "Please select leasehold period.";
+      }
+    }
+
+    if (step === 3) {
+      if (!Array.isArray(values.documents) || values.documents.length < 1) {
+        stepErrors.documents = "Please upload at least one document.";
+      }
+      if (!values.acceptedTerms) stepErrors.acceptedTerms = "Please accept the anti-bypass agreement.";
+    }
+
+    return stepErrors;
+  };
+
+  const validateStep = (step) => {
+    const stepErrors = getStepFieldErrors(step);
+
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      const fields = stepFieldMap[step] || [];
+
+      fields.forEach((field) => {
+        delete next[field];
+      });
+
+      return {
+        ...next,
+        ...stepErrors,
+      };
+    });
+
+    return stepErrors;
   };
 
   useEffect(() => {
@@ -249,17 +348,22 @@ const CreateListingPage = () => {
     setSubmitError("");
     setSubmitSuccess("");
 
-    const missingFields = [];
-    if (!formData.category) missingFields.push("category");
-    if (!formData.ownership) missingFields.push("ownership relationship");
-    if (!formData.utilization) missingFields.push("utilization");
-    if (!formData.titleType) missingFields.push("title type");
-    if (!formData.landArea) missingFields.push("land area");
-    if (!formData.pricePerSqft) missingFields.push("price per sqft");
-    if (!formData.acceptedTerms) missingFields.push("anti-bypass agreement");
+    const step1Errors = getStepFieldErrors(1);
+    const step2Errors = getStepFieldErrors(2);
+    const step3Errors = getStepFieldErrors(3);
+    const finalFieldErrors = { ...step1Errors, ...step2Errors, ...step3Errors };
 
-    if (missingFields.length > 0) {
-      setSubmitError(`Please complete: ${missingFields.join(", ")}`);
+    if (Object.keys(finalFieldErrors).length > 0) {
+      setFieldErrors(finalFieldErrors);
+
+      if (Object.keys(step1Errors).length > 0) {
+        setCurrentStep(1);
+      } else if (Object.keys(step2Errors).length > 0) {
+        setCurrentStep(2);
+      } else {
+        setCurrentStep(3);
+      }
+
       return;
     }
 
@@ -273,8 +377,13 @@ const CreateListingPage = () => {
         },
       });
 
+      (formData.photos || []).forEach((file) => {
+        revokeFilePreviewUrl(file);
+      });
+
       setSubmitSuccess("Listing submitted successfully.");
       setCurrentStep(1);
+      setFieldErrors({});
       setFormData((prev) => ({
         ...initialFormData,
         category: referenceOptions.categories[0]?.value || "",
@@ -291,38 +400,42 @@ const CreateListingPage = () => {
     }
   };
 
-  const stepContent = useMemo(() => {
-    if (currentStep === 1) {
-      return (
-        <BasicInfoStep
-          formData={formData}
-          updateField={updateField}
-          toggleArrayValue={toggleArrayValue}
-          ownershipOptions={referenceOptions.ownershipTypes}
-          utilizationOptions={referenceOptions.utilizations}
-          categoryOptions={referenceOptions.categories}
-        />
-      );
-    }
+  let stepContent = <ReviewStep formData={formData} updateField={updateField} errors={fieldErrors} />;
 
-    if (currentStep === 2) {
-      return <LocationStep formData={formData} updateField={updateField} titleTypeOptions={referenceOptions.titleTypes} />;
-    }
-
-    return <ReviewStep formData={formData} updateField={updateField} />;
-  }, [
-    currentStep,
-    formData,
-    referenceOptions.categories,
-    referenceOptions.ownershipTypes,
-    referenceOptions.utilizations,
-    referenceOptions.titleTypes,
-  ]);
+  if (currentStep === 1) {
+    stepContent = (
+      <BasicInfoStep
+        formData={formData}
+        updateField={updateField}
+        toggleArrayValue={toggleArrayValue}
+        ownershipOptions={referenceOptions.ownershipTypes}
+        utilizationOptions={referenceOptions.utilizations}
+        categoryOptions={referenceOptions.categories}
+        errors={fieldErrors}
+      />
+    );
+  } else if (currentStep === 2) {
+    stepContent = (
+      <LocationStep
+        formData={formData}
+        updateField={updateField}
+        titleTypeOptions={referenceOptions.titleTypes}
+        errors={fieldErrors}
+      />
+    );
+  }
 
   const handleNext = () => {
     if (isSubmitting) return;
 
+    setSubmitSuccess("");
+
     if (currentStep < 3) {
+      const stepErrors = validateStep(currentStep);
+      if (Object.keys(stepErrors).length > 0) {
+        return;
+      }
+
       setCurrentStep((prev) => Math.min(prev + 1, 3));
       return;
     }
