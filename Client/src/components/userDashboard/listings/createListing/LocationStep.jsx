@@ -16,8 +16,21 @@ const leaseOptions = [
   { value: "60-years", label: "60 Years" },
   { value: "99-years", label: "99 Years" },
 ];
+const defaultTitleTypeOptions = [
+  { value: "freehold", label: "Freehold" },
+  { value: "leasehold", label: "Leasehold" },
+];
 
-const LocationStep = ({ formData, updateField }) => {
+const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTypeOptions }) => {
+  const normalizedTitleTypeOptions =
+    Array.isArray(titleTypeOptions) && titleTypeOptions.length > 0
+      ? titleTypeOptions
+      : defaultTitleTypeOptions;
+
+  const selectedTitleTypeLabel =
+    normalizedTitleTypeOptions.find((option) => option.value === formData.titleType)?.label || "";
+  const isLeasehold = selectedTitleTypeLabel.toLowerCase().includes("leasehold");
+
   const locationMarker = {
     id: "listing-location-marker",
     image: formData.photos?.[0] ? URL.createObjectURL(formData.photos[0]) : null,
@@ -107,27 +120,21 @@ const LocationStep = ({ formData, updateField }) => {
       <div className="border-t border-border-card pt-5 sm:pt-6">
         <p className="mb-3 text-[12px] font-medium text-gray2 sm:mb-4 sm:text-[13px]">Title type</p>
         <div className="flex w-full gap-3">
+          {normalizedTitleTypeOptions.map((option) => (
             <button
+              key={option.value}
               type="button"
-              onClick={() => updateField("titleType", "freehold")}
+              onClick={() => updateField("titleType", option.value)}
                 className={`h-9 flex-1 rounded-xl border text-[11px] font-medium transition sm:h-10 sm:text-[12px] md:text-[13px] ${
-                formData.titleType === "freehold" ? "border-[#2F2F2F] bg-[#2F2F2F] text-white" : "border-border-input bg-white text-gray5 hover:border-[#D3D7DC]"
+                formData.titleType === option.value ? "border-[#2F2F2F] bg-[#2F2F2F] text-white" : "border-border-input bg-white text-gray5 hover:border-[#D3D7DC]"
               }`}
             >
-              Freehold
+              {option.label}
             </button>
-            <button
-              type="button"
-              onClick={() => updateField("titleType", "leasehold")}
-                className={`h-9 flex-1 rounded-xl border text-[11px] font-medium transition sm:h-10 sm:text-[12px] md:text-[13px] ${
-                formData.titleType === "leasehold" ? "border-[#2F2F2F] bg-[#2F2F2F] text-white" : "border-border-input bg-white text-gray5 hover:border-[#D3D7DC]"
-              }`}
-            >
-              Leasehold
-            </button>
+          ))}
             </div>
         <div className="flex flex-col sm:flex-row sm:gap-3 gap-1">
-          {formData.titleType === "leasehold" && (
+          {isLeasehold && (
             <>
               <div className="mt-3 flex-1">
                 <LeaseholdCalendarInput

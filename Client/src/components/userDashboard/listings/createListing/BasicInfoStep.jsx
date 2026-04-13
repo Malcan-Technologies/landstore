@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import CircleRadioGroup from "@/components/common/CircleRadioGroup";
 import PillCheckbox from "@/components/common/PillCheckbox";
@@ -10,12 +10,12 @@ import Upload from "@/components/svg/Upload";
 const dealTypeOptions = ["Buy", "JV", "Financing"];
 const terrainOptions = ["Flat", "Hilly", "Mixed"];
 const featureOptions = ["Road Access", "Water", "Electricity"];
-const utilizationOptions = [
+const defaultUtilizationOptions = [
   { value: "vacant", label: "Vacant" },
   { value: "rented", label: "Rented" },
   { value: "owner-used", label: "Owner used" },
 ];
-const categoryOptions = [
+const defaultCategoryOptions = [
   { value: "agriculture", label: "Agriculture" },
   { value: "industrial", label: "Industrial" },
   { value: "commercial", label: "Commercial" },
@@ -25,7 +25,7 @@ const priceOptions = [
   { value: "6800", label: "6,800" },
   { value: "9500", label: "9,500" },
 ];
-const ownershipOptions = [
+const defaultOwnershipOptions = [
   { value: "owned", label: "Land owned by me / my organisation" },
   { value: "agent", label: "I am listing on behalf of owner" },
 ];
@@ -37,25 +37,23 @@ const areaUnitOptions = [
 const maxPhotos = 4;
 const chipClassName = "border-green-secondary/30 bg-activebg text-green-secondary";
 
-const BasicInfoStep = ({ formData, updateField, toggleArrayValue }) => {
+const BasicInfoStep = ({
+  formData,
+  updateField,
+  toggleArrayValue,
+  ownershipOptions = defaultOwnershipOptions,
+  utilizationOptions = defaultUtilizationOptions,
+  categoryOptions = defaultCategoryOptions,
+}) => {
   const fileInputRef = useRef(null);
-  const [previewUrls, setPreviewUrls] = useState([]);
-
-  const photos = formData.photos ?? [];
+  const photos = useMemo(() => formData.photos ?? [], [formData.photos]);
+  const previewUrls = useMemo(() => photos.map((file) => URL.createObjectURL(file)), [photos]);
 
   useEffect(() => {
-    if (!photos.length) {
-      setPreviewUrls([]);
-      return undefined;
-    }
-
-    const nextPreviewUrls = photos.map((file) => URL.createObjectURL(file));
-    setPreviewUrls(nextPreviewUrls);
-
     return () => {
-      nextPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [photos]);
+  }, [previewUrls]);
 
   const photoSlots = useMemo(() => {
     return Array.from({ length: maxPhotos }, (_, index) => previewUrls[index] ?? null);
@@ -90,7 +88,7 @@ const BasicInfoStep = ({ formData, updateField, toggleArrayValue }) => {
                 <button
                   type="button"
                   onClick={() => handleRemovePhoto(index)}
-                  className="absolute right-2 top-2 z-[1] inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-[16px] leading-none text-white transition hover:bg-black/80"
+                  className="absolute right-2 top-2 z-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-[16px] leading-none text-white transition hover:bg-black/80"
                   aria-label={`Remove uploaded photo ${index + 1}`}
                 >
                   ×
@@ -203,7 +201,7 @@ const BasicInfoStep = ({ formData, updateField, toggleArrayValue }) => {
               onChange={(value) => updateField("areaUnit", value)}
               options={areaUnitOptions}
               placeholder="Unit"
-              className="w-[100px] sm:w-[115px] md:w-[130px]"
+              className="w-25 sm:w-28.75 md:w-32.5"
               buttonClassName="h-9 text-[12px] sm:h-10 sm:text-[13px] md:h-11"
             />
           </div>
@@ -243,7 +241,7 @@ const BasicInfoStep = ({ formData, updateField, toggleArrayValue }) => {
           value={formData.description}
           onChange={(event) => updateField("description", event.target.value)}
           placeholder="Enter description here..."
-          className="min-h-[120px] w-full rounded-lg border border-border-input bg-white px-3 py-2.5 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:min-h-[135px] sm:px-3.5 sm:py-3 sm:text-[13px] md:min-h-[150px] md:text-[14px]"
+          className="min-h-30 w-full rounded-lg border border-border-input bg-white px-3 py-2.5 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:min-h-33.75 sm:px-3.5 sm:py-3 sm:text-[13px] md:min-h-37.5 md:text-[14px]"
         />
       </div>
 

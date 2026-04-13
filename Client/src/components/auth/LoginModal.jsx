@@ -21,14 +21,18 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const resetLoginState = () => {
+    setShowPassword(false);
+    setEmail("");
+    setPassword("");
+    setErrors({});
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     if (open) {
       setActiveTab(initialTab);
-      setShowPassword(false);
-      setEmail("");
-      setPassword("");
-      setErrors({});
-      setIsLoading(false);
+      resetLoginState();
     }
   }, [open, initialTab]);
 
@@ -57,6 +61,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
       // Better Auth returns { user, session }
       if (response.user) {
         dispatch(loginSuccess(response.user));
+        resetLoginState();
         onClose();
       } else {
         setErrors({ submit: 'Login failed. Please try again.' });
@@ -67,6 +72,12 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRegisterSuccess = () => {
+    setActiveTab("login");
+    resetLoginState();
+    onClose();
   };
 
   return (
@@ -173,7 +184,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
         </form>
       ) : (
         <div className="mt-4 h-full pr-1">
-          <Register />
+          <Register onRegisterSuccess={handleRegisterSuccess} />
         </div>
       )}
     </Modal>

@@ -1,9 +1,11 @@
+import { authService } from './authService';
+import { landService } from './landService';
+import { userService } from './userService';
+import { contactService } from './contactService';
+import { adminService } from './adminService';
+
 // Export all services for easy import
-export { authService } from './authService';
-export { landService } from './landService';
-export { userService } from './userService';
-export { contactService } from './contactService';
-export { adminService } from './adminService';
+export { authService, landService, userService, contactService, adminService };
 
 // Default export with all services
 const services = {

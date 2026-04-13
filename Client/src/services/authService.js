@@ -1,65 +1,83 @@
 import api from '@/utils/axios';
 
+const getOrigin = () => {
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  return 'http://localhost:3000';
+};
+
+const withOriginHeader = (config = {}) => ({
+  ...config,
+  headers: {
+    ...(config.headers || {}),
+    Origin: getOrigin(),
+  },
+});
+
+const withOriginAndNo401Redirect = (config = {}) =>
+  withOriginHeader({
+    ...config,
+    skipAuthRedirectOn401: true,
+  });
+
 // Authentication service
 export const authService = {
-  // Login user (Better Auth)
+  // Login user
   login: async (credentials) => {
     try {
-      const response = await api.post('/auth/sign-in/email', credentials, {
-        headers: {
-          origin: 'http://localhost:3000',
-        },
-      });
+      const response = await api.post('/auth/sign-in/email', credentials, withOriginAndNo401Redirect());
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Register new user (Better Auth signup)
+  // Register and complete profile in one request (new Postman flow)
   register: async (userData) => {
     try {
-      const response = await api.post('/auth/sign-up/email', userData);
+      const response = await api.post('/users/register-complete', userData, withOriginAndNo401Redirect());
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Complete user profile with business information
+  // Explicit alias for the same endpoint
+  registerComplete: async (userData) => {
+    try {
+      const response = await api.post('/users/register-complete', userData, withOriginAndNo401Redirect());
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Complete user profile (kept for compatibility with existing UI flow)
   completeProfile: async (profileData) => {
     try {
-      const response = await api.post('/users/complete-profile', profileData);
+      const response = await api.post('/users/complete-profile', profileData, withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Logout user (Better Auth)
+  // Logout user
   logout: async () => {
     try {
-      await api.post('/auth/sign-out');
-    } catch (error) {
-      // Even if API call fails, we should clear local storage
-      console.error('Logout API call failed:', error);
-    }
-  },
-
-  // Get current session (Better Auth)
-  getCurrentUser: async () => {
-    try {
-      const response = await api.get('/auth/get-session');
+      const response = await api.post('/auth/sign-out', null, withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Update user profile
-  updateProfile: async (profileData) => {
+  // Get current session
+  getCurrentUser: async () => {
     try {
-      const response = await api.put('/auth/profile', profileData);
+      const response = await api.get('/auth/get-session', withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;
@@ -69,7 +87,7 @@ export const authService = {
   // Change password
   changePassword: async (passwordData) => {
     try {
-      const response = await api.post('/auth/change-password', passwordData);
+      const response = await api.post('/auth/change-password', passwordData, withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;
@@ -79,7 +97,7 @@ export const authService = {
   // Request password reset (Better Auth)
   forgotPassword: async (email) => {
     try {
-      const response = await api.post('/auth/reset-password', { email });
+      const response = await api.post('/auth/reset-password', { email }, withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;
@@ -89,17 +107,20 @@ export const authService = {
   // Reset password
   resetPassword: async (token, newPassword) => {
     try {
-      const response = await api.post('/auth/reset-password', { token, newPassword });
+      const response = await api.post('/auth/reset-password', { token, newPassword }, withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Verify email (uses query param per Postman)
+  // Verify email
   verifyEmail: async (token) => {
     try {
-      const response = await api.get('/auth/verify-email', { params: { token } });
+      const response = await api.get(
+        '/auth/verify-email',
+        withOriginHeader(token ? { params: { token } } : {})
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -109,7 +130,7 @@ export const authService = {
   // Refresh access token
   refreshToken: async () => {
     try {
-      const response = await api.post('/auth/refresh-token');
+      const response = await api.post('/auth/refresh-token', null, withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;

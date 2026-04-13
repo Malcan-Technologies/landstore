@@ -1,131 +1,277 @@
 import api from '@/utils/axios';
 
-// Admin service
+// Admin/reference-data service
 export const adminService = {
-  // Get dashboard statistics
-  getDashboardStats: async () => {
+  // Categories
+  createCategory: async (data) => {
     try {
-      const response = await api.get('/admin/dashboard/stats');
+      const response = await api.post('/categories/', data);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Get all users
-  getAllUsers: async (params = {}) => {
+  getCategories: async (params = {}) => {
     try {
-      const response = await api.get('/admin/users', { params });
+      const response = await api.get('/categories/', { params });
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Get user by ID
-  getUserById: async (id) => {
+  getCategoryById: async (id) => {
     try {
-      const response = await api.get(`/admin/users/${id}`);
+      const response = await api.get(`/categories/${id}`);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Update user status (active/inactive)
-  updateUserStatus: async (id, status) => {
+  updateCategory: async (id, data) => {
     try {
-      const response = await api.put(`/admin/users/${id}/status`, { status });
+      const response = await api.patch(`/categories/${id}`, data);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Delete user
-  deleteUser: async (id) => {
+  deleteCategory: async (id) => {
     try {
-      const response = await api.delete(`/admin/users/${id}`);
+      const response = await api.delete(`/categories/${id}`);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Get all land listings
-  getAllLands: async (params = {}) => {
+  // Ownership types
+  createOwnershipType: async (data) => {
     try {
-      const response = await api.get('/admin/lands', { params });
+      const response = await api.post('/ownership-types/', data);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Update land status (active/inactive/featured)
-  updateLandStatus: async (id, status) => {
+  getOwnershipTypes: async (params = {}) => {
     try {
-      const response = await api.put(`/admin/lands/${id}/status`, { status });
+      const response = await api.get('/ownership-types/', { params });
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Delete land listing
-  deleteLand: async (id) => {
+  getOwnershipTypeById: async (id) => {
     try {
-      const response = await api.delete(`/admin/lands/${id}`);
+      const response = await api.get(`/ownership-types/${id}`);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Get all contact messages
-  getAllContactMessages: async (params = {}) => {
+  updateOwnershipType: async (id, data) => {
     try {
-      const response = await api.get('/admin/contact-messages', { params });
+      const response = await api.patch(`/ownership-types/${id}`, data);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Mark contact message as read
-  markContactMessageRead: async (id) => {
+  deleteOwnershipType: async (id) => {
     try {
-      const response = await api.put(`/admin/contact-messages/${id}/read`);
+      const response = await api.delete(`/ownership-types/${id}`);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Delete contact message
-  deleteContactMessage: async (id) => {
+  // Title types
+  createTitleType: async (data) => {
     try {
-      const response = await api.delete(`/admin/contact-messages/${id}`);
+      const response = await api.post('/title-types/', data);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Get system logs
-  getSystemLogs: async (params = {}) => {
+  getTitleTypes: async (params = {}) => {
     try {
-      const response = await api.get('/admin/logs', { params });
+      const response = await api.get('/title-types/', { params });
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  // Get analytics data
-  getAnalytics: async (params = {}) => {
+  getTitleTypeById: async (id) => {
     try {
-      const response = await api.get('/admin/analytics', { params });
+      const response = await api.get(`/title-types/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateTitleType: async (id, data) => {
+    try {
+      const response = await api.patch(`/title-types/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteTitleType: async (id) => {
+    try {
+      const response = await api.delete(`/title-types/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Utilizations
+  createUtilization: async (data) => {
+    try {
+      const response = await api.post('/utilizations/', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getUtilizations: async (params = {}) => {
+    try {
+      const response = await api.get('/utilizations/', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getUtilizationById: async (id) => {
+    try {
+      const response = await api.get(`/utilizations/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateUtilization: async (id, data) => {
+    try {
+      const response = await api.patch(`/utilizations/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteUtilization: async (id) => {
+    try {
+      const response = await api.delete(`/utilizations/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Entity types
+  createEntityType: async (data) => {
+    try {
+      const response = await api.post('/entity-types/', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getEntityTypes: async (params = {}) => {
+    try {
+      const response = await api.get('/entity-types/', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getEntityTypeById: async (id) => {
+    try {
+      const response = await api.get(`/entity-types/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateEntityType: async (id, data) => {
+    try {
+      const response = await api.patch(`/entity-types/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteEntityType: async (id) => {
+    try {
+      const response = await api.delete(`/entity-types/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Interest types
+  createInterestType: async (data) => {
+    try {
+      const response = await api.post('/interest-types/', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getInterestTypes: async (params = {}) => {
+    try {
+      const response = await api.get('/interest-types/', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getInterestTypeById: async (id) => {
+    try {
+      const response = await api.get(`/interest-types/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateInterestType: async (id, data) => {
+    try {
+      const response = await api.patch(`/interest-types/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteInterestType: async (id) => {
+    try {
+      const response = await api.delete(`/interest-types/${id}`);
       return response.data;
     } catch (error) {
       throw error;

@@ -4,7 +4,7 @@ import React from "react";
 import Modal from "@/components/common/Modal";
 import Check from "@/components/svg/Check";
 
-const EmailConfirmationModal = ({ open, onClose, onResend }) => {
+const EmailConfirmationModal = ({ open, onClose, onConfirm, onResend }) => {
   return (
     <Modal open={open} onClose={onClose}>
       <div className="flex flex-col items-center text-center">
@@ -24,13 +24,13 @@ const EmailConfirmationModal = ({ open, onClose, onResend }) => {
 
         <h3 className="mt-5 text-[22px] font-semibold text-gray2">Check your email</h3>
         <p className="mt-2 max-w-xs text-[14px] leading-6 text-gray7">
-          We've sent a verification link to your email address. Please click it to activate your account.
+          We&apos;ve sent a verification link to your email address. Please click it to activate your account.
         </p>
 
         <div className="mt-6 w-full space-y-3">
           <button
             type="button"
-            onClick={onClose}
+            onClick={onConfirm || onClose}
             className="h-11 w-full rounded-xl bg-green-primary text-[15px] font-semibold text-white transition hover:bg-green-primary"
           >
             Got it

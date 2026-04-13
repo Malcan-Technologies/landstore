@@ -37,8 +37,10 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    const skipAuthRedirectOn401 = Boolean(error?.config?.skipAuthRedirectOn401);
+
     // Handle common errors
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !skipAuthRedirectOn401) {
       // Unauthorized - clear stored user and redirect to login
       if (typeof window !== 'undefined') {
         localStorage.removeItem('user');

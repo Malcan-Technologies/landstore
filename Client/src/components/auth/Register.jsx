@@ -1,10 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useDispatch } from "react-redux";
-import { loginSuccess } from "@/store/authSlice";
 import { authService } from "@/services/authService";
-import { validateForm, registerValidation, completeProfileValidation } from "@/validators";
+import { validateForm, registerValidation } from "@/validators";
 import Button from "@/components/common/Button";
 import EmailConfirmationModal from "@/components/auth/modals/EmailConfirmationModal";
 import PillCheckbox from "@/components/common/PillCheckbox";
@@ -31,8 +29,7 @@ const interestOptions = [
   "Real estate developer",
 ];
 
-const Register = () => {
-  const dispatch = useDispatch();
+const Register = ({ onRegisterSuccess }) => {
   const [entityType, setEntityType] = useState("individual");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -110,105 +107,144 @@ const Register = () => {
     }
   };
 
+  const normalizeRegisterPhone = (value) => {
+    if (!value) return "";
+
+    const digitsOnly = value.replace(/\D/g, "");
+    if (!digitsOnly) return "";
+
+    return digitsOnly.startsWith("60") ? digitsOnly : `60${digitsOnly}`;
+  };
+
+  const buildRegisterPayload = () => {
+    const fullName = formData.fullName.trim();
+    const payload = {
+      email: formData.email.trim(),
+      password: formData.password,
+      name: fullName,
+      userType: "user",
+      profileType: entityType,
+    };
+
+    const normalizedPhone = normalizeRegisterPhone(phoneNumber || formData.phone);
+    if (normalizedPhone) {
+      payload.phone = normalizedPhone;
+    }
+
+    if (entityType === "individual") {
+      payload.fullName = fullName;
+      payload.identityNo = formData.identityNo.trim();
+    }
+
+    if (entityType === "company") {
+      payload.companyName = formData.companyName.trim();
+      payload.registrationNo = formData.registrationNo.trim();
+    }
+
+    if (entityType === "koperasi") {
+      payload.koperasiName = formData.koperasiName.trim();
+      payload.registrationNo = formData.registrationNo.trim();
+    }
+
+    return payload;
+  };
+
+  const validateRegisterPayload = (payload) => {
+    const nextErrors = {};
+
+    const baseValidation = validateForm(
+      {
+        email: payload.email,
+        password: payload.password,
+        name: payload.name,
+      },
+      registerValidation
+    );
+
+    Object.assign(nextErrors, baseValidation.errors);
+
+    if (!payload.name) {
+      nextErrors.fullName = "Full name is required";
+    }
+
+    if (!formData.confirmPassword) {
+      nextErrors.confirmPassword = "Please reconfirm your password";
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      nextErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if ((entityType === "individual" || entityType === "company") && !payload.phone) {
+      nextErrors.phone = "Phone number is required";
+    }
+
+    if (entityType === "individual" && !payload.identityNo) {
+      nextErrors.identityNo = "Identity number is required for individual profiles";
+    }
+
+    if (entityType === "company" && !payload.companyName) {
+      nextErrors.companyName = "Company name is required for company profiles";
+    }
+
+    if (entityType === "koperasi" && !payload.koperasiName) {
+      nextErrors.koperasiName = "Koperasi name is required for koperasi profiles";
+    }
+
+    if ((entityType === "company" || entityType === "koperasi") && !payload.registrationNo) {
+      nextErrors.registrationNo = "Registration number is required";
+    }
+
+    return nextErrors;
+  };
+
+  const resetRegisterState = () => {
+    setEntityType("individual");
+    setPhoneNumber("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setSelectedInterests([
+      "Landowner",
+      "Interested to sell/rent/JV",
+    ]);
+    setIsLoading(false);
+    setErrors({});
+    setFormData({
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      phone: "",
+      identityNo: "",
+      companyName: "",
+      koperasiName: "",
+      registrationNo: "",
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log('🚀 Form submitted!');
     setIsLoading(true);
     setErrors({});
 
     try {
-      // Prepare all data first
-      const registerData = {
-        email: formData.email,
-        password: formData.password,
-        name: formData.fullName
-      };
+      const registerPayload = buildRegisterPayload();
+      const payloadErrors = validateRegisterPayload(registerPayload);
 
-      const fullPhoneNumber = phoneNumber ? `+60${phoneNumber}` : (formData.phone ? `+60${formData.phone}` : '');
-      const profileData = {
-        email: formData.email,
-        profileType: entityType,
-        phone: fullPhoneNumber,
-        userType: "user",
-        interests: selectedInterests
-      };
-
-      // Add entity-specific fields
-      if (entityType === "individual") {
-        profileData.fullName = formData.fullName;
-        profileData.firstName = formData.fullName.split(' ')[0];
-        profileData.lastName = formData.fullName.split(' ').slice(1).join(' ');
-        profileData.identityNo = formData.identityNo || '';
-      } else if (entityType === "company") {
-        profileData.companyName = formData.companyName || '';
-        profileData.registrationNo = formData.registrationNo || '';
-      } else if (entityType === "koperasi") {
-        profileData.koperasiName = formData.koperasiName || '';
-        profileData.registrationNo = formData.registrationNo || '';
-      }
-
-      console.log('📋 Registration data:', registerData);
-      console.log('📋 Profile data:', profileData);
-
-      // VALIDATE EVERYTHING BEFORE MAKING ANY API CALLS
-      const validation = validateForm(registerData, registerValidation);
-      console.log('✅ Validation result:', validation);
-      
-      if (!validation.isValid) {
-        console.log('❌ Validation failed:', validation.errors);
-        setErrors(validation.errors);
-        setIsLoading(false);
+      if (Object.keys(payloadErrors).length > 0) {
+        setErrors(payloadErrors);
         return;
       }
 
-      // Check password confirmation
-      if (formData.password !== formData.confirmPassword) {
-        console.log('❌ Passwords do not match');
-        setErrors({ confirmPassword: 'Passwords do not match' });
-        setIsLoading(false);
-        return;
-      }
+      // Single API for all profile types; fields change by profileType.
+      const registerResponse = await authService.register(registerPayload);
 
-      // Validate profile data
-      const profileValidation = validateForm(profileData, completeProfileValidation);
-      console.log('✅ Profile validation result:', profileValidation);
-      
-      if (!profileValidation.isValid) {
-        console.log('❌ Profile validation failed:', profileValidation.errors);
-        setErrors(profileValidation.errors);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('✅ All validations passed, proceeding with API calls...');
-
-      // Step 1: Register with Better Auth
-      console.log('📡 Calling register API...');
-      const registerResponse = await authService.register(registerData);
-      console.log('📥 Register response:', registerResponse);
-      
-      if (registerResponse.success || registerResponse.user) {
-        console.log('✅ Registration successful, completing profile...');
-
-        console.log('📡 Calling complete-profile API...');
-        const profileResponse = await authService.completeProfile(profileData);
-        console.log('📥 Profile response:', profileResponse);
-        
-        if (profileResponse.success || profileResponse.user) {
-          // Update Redux store with user data
-          const userData = profileResponse.user || profileResponse.result?.user || registerResponse.user;
-          if (userData) {
-            dispatch(loginSuccess(userData));
-          }
-          setIsEmailModalOpen(true);
-        } else {
-          setErrors({ submit: profileResponse.message || 'Failed to complete profile' });
-        }
+      if (registerResponse?.success || registerResponse?.profile || registerResponse?.user) {
+        setIsEmailModalOpen(true);
       } else {
-        setErrors({ submit: registerResponse.message || 'Registration failed' });
+        setErrors({ submit: registerResponse?.message || 'Registration failed' });
       }
     } catch (error) {
-      console.error('Registration error:', error);
       setErrors({ submit: error.message || 'Registration failed. Please try again.' });
     } finally {
       setIsLoading(false);
@@ -216,13 +252,19 @@ const Register = () => {
   };
 
   const handleCloseEmailModal = () => setIsEmailModalOpen(false);
+
+  const handleConfirmEmailModal = () => {
+    setIsEmailModalOpen(false);
+    resetRegisterState();
+    onRegisterSuccess?.();
+  };
+
   const handleResendEmail = () => {
     console.info("Resend verification email clicked");
   };
 
   return (
     <>
-      {console.log("Register component rendered")}
       <form className="mt-4 space-y-3.5" onSubmit={handleSubmit}>
       <div>
         <p className="mb-2 block text-[14px] font-medium text-gray7 md:text-[15px]">Entity Type</p>
@@ -235,7 +277,7 @@ const Register = () => {
                 key={key}
                 type="button"
                 onClick={() => setEntityType(key)}
-                className={`flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border px-2 py-3 text-[11px] font-medium transition ${active ? "border-border-card bg-white text-gray2 shadow-sm" : "border-border-input bg-background-primary text-gray2"}`}
+                className={`flex min-h-18 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border px-2 py-3 text-[11px] font-medium transition ${active ? "border-border-card bg-white text-gray2 shadow-sm" : "border-border-input bg-background-primary text-gray2"}`}
               >
                 <Icon size={18} />
                 <span>{label}</span>
@@ -423,7 +465,7 @@ const Register = () => {
               {!isLoading && <Arrow size={14} color="white" />}
             </span>
           </Button>
-          <p className="mx-auto mt-2.5 max-w-[520px] text-center text-[11px] leading-4 text-gray5">
+          <p className="mx-auto mt-2.5 max-w-130 text-center text-[11px] leading-4 text-gray5">
             By continuing, you agree to Landstore&apos;s Professional Standards and Anti-Bypass Policy.
           </p>
         </div>
@@ -432,6 +474,7 @@ const Register = () => {
       <EmailConfirmationModal
         open={isEmailModalOpen}
         onClose={handleCloseEmailModal}
+        onConfirm={handleConfirmEmailModal}
         onResend={handleResendEmail}
       />
     </>
