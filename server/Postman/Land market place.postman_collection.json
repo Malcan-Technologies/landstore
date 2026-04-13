@@ -87,7 +87,7 @@
           "response": []
         },
         {
-          "name": "Register",
+          "name": "Register(Individual)",
           "request": {
             "method": "POST",
             "header": [
@@ -99,7 +99,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"basit sheikh\",\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\"\r\n}",
+              "raw": "{\r\n    \"email\": \"user12@example.com\",\r\n    \"password\": \"securePassword123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -107,14 +107,79 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/sign-up/email",
+              "raw": "{{baseUrl}}/users/register-complete",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "auth",
-                "sign-up",
-                "email"
+                "users",
+                "register-complete"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register(Company)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"company13@business.com\",\r\n    \"password\": \"CompanyPass123\",\r\n    \"name\": \"John Doe\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"company\",\r\n    \"companyName\": \"ABC Development Sdn Bhd\",\r\n    \"registrationNo\": \"REG123456\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/register-complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "register-complete"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register(Koprasi)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"koperasi123@example.com\",\r\n    \"password\": \"SecurePass123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\", // ← System role (admin or user)\r\n    \"profileType\": \"koperasi\", // ← Business profile type\r\n    \"koperasiName\": \"Koperasi ABC\",\r\n    \"registrationNo\": \"REG789\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/register-complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "register-complete"
               ]
             }
           },
@@ -587,7 +652,7 @@
                 },
                 {
                   "key": "listingCode",
-                  "value": "LAND-2026-005",
+                  "value": "LAND-2026-009",
                   "type": "text",
                   "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
                 },
@@ -614,9 +679,117 @@
                   "type": "file",
                   "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
                   "src": [
-                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
+                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile2.jpeg"
                   ]
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "uuid": "625f394d-38e2-459a-9dca-278290853ba4",
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/spm docs.pdf"
+                },
+                {
+                  "key": "tanahRizabMelayu",
+                  "value": "true",
+                  "description": "true // false",
+                  "type": "text",
+                  "uuid": "a8bcdfdc-b899-4044-876b-891bfe9e0409"
+                },
+                {
+                  "key": "dealTypes",
+                  "value": "buy",
+                  "description": "buy / jv/ financing",
+                  "type": "text",
+                  "uuid": "9c1ec4ce-b890-4bb8-9192-e0c2d5fb3020"
+                },
+                {
+                  "key": "terrainChips",
+                  "value": "flat",
+                  "description": "flat / hilly / mix",
+                  "type": "text",
+                  "uuid": "d50b4700-1009-466b-ac77-d90848749b73"
+                },
+                {
+                  "key": "featureTags",
+                  "value": "road_access",
+                  "description": "road_access/ water / electricity",
+                  "type": "text",
+                  "uuid": "77871cf6-5145-4766-a442-c4692652bd21"
+                },
+                {
+                  "key": "estimatedValuation",
+                  "value": "5000000",
+                  "type": "text",
+                  "uuid": "9b44ad7f-a4bb-4bd5-b2a6-b00c9d20a831"
+                },
+                {
+                  "key": "description",
+                  "value": "this is description",
+                  "type": "text",
+                  "uuid": "2b76bf15-3406-42fd-adc0-41a736d6821a"
+                },
+                {
+                  "key": "status",
+                  "value": "draft",
+                  "description": "draft/published/sold/archived/pending_approval",
+                  "type": "text",
+                  "uuid": "318bc2f0-b8ee-4fac-b46c-0a8dbf810c92"
+                },
+                {
+                  "key": "location.state",
+                  "value": "landjie",
+                  "type": "text",
+                  "uuid": "2eec3ac2-50ba-43f6-a96a-fede4b50b9f0"
+                },
+                {
+                  "key": "location.district",
+                  "value": "hfuhfufud",
+                  "type": "text",
+                  "uuid": "9d62b785-315a-4afd-9a3c-e696ef031a1b"
+                },
+                {
+                  "key": "location.mukim",
+                  "value": "jfjdsfdsf",
+                  "type": "text",
+                  "uuid": "dadefba6-3832-4fbf-b025-f269eb75ff2d"
+                },
+                {
+                  "key": "location.section",
+                  "value": "jhfjdhfau",
+                  "type": "text",
+                  "uuid": "f10a2fc3-4ce8-4097-9cac-aea4dc35a250"
+                },
+                {
+                  "key": "location.latitude",
+                  "value": "jhfjdsfu",
+                  "type": "text",
+                  "uuid": "98fbe8e8-e468-401d-be2e-d2f1f3b8c165"
+                },
+                {
+                  "key": "location.longitude",
+                  "value": "jhjdshfs",
+                  "type": "text",
+                  "uuid": "42bd18ad-4f9a-4dd4-b539-330a4b4e1e08"
+                },
+                {
+                  "key": "location.isApproximate",
+                  "value": "true",
+                  "description": "false / true",
+                  "type": "text",
+                  "uuid": "98410fc2-39c8-481a-9f45-f3fd2c89ee1b"
+                },
+                {
+                  "key": "leaseholdDetails.startYear",
+                  "value": "2020",
+                  "type": "text",
+                  "uuid": "ceb9a938-5cb0-4498-baf4-bf24b1741215"
+                },
+                {
+                  "key": "leaseholdDetails.leasePeriodYears",
+                  "value": "100",
+                  "type": "text",
+                  "uuid": "16780bd7-e34d-40be-b9b2-ed62cf32a872"
                 }
               ]
             },
@@ -888,7 +1061,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\" : \"Own Land\"\r\n}   ",
+              "raw": "{\r\n    \"name\" : \"Own Land\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
