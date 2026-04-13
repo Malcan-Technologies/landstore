@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
 import Register from "@/components/auth/Register";
+import ForgotPasswordModal from "@/components/auth/modals/forgotPasswordModal";
 import Arrow from "@/components/svg/Arrow";
 import EyeClose from "@/components/svg/EyeClose";
 import EyeOpen from "@/components/svg/EyeOpen";
@@ -16,6 +17,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,6 +35,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
     if (open) {
       setActiveTab(initialTab);
       resetLoginState();
+      setForgotPasswordOpen(false);
     }
   }, [open, initialTab]);
 
@@ -75,13 +78,14 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   };
 
   const handleRegisterSuccess = () => {
-    setActiveTab("login");
+    // setActiveTab("register");
     resetLoginState();
     onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose} showCloseButton>
+    <>
+      <Modal open={open && !forgotPasswordOpen} onClose={onClose} showCloseButton>
       <div className="text-center">
         <h2 className="text-[24px] font-bold text-gray2 md:text-[28px]">
           {activeTab === "login" ? "Welcome back" : "Join Landstore"}
@@ -155,6 +159,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
               <button
                 type="button"
                 className="mt-2 cursor-pointer text-[14px] font-medium text-gray5 underline underline-offset-2"
+                onClick={() => setForgotPasswordOpen(true)}
               >
                 Forgot password?
               </button>
@@ -187,7 +192,14 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
           <Register onRegisterSuccess={handleRegisterSuccess} />
         </div>
       )}
-    </Modal>
+      </Modal>
+
+      <ForgotPasswordModal
+        open={forgotPasswordOpen}
+        onClose={() => setForgotPasswordOpen(false)}
+        onBackToLogin={() => setForgotPasswordOpen(false)}
+      />
+    </>
   );
 };
 

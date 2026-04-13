@@ -211,7 +211,7 @@ const FilterPanel = ({
 
   return (
     <aside
-      className={`relative ${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "max-w-fit bg-transparent p-0 shadow-none" : "max-w-84 rounded-xl bg-white p-5 shadow-[0_20px_40px_rgba(15,61,46,0.05)]"} ${isModalVariant || usesExternalCollapse ? "flex h-full flex-col overflow-hidden" : ""}`}
+      className={`relative w-full${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "max-w-fit bg-transparent p-0 shadow-none" : "max-w-84 rounded-xl bg-white p-5 shadow-[0_20px_40px_rgba(15,61,46,0.05)]"} ${isModalVariant || usesExternalCollapse ? "flex h-full flex-col overflow-hidden" : ""}`}
     >
       <div className={`${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "absolute -right-20 top-0 z-10" : "mb-4 flex items-center justify-between gap-2"}`}>
         {!(!isModalVariant && !usesExternalCollapse && isPanelCollapsed) ? (
