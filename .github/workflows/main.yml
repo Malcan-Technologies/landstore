@@ -3,6 +3,7 @@ name: Deploy Client to ECS
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -29,7 +30,7 @@ jobs:
     - name: Set environment variables
       run: |
         echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
-        echo "REPOSITORY=land-marketplace/client" >> $GITHUB_ENV
+        echo "REPOSITORY=landstore-client" >> $GITHUB_ENV
         echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
     # ✅ Build & Push Docker Image
@@ -43,7 +44,7 @@ jobs:
     - name: Download task definition
       run: |
         aws ecs describe-task-definition \
-          --task-definition land-marketplace \
+          --task-definition landstore-client \
           --query taskDefinition > task-definition.json
 
     # ✅ Update image + ADD env vars (SAFE: append, not overwrite)
