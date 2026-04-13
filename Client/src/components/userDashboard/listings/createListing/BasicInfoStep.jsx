@@ -6,6 +6,7 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import Camera from "@/components/svg/Camera";
 import DangerSheild from "@/components/svg/DangerSheild";
 import Upload from "@/components/svg/Upload";
+import { getFilePreviewUrl, revokeFilePreviewUrl } from "@/utils/filePreview";
 
 const dealTypeOptions = ["Buy", "JV", "Financing"];
 const terrainOptions = ["Flat", "Hilly", "Mixed"];
@@ -44,16 +45,24 @@ const BasicInfoStep = ({
   ownershipOptions = defaultOwnershipOptions,
   utilizationOptions = defaultUtilizationOptions,
   categoryOptions = defaultCategoryOptions,
+  errors = {},
 }) => {
   const fileInputRef = useRef(null);
+  const previousPhotosRef = useRef([]);
   const photos = useMemo(() => formData.photos ?? [], [formData.photos]);
-  const previewUrls = useMemo(() => photos.map((file) => URL.createObjectURL(file)), [photos]);
+  const previewUrls = useMemo(() => photos.map((file) => getFilePreviewUrl(file)), [photos]);
 
   useEffect(() => {
-    return () => {
-      previewUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [previewUrls]);
+    const previousPhotos = previousPhotosRef.current;
+
+    previousPhotos.forEach((file) => {
+      if (!photos.includes(file)) {
+        revokeFilePreviewUrl(file);
+      }
+    });
+
+    previousPhotosRef.current = photos;
+  }, [photos]);
 
   const photoSlots = useMemo(() => {
     return Array.from({ length: maxPhotos }, (_, index) => previewUrls[index] ?? null);
@@ -75,13 +84,13 @@ const BasicInfoStep = ({
 
   return (
     <div className="space-y-5 sm:space-y-6 md:space-y-7">
-      <div>
+      <div className="relative">
         <div className="mb-2.5 flex items-center gap-2 text-[12px] font-medium text-gray2 sm:mb-3 sm:text-[13px] md:text-[14px]">
           <Camera size={16} color="var(--color-gray2)" />
           Photo upload
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5">
+        <div className={`grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 ${errors.photos ? "rounded-lg ring-1 ring-red-300" : ""}`.trim()}>
           {photoSlots.map((photoUrl, index) =>
             photoUrl ? (
               <div key={index} className="relative h-30 overflow-hidden rounded-md bg-background-primary sm:h-40 sm:rounded-lg md:h-44">
@@ -112,6 +121,9 @@ const BasicInfoStep = ({
             )
           )}
         </div>
+        {errors.photos ? (
+          <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.photos}</p>
+        ) : null}
       </div>
 
       <div className="grid gap-4 sm:gap-5 md:grid-cols-3 md:gap-6">
@@ -167,6 +179,7 @@ const BasicInfoStep = ({
         onChange={(value) => updateField("ownership", value)}
         options={ownershipOptions}
         placeholder="Select ownership relationship"
+        error={errors.ownership}
       />
 
       <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
@@ -176,6 +189,7 @@ const BasicInfoStep = ({
           onChange={(value) => updateField("utilization", value)}
           options={utilizationOptions}
           placeholder="Select utilization"
+          error={errors.utilization}
         />
         <SelectDropdown
           label="Category"
@@ -183,18 +197,19 @@ const BasicInfoStep = ({
           onChange={(value) => updateField("category", value)}
           options={categoryOptions}
           placeholder="Select category"
+          error={errors.category}
         />
       </div>
 
       <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
-        <div>
+        <div className="relative">
           <label className="mb-2 block text-[12px] font-medium text-gray2 sm:text-[13px]">Land Area</label>
           <div className="flex gap-2">
             <input
               value={formData.landArea}
               onChange={(event) => updateField("landArea", event.target.value)}
               placeholder="Value"
-              className="h-9 w-full rounded-md border border-border-input bg-white px-3 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:h-10 sm:px-3.5 sm:text-[13px] md:h-11 md:text-[14px]"
+              className={`h-9 w-full rounded-md border border-border-input bg-white px-3 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:h-10 sm:px-3.5 sm:text-[13px] md:h-11 md:text-[14px] ${errors.landArea ? "border-red-400 focus:border-red-400" : ""}`.trim()}
             />
             <SelectDropdown
               value={formData.areaUnit}
@@ -205,6 +220,9 @@ const BasicInfoStep = ({
               buttonClassName="h-9 text-[12px] sm:h-10 sm:text-[13px] md:h-11"
             />
           </div>
+          {errors.landArea ? (
+            <p className="pointer-events-none absolute left-0 bottom-0 mt-1 text-[11px] text-red-500">{errors.landArea}</p>
+          ) : null}
         </div>
 
         <div>
@@ -230,6 +248,8 @@ const BasicInfoStep = ({
             options={priceOptions}
             placeholder="e.g. 4500"
             buttonClassName="h-9 text-[12px] sm:h-10 sm:text-[13px] md:h-11"
+            error={errors.pricePerSqft}
+            errorClassName="right-0 text-right"
           />
           <p className="mt-2 text-[11px] italic text-gray5 sm:text-[12px]">Estimated valuation: 1.2M</p>
         </div>
