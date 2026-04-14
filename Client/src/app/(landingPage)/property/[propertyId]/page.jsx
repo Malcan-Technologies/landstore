@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
-import Modal from "@/components/common/Modal";
+import PropertyGallery from "@/components/landingPage/property/PropertyGallery";
 import MapView from "@/components/userDashboard/explore/MapView";
 import Bag from "@/components/svg/Bag";
 import Bag2 from "@/components/svg/Bag2";
@@ -14,14 +13,14 @@ import Check from "@/components/svg/Check";
 import Heart from "@/components/svg/Heart";
 import Layer from "@/components/svg/Layer";
 import List2 from "@/components/svg/List2";
-import Map from "@/components/svg/Map";
 import Map2 from "@/components/svg/Map2";
 import Pointer from "@/components/svg/Pointer";
 import Plus from "@/components/svg/Plus";
 import Sheild from "@/components/svg/Sheild";
 import Person from "@/components/svg/Person";
+import { landService } from "@/services/landService";
 
-const propertyDetails = {
+const fallbackPropertyDetails = {
   id: "LS-000128",
   title: "Kuala Langat, Selangor",
   valuation: "RM 1.2M",
@@ -43,115 +42,269 @@ const propertyDetails = {
   lng: 101.69,
   description:
     "Excellent agriculture potential with direct road access. Soil is suitable for various high-value crops. This listing follows strict privacy guidelines. For full documentation including clean deed, please submit a professional enquiry.",
-  images: [
-    "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=2000&q=80",
-    "https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1439886183900-e79ec0057170?auto=format&fit=crop&w=1200&q=80",
-  ],
+  images: ["/Land.jpg"],
+  isApproximate: true,
 };
 
-const stats = [
-  { label: "Status", values: [{ text: propertyDetails.status, active: true }] },
-  { label: "Deal type", values: propertyDetails.dealTypes.slice(0, 2).map((text) => ({ text })) },
-  { label: "Terrain", values: [{ text: propertyDetails.terrain }, { text: "Hilly" }] },
-  { label: "Utilization", values: [{ text: propertyDetails.utilization }] },
-  { label: "Tanah Rezab Melayu", values: [{ text: propertyDetails.tanahRezab }] },
-];
+const dealTypeLabelMap = {
+  buy: "Buy",
+  jv: "JV",
+  financing: "Financing",
+};
 
-const highlightCards = [
-  { label: "Negeri/Daerah", value: propertyDetails.negeri, Icon: List2 },
-  { label: "Land area", value: propertyDetails.landArea, Icon: Bag2 },
-  { label: "Price per sqft", value: propertyDetails.pricePerSqft, Icon: Map2 },
-  { label: "Features", value: propertyDetails.features.join(", "), Icon: Layer },
-];
+const terrainLabelMap = {
+  flat: "Flat",
+  hilly: "Hilly",
+  mix: "Mixed",
+};
 
-const propertyMapMarkers = [
-  {
-    id: "property-marker",
-    price: propertyDetails.valuation,
-    area: propertyDetails.area,
-    category: propertyDetails.category,
-    image: propertyDetails.images[0],
-    lat: propertyDetails.lat,
-    lng: propertyDetails.lng,
-  },
-];
+const featureTagLabelMap = {
+  road_access: "Road Access",
+  water: "Water",
+  electricity: "Electricity",
+};
 
 const interestTypeOptions = ["Buy", "JV", "Financing"];
 const roleOptions = ["Developer", "Buyer", "Financier", "Representative"];
 
+const extractProperty = (response) => {
+  if (response?.property) return response.property;
+  if (response?.data?.property) return response.data.property;
+  if (response?.result?.property) return response.result.property;
+  if (response?.data) return response.data;
+  return null;
+};
+
+const toNumberOrFallback = (value, fallback) => {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+};
+
+const formatDate = (value) => {
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return fallbackPropertyDetails.updatedAt;
+  }
+
+  return parsedDate.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatCurrency = (value, { compact = false, maximumFractionDigits = 2 } = {}) => {
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue)) {
+    return "RM 0";
+  }
+
+  return `RM ${parsedValue.toLocaleString("en-US", {
+    notation: compact ? "compact" : "standard",
+    maximumFractionDigits,
+  })}`;
+};
+
+const formatArea = (landArea, landAreaUnit) => {
+  if (landArea === undefined || landArea === null || landArea === "") {
+    return "";
+  }
+
+  const parsedValue = Number(landArea);
+  const formattedArea = Number.isFinite(parsedValue)
+    ? parsedValue.toLocaleString("en-US", { maximumFractionDigits: 2 })
+    : String(landArea);
+
+  return `${formattedArea}${landAreaUnit ? ` ${landAreaUnit}` : ""}`.trim();
+};
+
+const formatStatusLabel = (value) =>
+  String(value || "active")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const mapPropertyToDetails = (property) => {
+  const locationTitle = [property?.location?.district, property?.location?.state]
+    .filter(Boolean)
+    .join(", ");
+
+  const mappedDealTypes = Array.isArray(property?.dealTypes)
+    ? property.dealTypes
+        .map((item) => dealTypeLabelMap[String(item).toLowerCase()] || String(item || ""))
+        .filter(Boolean)
+    : [];
+
+  const mappedTerrain = Array.isArray(property?.terrainChips)
+    ? property.terrainChips
+        .map((item) => terrainLabelMap[String(item).toLowerCase()] || String(item || ""))
+        .filter(Boolean)
+    : [];
+
+  const mappedFeatures = Array.isArray(property?.featureTags)
+    ? property.featureTags
+        .map((item) => featureTagLabelMap[String(item).toLowerCase()] || String(item || ""))
+        .filter(Boolean)
+    : [];
+
+  const landAreaText = formatArea(property?.landArea, property?.landAreaUnit);
+  const latitude = toNumberOrFallback(property?.location?.latitude, fallbackPropertyDetails.lat);
+  const longitude = toNumberOrFallback(property?.location?.longitude, fallbackPropertyDetails.lng);
+  const pricePerSqftValue = Number(property?.pricePerSqrft);
+  const primaryImage = property?.media?.fileUrl;
+
+  return {
+    id: property?.id || fallbackPropertyDetails.id,
+    title: property?.title || locationTitle || fallbackPropertyDetails.title,
+    valuation: formatCurrency(property?.estimatedValuation ?? property?.price, {
+      compact: true,
+      maximumFractionDigits: 1,
+    }),
+    ownerType: property?.ownershipType?.name || fallbackPropertyDetails.ownerType,
+    category: property?.category?.name || fallbackPropertyDetails.category,
+    area: landAreaText || fallbackPropertyDetails.area,
+    code: property?.listingCode || fallbackPropertyDetails.code,
+    updatedAt: formatDate(property?.updatedAt),
+    status: formatStatusLabel(property?.status),
+    dealTypes: mappedDealTypes.length > 0 ? mappedDealTypes : fallbackPropertyDetails.dealTypes,
+    terrain: mappedTerrain[0] || fallbackPropertyDetails.terrain,
+    utilization: property?.utilization?.name || fallbackPropertyDetails.utilization,
+    tanahRezab:
+      property?.tanahRizabMelayu === true
+        ? "Yes"
+        : property?.tanahRizabMelayu === false
+          ? "No"
+          : fallbackPropertyDetails.tanahRezab,
+    negeri:
+      [property?.location?.state, property?.location?.district].filter(Boolean).join(" / ") ||
+      fallbackPropertyDetails.negeri,
+    landArea: landAreaText || fallbackPropertyDetails.landArea,
+    pricePerSqft: Number.isFinite(pricePerSqftValue)
+      ? `${formatCurrency(pricePerSqftValue, { maximumFractionDigits: 2 })} / sqft`
+      : fallbackPropertyDetails.pricePerSqft,
+    features: mappedFeatures.length > 0 ? mappedFeatures : fallbackPropertyDetails.features,
+    lat: latitude,
+    lng: longitude,
+    description: property?.description || fallbackPropertyDetails.description,
+    images: primaryImage ? [primaryImage] : fallbackPropertyDetails.images,
+    isApproximate: property?.location?.isApproximate !== false,
+  };
+};
+
 const PropertyPage = () => {
   const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const propertyId = Array.isArray(params?.propertyId) ? params.propertyId[0] : params?.propertyId;
+  const openedFromListings = searchParams.get("source") === "listings";
+  const showMatchmakingAside = !openedFromListings;
+  const backRoute = openedFromListings ? "/user-dashboard/listings" : "/explore";
+
+  const [propertyDetails, setPropertyDetails] = useState(fallbackPropertyDetails);
+  const [isPropertyLoading, setIsPropertyLoading] = useState(true);
+  const [propertyLoadError, setPropertyLoadError] = useState("");
   const [showInterestForm, setShowInterestForm] = useState(false);
   const [interestType, setInterestType] = useState(interestTypeOptions[0]);
   const [message, setMessage] = useState("");
   const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
-  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const handleOpenGallery = useCallback((index) => {
-    setActiveImageIndex(index);
-    setIsGalleryOpen(true);
-  }, []);
+  useEffect(() => {
+    let isMounted = true;
 
-  const handleCloseGallery = useCallback(() => {
-    setIsGalleryOpen(false);
-  }, []);
+    const loadPropertyDetails = async () => {
+      if (!propertyId) {
+        setIsPropertyLoading(false);
+        return;
+      }
 
-  const handlePreviousImage = useCallback(() => {
-    setActiveImageIndex((prev) => (prev === 0 ? propertyDetails.images.length - 1 : prev - 1));
-  }, []);
+      try {
+        setIsPropertyLoading(true);
+        setPropertyLoadError("");
 
-  const handleNextImage = useCallback(() => {
-    setActiveImageIndex((prev) => (prev === propertyDetails.images.length - 1 ? 0 : prev + 1));
-  }, []);
+        const response = await landService.getListingById(propertyId);
+        const property = extractProperty(response);
+
+        if (!isMounted) return;
+        if (!property?.id) {
+          setPropertyLoadError("Property details are unavailable right now.");
+          return;
+        }
+
+        setPropertyDetails(mapPropertyToDetails(property));
+      } catch (error) {
+        if (!isMounted) return;
+        setPropertyLoadError(error?.message || "Failed to load property details.");
+      } finally {
+        if (isMounted) {
+          setIsPropertyLoading(false);
+        }
+      }
+    };
+
+    loadPropertyDetails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [propertyId]);
+
+  const stats = useMemo(
+    () => [
+      { label: "Status", values: [{ text: propertyDetails.status, active: true }] },
+      { label: "Deal type", values: propertyDetails.dealTypes.slice(0, 2).map((text) => ({ text })) },
+      { label: "Terrain", values: [{ text: propertyDetails.terrain }] },
+      { label: "Utilization", values: [{ text: propertyDetails.utilization }] },
+      { label: "Tanah Rezab Melayu", values: [{ text: propertyDetails.tanahRezab }] },
+    ],
+    [propertyDetails]
+  );
+
+  const highlightCards = useMemo(
+    () => [
+      { label: "Negeri/Daerah", value: propertyDetails.negeri, Icon: List2 },
+      { label: "Land area", value: propertyDetails.landArea, Icon: Bag2 },
+      { label: "Price per sqft", value: propertyDetails.pricePerSqft, Icon: Map2 },
+      { label: "Features", value: propertyDetails.features.join(", "), Icon: Layer },
+    ],
+    [propertyDetails]
+  );
+
+  const propertyMapMarkers = useMemo(
+    () => [
+      {
+        id: "property-marker",
+        price: propertyDetails.valuation,
+        area: propertyDetails.area,
+        category: propertyDetails.category,
+        image: propertyDetails.images[0],
+        lat: propertyDetails.lat,
+        lng: propertyDetails.lng,
+      },
+    ],
+    [propertyDetails]
+  );
 
   return (
     <main className="bg-background-primary py-20">
       <div className="flex mx-3 flex-col gap-8 px-2 lg:px-6 xl:px-10 lg:flex-row lg:items-start">
-        <section className="w-full space-y-6 lg:w-[67%] lg:max-w-[87%] lg:flex-none">
-          <button type="button" onClick={() => router.push("/explore")} className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
+        <section className={`w-full space-y-6 ${showMatchmakingAside ? "lg:w-[67%] lg:max-w-[87%] lg:flex-none" : ""}`}>
+          <button type="button" onClick={() => router.push(backRoute)} className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
             <ArrowLeftIcon />
-            Back to marketplace
+            {openedFromListings ? "Back to my listings" : "Back to marketplace"}
           </button>
 
-          <div className="grid gap-2 sm:grid-cols-3 items-stretch">
-            <button type="button" onClick={() => handleOpenGallery(0)} className="relative sm:h-100 h-60 sm:rounded-l-xl rounded-t-xl text-left sm:col-span-2 w-full">
-              <Image
-                src={propertyDetails.images[0]}
-                alt="Main property view"
-                fill
-                className="sm:rounded-l-xl sm:rounded-tr-none rounded-t-xl object-cover"
-                sizes="(min-width: 1024px) 66vw, 100vw"
-                unoptimized
-              />
-            </button>
-            <div className="flex h-30 gap-2 sm:h-auto sm:flex-col">
-              <button type="button" onClick={() => handleOpenGallery(1)} className="relative sm:h-49 flex-1 rounded-r-none rounded-bl-xl text-left sm:w-full sm:flex-none sm:rounded-bl-none sm:rounded-tr-xl">
-                <Image
-                  src={propertyDetails.images[1]}
-                  alt="Property gallery image 2"
-                  fill
-                  className="rounded-r-none rounded-bl-xl object-cover sm:rounded-bl-none sm:rounded-tr-xl"
-                  sizes="(min-width: 1024px) 24vw, 80vw"
-                  unoptimized
-                />
-              </button>
-              <button type="button" onClick={() => handleOpenGallery(2)} className="relative sm:h-49 flex-1 rounded-r-xl text-left sm:w-full sm:flex-none sm:rounded-br-xl">
-                <Image
-                  src={propertyDetails.images[2]}
-                  alt="Property gallery image 3"
-                  fill
-                  className="rounded-br-xl object-cover sm:rounded-br-xl"
-                  sizes="(min-width: 1024px) 24vw, 80vw"
-                  unoptimized
-                />
-                <div className="absolute inset-0 flex items-center justify-center rounded-r-xl bg-black/30 text-white sm:rounded-br-xl">
-                  +15 more
-                </div>
-              </button>
+          {isPropertyLoading ? (
+            <div className="rounded-xl border border-border-card bg-white px-4 py-3 text-sm font-medium text-gray5">
+              Loading property details...
             </div>
-          </div>
+          ) : null}
+
+          {propertyLoadError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {propertyLoadError}
+            </div>
+          ) : null}
+
+          <PropertyGallery images={propertyDetails.images} moreImagesLabel="+15 more" />
 
           <header className="flex flex-col gap-4 border-b w-full border-border-input pb-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-2 w-full">
@@ -245,7 +398,7 @@ const PropertyPage = () => {
                   mapClassName="h-[322px] w-full rounded-lg"
                   ringClassName="z-[1]"
                 />
-                <div className="pointer-events-none absolute bottom-6 right-6 z-[2] rounded-[14px] border border-border-card bg-white px-4 py-3 text-[12px] font-semibold text-gray7 shadow-[0_6px_18px_rgba(15,23,42,0.16)]">
+                <div className="pointer-events-none absolute bottom-6 right-6 z-2 rounded-[14px] border border-border-card bg-white px-4 py-3 text-[12px] font-semibold text-gray7 shadow-[0_6px_18px_rgba(15,23,42,0.16)]">
                   LAT {propertyDetails.lat.toFixed(2)} / LNG {propertyDetails.lng.toFixed(2)}
                 </div>
               </div>
@@ -256,12 +409,17 @@ const PropertyPage = () => {
                     <WarningRingIcon />
                   </span>
                 </span>
-                <span>Location is approximate. Owner identity is protected</span>
+                <span>
+                  {propertyDetails.isApproximate
+                    ? "Location is approximate. Owner identity is protected"
+                    : "Location visibility is restricted for privacy."}
+                </span>
               </div>
             </div>
           </div>
         </section>
 
+        {showMatchmakingAside ? (
         <aside className="h-fit w-auto  rounded-xl border border-border-card bg-white p-6 shadow-[0_10px_30px_rgba(16,24,40,0.08)]">
           {showInterestForm ? (
             <div className="space-y-5">
@@ -365,83 +523,9 @@ const PropertyPage = () => {
             </div>
           )}
         </aside>
+        ) : null}
       </div>
 
-      <Modal
-        open={isGalleryOpen}
-        onClose={handleCloseGallery}
-        panelClassName="w-full max-w-[1100px] overflow-visible bg-transparent px-4 py-4 text-left shadow-none md:px-5 md:py-5"
-        overlayClassName="bg-black/70"
-        containerClassName="flex min-h-full items-center justify-center p-4"
-        closeButtonClassName="absolute right-5 top-4 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-[34px] leading-none text-white/80 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
-        closeLabel="Close gallery"
-      >
-        <div className="relative space-y-4 rounded-[28px] bg-[#0D0D0D] p-4 shadow-2xl md:p-5">
-          <div className="relative z-10 overflow-hidden rounded-[22px] bg-black/50">
-            <div className="relative h-[70vh] min-h-105 w-full">
-              <Image
-                src={propertyDetails.images[activeImageIndex]}
-                alt={`Property gallery image ${activeImageIndex + 1}`}
-                fill
-                className="object-contain"
-                sizes="100vw"
-                unoptimized
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handlePreviousImage}
-              className="absolute left-4 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
-              aria-label="Previous image"
-            >
-              <span className="text-[22px] leading-none">‹</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleNextImage}
-              className="absolute right-4 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
-              aria-label="Next image"
-            >
-              <span className="text-[22px] leading-none">›</span>
-            </button>
-          </div>
-
-          <div className="relative z-10 flex items-center justify-between gap-3 text-sm text-white/80">
-            <span>
-              Image {activeImageIndex + 1} of {propertyDetails.images.length}
-            </span>
-          </div>
-
-          <div className="relative z-10 flex gap-3 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
-            {propertyDetails.images.map((image, index) => {
-              const isActive = activeImageIndex === index;
-
-              return (
-                <button
-                  key={image}
-                  type="button"
-                  onClick={() => setActiveImageIndex(index)}
-                  className={`relative h-20 w-28 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
-                    isActive ? "border-green-secondary" : "border-transparent opacity-70 hover:opacity-100"
-                  }`}
-                  aria-label={`Open image ${index + 1}`}
-                >
-                  <Image
-                    src={image}
-                    alt={`Property thumbnail ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="112px"
-                    unoptimized
-                  />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </Modal>
     </main>
   );
 };

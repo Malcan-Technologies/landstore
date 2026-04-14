@@ -50,7 +50,16 @@ const BasicInfoStep = ({
   const fileInputRef = useRef(null);
   const previousPhotosRef = useRef([]);
   const photos = useMemo(() => formData.photos ?? [], [formData.photos]);
+  const existingPhotoUrls = useMemo(() => formData.existingPhotos ?? [], [formData.existingPhotos]);
   const previewUrls = useMemo(() => photos.map((file) => getFilePreviewUrl(file)), [photos]);
+
+  const photoItems = useMemo(
+    () => [
+      ...existingPhotoUrls.map((url) => ({ url, isExisting: true })),
+      ...previewUrls.map((url, newIndex) => ({ url, isExisting: false, newIndex })),
+    ],
+    [existingPhotoUrls, previewUrls]
+  );
 
   useEffect(() => {
     const previousPhotos = previousPhotosRef.current;
@@ -65,12 +74,13 @@ const BasicInfoStep = ({
   }, [photos]);
 
   const photoSlots = useMemo(() => {
-    return Array.from({ length: maxPhotos }, (_, index) => previewUrls[index] ?? null);
-  }, [previewUrls]);
+    return Array.from({ length: maxPhotos }, (_, index) => photoItems[index] ?? null);
+  }, [photoItems]);
 
   const handlePhotoUpload = (event) => {
     const selectedFiles = Array.from(event.target.files ?? []);
-    const nextPhotos = [...photos, ...selectedFiles].slice(0, maxPhotos);
+    const remainingSlots = Math.max(maxPhotos - existingPhotoUrls.length - photos.length, 0);
+    const nextPhotos = [...photos, ...selectedFiles.slice(0, remainingSlots)].slice(0, maxPhotos);
     updateField("photos", nextPhotos);
     event.target.value = "";
   };
@@ -91,20 +101,27 @@ const BasicInfoStep = ({
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
         <div className={`grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 ${errors.photos ? "rounded-lg ring-1 ring-red-300" : ""}`.trim()}>
-          {photoSlots.map((photoUrl, index) =>
-            photoUrl ? (
+          {photoSlots.map((photoItem, index) =>
+            photoItem ? (
               <div key={index} className="relative h-30 overflow-hidden rounded-md bg-background-primary sm:h-40 sm:rounded-lg md:h-44">
-                <button
-                  type="button"
-                  onClick={() => handleRemovePhoto(index)}
-                  className="absolute right-2 top-2 z-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-[16px] leading-none text-white transition hover:bg-black/80"
-                  aria-label={`Remove uploaded photo ${index + 1}`}
-                >
-                  ×
-                </button>
-                <img src={photoUrl} alt={`Uploaded land ${index + 1}`} className="h-full w-full object-cover" />
+                {!photoItem.isExisting ? (
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePhoto(photoItem.newIndex)}
+                    className="absolute right-2 top-2 z-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-[16px] leading-none text-white transition hover:bg-black/80"
+                    aria-label={`Remove uploaded photo ${index + 1}`}
+                  >
+                    ×
+                  </button>
+                ) : null}
+                <img src={photoItem.url} alt={`Uploaded land ${index + 1}`} className="h-full w-full object-cover" />
+                {photoItem.isExisting ? (
+                  <span className="absolute left-2 top-2 z-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-medium text-white">
+                    Existing
+                  </span>
+                ) : null}
               </div>
-            ) : index === previewUrls.length && previewUrls.length < maxPhotos ? (
+            ) : index === photoItems.length && photoItems.length < maxPhotos ? (
               <button
                 key={index}
                 type="button"
