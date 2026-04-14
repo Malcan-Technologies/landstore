@@ -13,17 +13,40 @@ const statusStyles = {
   reserved: "bg-[#EEF4FF] text-[#2563EB]",
 };
 
-const ListingCard = ({ listing, showFooter = true, onAction }) => {
+const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
   const fallbackImage = "/Land.jpg";
   const statusClassName =
     statusStyles[listing.statusKey] ?? statusStyles.active;
 
-  const handleActionClick = (action) => {
+  const handleCardClick = () => {
+    if (!onCardClick) return;
+    onCardClick(listing);
+  };
+
+  const handleCardKeyDown = (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    if (!onCardClick) return;
+    onCardClick(listing);
+  };
+
+  const handleActionClick = (event, action) => {
+    event.stopPropagation();
     onAction?.(action, listing);
   };
 
   return (
-    <article className="rounded-2xl border border-border-card bg-white p-3 py-4 shadow-[0px_4px_18px_rgba(15,61,46,0.04)]">
+    <article
+      className={`rounded-2xl border border-border-card bg-white p-3 py-4 shadow-[0px_4px_18px_rgba(15,61,46,0.04)] ${onCardClick ? "cursor-pointer" : ""}`}
+      role={onCardClick ? "button" : undefined}
+      tabIndex={onCardClick ? 0 : undefined}
+      onClick={onCardClick ? handleCardClick : undefined}
+      onKeyDown={onCardClick ? handleCardKeyDown : undefined}
+      aria-label={onCardClick ? `Open ${listing.title} details` : undefined}
+    >
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative h-auto sm:w-54  lg:w-60 xl:w-60 w-auto overflow-hidden rounded-xl">
           <img
@@ -81,7 +104,7 @@ const ListingCard = ({ listing, showFooter = true, onAction }) => {
               </div>
 
               <h2 className="flex  lg:-mt-4 items-center gap-2 text-[18px] font-bold text-gray2 lg:text-[22px] xl:text-[28px]">
-                <Pointer color="var(--color-green-secondary)" className="h-[15px] w-3 shrink-0 sm:h-4 sm:w-[13px] lg:h-[28px] lg:w-[18px]" />
+                <Pointer color="var(--color-green-secondary)" className="h-3.75 w-3 shrink-0 sm:h-4 sm:w-3.25 lg:h-7 lg:w-4.5" />
                 <span className="truncate">{listing.title}</span>
               </h2>
 
@@ -123,7 +146,7 @@ const ListingCard = ({ listing, showFooter = true, onAction }) => {
                         <button
                           key={action.label}
                           type="button"
-                          onClick={() => handleActionClick(action)}
+                          onClick={(event) => handleActionClick(event, action)}
                           className="inline-flex h-8 sm:w-auto w-full justify-center sm:justify-start items-center gap-2 rounded-lg border border-[#FECACA] px-3 text-[12px] font-medium text-[#EF4444] transition hover:bg-[#FEF2F2]"
                         >
                           <Delete size={16} className="text-current" />
@@ -137,7 +160,7 @@ const ListingCard = ({ listing, showFooter = true, onAction }) => {
                         <button
                           key={action.label}
                           type="button"
-                          onClick={() => handleActionClick(action)}
+                          onClick={(event) => handleActionClick(event, action)}
                           className="inline-flex h-8 sm:w-auto w-full justify-center sm:justify-start items-center gap-2 rounded-lg border border-border-input px-3 text-[12px] font-medium text-gray2 transition hover:bg-background-primary"
                         >
                           <EyeOpen size={16} color="currentColor" />
@@ -151,7 +174,7 @@ const ListingCard = ({ listing, showFooter = true, onAction }) => {
                         <button
                           key={action.label}
                           type="button"
-                          onClick={() => handleActionClick(action)}
+                          onClick={(event) => handleActionClick(event, action)}
                           className="inline-flex h-8 sm:w-auto w-full justify-center sm:justify-start items-center rounded-lg bg-[#EAF8F1] px-2 py-2 sm:text-[12px] text-[9px] font-semibold text-green-secondary transition hover:bg-[#DCF3E8]"
                         >
                           {action.label}
@@ -163,7 +186,7 @@ const ListingCard = ({ listing, showFooter = true, onAction }) => {
                       <button
                         key={action.label}
                         type="button"
-                        onClick={() => handleActionClick(action)}
+                        onClick={(event) => handleActionClick(event, action)}
                         className="inline-flex h-8 sm:w-auto w-full justify-center sm:justify-start items-center rounded-lg border border-border-input px-3 sm:text-[12px] text-[9px] font-medium text-gray2 transition hover:bg-background-primary"
                       >
                         {action.type === "default" ? (

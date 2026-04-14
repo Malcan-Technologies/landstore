@@ -6,10 +6,40 @@ import Image from "next/image";
 import Modal from "@/components/common/Modal";
 
 const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
+  const fallbackImage = "/Land.jpg";
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [failedImageMap, setFailedImageMap] = useState({});
 
   const hasSecondaryImages = images.length > 1;
+
+  const resolveImageSrc = useCallback(
+    (source) => {
+      if (!source || failedImageMap[source]) {
+        return fallbackImage;
+      }
+
+      return source;
+    },
+    [failedImageMap]
+  );
+
+  const markImageAsFailed = useCallback((source) => {
+    if (!source || source === fallbackImage) {
+      return;
+    }
+
+    setFailedImageMap((previous) => {
+      if (previous[source]) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        [source]: true,
+      };
+    });
+  }, []);
 
   const handleOpenGallery = useCallback((index) => {
     setActiveImageIndex(index);
@@ -51,13 +81,14 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
           }`}
         >
           <Image
-            src={images[0]}
+            src={resolveImageSrc(images[0])}
             alt="Main property view"
             fill
             className={`object-cover ${
               hasSecondaryImages ? "rounded-t-xl sm:rounded-l-xl sm:rounded-tr-none" : "rounded-xl"
             }`}
             sizes="(min-width: 1024px) 66vw, 100vw"
+            onError={() => markImageAsFailed(images[0])}
             unoptimized
           />
         </button>
@@ -71,11 +102,12 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
                 className="relative flex-1 rounded-r-none rounded-bl-xl text-left sm:h-49 sm:w-full sm:flex-none sm:rounded-bl-none sm:rounded-tr-xl"
               >
                 <Image
-                  src={images[1]}
+                  src={resolveImageSrc(images[1])}
                   alt="Property gallery image 2"
                   fill
                   className="rounded-r-none rounded-bl-xl object-cover sm:rounded-bl-none sm:rounded-tr-xl"
                   sizes="(min-width: 1024px) 24vw, 80vw"
+                  onError={() => markImageAsFailed(images[1])}
                   unoptimized
                 />
               </button>
@@ -88,11 +120,12 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
                 className="relative flex-1 rounded-r-xl text-left sm:h-49 sm:w-full sm:flex-none sm:rounded-br-xl"
               >
                 <Image
-                  src={images[2]}
+                  src={resolveImageSrc(images[2])}
                   alt="Property gallery image 3"
                   fill
                   className="rounded-br-xl object-cover sm:rounded-br-xl"
                   sizes="(min-width: 1024px) 24vw, 80vw"
+                  onError={() => markImageAsFailed(images[2])}
                   unoptimized
                 />
                 <div className="absolute inset-0 flex items-center justify-center rounded-r-xl bg-black/30 text-white sm:rounded-br-xl">
@@ -117,11 +150,12 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
           <div className="relative z-10 overflow-hidden rounded-[22px] bg-black/50">
             <div className="relative h-[70vh] min-h-105 w-full">
               <Image
-                src={images[activeImageIndex]}
+                src={resolveImageSrc(images[activeImageIndex])}
                 alt={`Property gallery image ${activeImageIndex + 1}`}
                 fill
                 className="object-contain"
                 sizes="100vw"
+                onError={() => markImageAsFailed(images[activeImageIndex])}
                 unoptimized
               />
             </div>
@@ -161,7 +195,7 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
 
               return (
                 <button
-                  key={image}
+                  key={`${image || "placeholder"}-${index}`}
                   type="button"
                   onClick={() => setActiveImageIndex(index)}
                   className={`relative h-20 w-28 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
@@ -170,11 +204,12 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
                   aria-label={`Open image ${index + 1}`}
                 >
                   <Image
-                    src={image}
+                    src={resolveImageSrc(image)}
                     alt={`Property thumbnail ${index + 1}`}
                     fill
                     className="object-cover"
                     sizes="112px"
+                    onError={() => markImageAsFailed(image)}
                     unoptimized
                   />
                 </button>

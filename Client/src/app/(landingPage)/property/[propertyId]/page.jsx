@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import PropertyGallery from "@/components/landingPage/property/PropertyGallery";
 import MapView from "@/components/userDashboard/explore/MapView";
@@ -13,14 +13,14 @@ import Check from "@/components/svg/Check";
 import Heart from "@/components/svg/Heart";
 import Layer from "@/components/svg/Layer";
 import List2 from "@/components/svg/List2";
-import Map from "@/components/svg/Map";
 import Map2 from "@/components/svg/Map2";
 import Pointer from "@/components/svg/Pointer";
 import Plus from "@/components/svg/Plus";
 import Sheild from "@/components/svg/Sheild";
 import Person from "@/components/svg/Person";
+import { landService } from "@/services/landService";
 
-const propertyDetails = {
+const fallbackPropertyDetails = {
   id: "LS-000128",
   title: "Kuala Langat, Selangor",
   valuation: "RM 1.2M",
@@ -42,58 +42,267 @@ const propertyDetails = {
   lng: 101.69,
   description:
     "Excellent agriculture potential with direct road access. Soil is suitable for various high-value crops. This listing follows strict privacy guidelines. For full documentation including clean deed, please submit a professional enquiry.",
-  images: [
-    "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=2000&q=80",
-    "https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=1200&q=80",
-    "https://images.unsplash.com/photo-1439886183900-e79ec0057170?auto=format&fit=crop&w=1200&q=80",
-  ],
+  images: ["/Land.jpg"],
+  isApproximate: true,
 };
 
-const stats = [
-  { label: "Status", values: [{ text: propertyDetails.status, active: true }] },
-  { label: "Deal type", values: propertyDetails.dealTypes.slice(0, 2).map((text) => ({ text })) },
-  { label: "Terrain", values: [{ text: propertyDetails.terrain }, { text: "Hilly" }] },
-  { label: "Utilization", values: [{ text: propertyDetails.utilization }] },
-  { label: "Tanah Rezab Melayu", values: [{ text: propertyDetails.tanahRezab }] },
-];
+const dealTypeLabelMap = {
+  buy: "Buy",
+  jv: "JV",
+  financing: "Financing",
+};
 
-const highlightCards = [
-  { label: "Negeri/Daerah", value: propertyDetails.negeri, Icon: List2 },
-  { label: "Land area", value: propertyDetails.landArea, Icon: Bag2 },
-  { label: "Price per sqft", value: propertyDetails.pricePerSqft, Icon: Map2 },
-  { label: "Features", value: propertyDetails.features.join(", "), Icon: Layer },
-];
+const terrainLabelMap = {
+  flat: "Flat",
+  hilly: "Hilly",
+  mix: "Mixed",
+};
 
-const propertyMapMarkers = [
-  {
-    id: "property-marker",
-    price: propertyDetails.valuation,
-    area: propertyDetails.area,
-    category: propertyDetails.category,
-    image: propertyDetails.images[0],
-    lat: propertyDetails.lat,
-    lng: propertyDetails.lng,
-  },
-];
+const featureTagLabelMap = {
+  road_access: "Road Access",
+  water: "Water",
+  electricity: "Electricity",
+};
 
 const interestTypeOptions = ["Buy", "JV", "Financing"];
 const roleOptions = ["Developer", "Buyer", "Financier", "Representative"];
 
+const extractProperty = (response) => {
+  if (response?.property) return response.property;
+  if (response?.data?.property) return response.data.property;
+  if (response?.result?.property) return response.result.property;
+  if (response?.data) return response.data;
+  return null;
+};
+
+const toNumberOrFallback = (value, fallback) => {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+};
+
+const formatDate = (value) => {
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return fallbackPropertyDetails.updatedAt;
+  }
+
+  return parsedDate.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatCurrency = (value, { compact = false, maximumFractionDigits = 2 } = {}) => {
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue)) {
+    return "RM 0";
+  }
+
+  return `RM ${parsedValue.toLocaleString("en-US", {
+    notation: compact ? "compact" : "standard",
+    maximumFractionDigits,
+  })}`;
+};
+
+const formatArea = (landArea, landAreaUnit) => {
+  if (landArea === undefined || landArea === null || landArea === "") {
+    return "";
+  }
+
+  const parsedValue = Number(landArea);
+  const formattedArea = Number.isFinite(parsedValue)
+    ? parsedValue.toLocaleString("en-US", { maximumFractionDigits: 2 })
+    : String(landArea);
+
+  return `${formattedArea}${landAreaUnit ? ` ${landAreaUnit}` : ""}`.trim();
+};
+
+const formatStatusLabel = (value) =>
+  String(value || "active")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const mapPropertyToDetails = (property) => {
+  const locationTitle = [property?.location?.district, property?.location?.state]
+    .filter(Boolean)
+    .join(", ");
+
+  const mappedDealTypes = Array.isArray(property?.dealTypes)
+    ? property.dealTypes
+        .map((item) => dealTypeLabelMap[String(item).toLowerCase()] || String(item || ""))
+        .filter(Boolean)
+    : [];
+
+  const mappedTerrain = Array.isArray(property?.terrainChips)
+    ? property.terrainChips
+        .map((item) => terrainLabelMap[String(item).toLowerCase()] || String(item || ""))
+        .filter(Boolean)
+    : [];
+
+  const mappedFeatures = Array.isArray(property?.featureTags)
+    ? property.featureTags
+        .map((item) => featureTagLabelMap[String(item).toLowerCase()] || String(item || ""))
+        .filter(Boolean)
+    : [];
+
+  const landAreaText = formatArea(property?.landArea, property?.landAreaUnit);
+  const latitude = toNumberOrFallback(property?.location?.latitude, fallbackPropertyDetails.lat);
+  const longitude = toNumberOrFallback(property?.location?.longitude, fallbackPropertyDetails.lng);
+  const pricePerSqftValue = Number(property?.pricePerSqrft);
+  const primaryImage = property?.media?.fileUrl;
+
+  return {
+    id: property?.id || fallbackPropertyDetails.id,
+    title: property?.title || locationTitle || fallbackPropertyDetails.title,
+    valuation: formatCurrency(property?.estimatedValuation ?? property?.price, {
+      compact: true,
+      maximumFractionDigits: 1,
+    }),
+    ownerType: property?.ownershipType?.name || fallbackPropertyDetails.ownerType,
+    category: property?.category?.name || fallbackPropertyDetails.category,
+    area: landAreaText || fallbackPropertyDetails.area,
+    code: property?.listingCode || fallbackPropertyDetails.code,
+    updatedAt: formatDate(property?.updatedAt),
+    status: formatStatusLabel(property?.status),
+    dealTypes: mappedDealTypes.length > 0 ? mappedDealTypes : fallbackPropertyDetails.dealTypes,
+    terrain: mappedTerrain[0] || fallbackPropertyDetails.terrain,
+    utilization: property?.utilization?.name || fallbackPropertyDetails.utilization,
+    tanahRezab:
+      property?.tanahRizabMelayu === true
+        ? "Yes"
+        : property?.tanahRizabMelayu === false
+          ? "No"
+          : fallbackPropertyDetails.tanahRezab,
+    negeri:
+      [property?.location?.state, property?.location?.district].filter(Boolean).join(" / ") ||
+      fallbackPropertyDetails.negeri,
+    landArea: landAreaText || fallbackPropertyDetails.landArea,
+    pricePerSqft: Number.isFinite(pricePerSqftValue)
+      ? `${formatCurrency(pricePerSqftValue, { maximumFractionDigits: 2 })} / sqft`
+      : fallbackPropertyDetails.pricePerSqft,
+    features: mappedFeatures.length > 0 ? mappedFeatures : fallbackPropertyDetails.features,
+    lat: latitude,
+    lng: longitude,
+    description: property?.description || fallbackPropertyDetails.description,
+    images: primaryImage ? [primaryImage] : fallbackPropertyDetails.images,
+    isApproximate: property?.location?.isApproximate !== false,
+  };
+};
+
 const PropertyPage = () => {
   const router = useRouter();
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const propertyId = Array.isArray(params?.propertyId) ? params.propertyId[0] : params?.propertyId;
+  const openedFromListings = searchParams.get("source") === "listings";
+  const showMatchmakingAside = !openedFromListings;
+  const backRoute = openedFromListings ? "/user-dashboard/listings" : "/explore";
+
+  const [propertyDetails, setPropertyDetails] = useState(fallbackPropertyDetails);
+  const [isPropertyLoading, setIsPropertyLoading] = useState(true);
+  const [propertyLoadError, setPropertyLoadError] = useState("");
   const [showInterestForm, setShowInterestForm] = useState(false);
   const [interestType, setInterestType] = useState(interestTypeOptions[0]);
   const [message, setMessage] = useState("");
   const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPropertyDetails = async () => {
+      if (!propertyId) {
+        setIsPropertyLoading(false);
+        return;
+      }
+
+      try {
+        setIsPropertyLoading(true);
+        setPropertyLoadError("");
+
+        const response = await landService.getListingById(propertyId);
+        const property = extractProperty(response);
+
+        if (!isMounted) return;
+        if (!property?.id) {
+          setPropertyLoadError("Property details are unavailable right now.");
+          return;
+        }
+
+        setPropertyDetails(mapPropertyToDetails(property));
+      } catch (error) {
+        if (!isMounted) return;
+        setPropertyLoadError(error?.message || "Failed to load property details.");
+      } finally {
+        if (isMounted) {
+          setIsPropertyLoading(false);
+        }
+      }
+    };
+
+    loadPropertyDetails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [propertyId]);
+
+  const stats = useMemo(
+    () => [
+      { label: "Status", values: [{ text: propertyDetails.status, active: true }] },
+      { label: "Deal type", values: propertyDetails.dealTypes.slice(0, 2).map((text) => ({ text })) },
+      { label: "Terrain", values: [{ text: propertyDetails.terrain }] },
+      { label: "Utilization", values: [{ text: propertyDetails.utilization }] },
+      { label: "Tanah Rezab Melayu", values: [{ text: propertyDetails.tanahRezab }] },
+    ],
+    [propertyDetails]
+  );
+
+  const highlightCards = useMemo(
+    () => [
+      { label: "Negeri/Daerah", value: propertyDetails.negeri, Icon: List2 },
+      { label: "Land area", value: propertyDetails.landArea, Icon: Bag2 },
+      { label: "Price per sqft", value: propertyDetails.pricePerSqft, Icon: Map2 },
+      { label: "Features", value: propertyDetails.features.join(", "), Icon: Layer },
+    ],
+    [propertyDetails]
+  );
+
+  const propertyMapMarkers = useMemo(
+    () => [
+      {
+        id: "property-marker",
+        price: propertyDetails.valuation,
+        area: propertyDetails.area,
+        category: propertyDetails.category,
+        image: propertyDetails.images[0],
+        lat: propertyDetails.lat,
+        lng: propertyDetails.lng,
+      },
+    ],
+    [propertyDetails]
+  );
+
   return (
     <main className="bg-background-primary py-20">
       <div className="flex mx-3 flex-col gap-8 px-2 lg:px-6 xl:px-10 lg:flex-row lg:items-start">
-        <section className="w-full space-y-6 lg:w-[67%] lg:max-w-[87%] lg:flex-none">
-          <button type="button" onClick={() => router.push("/explore")} className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
+        <section className={`w-full space-y-6 ${showMatchmakingAside ? "lg:w-[67%] lg:max-w-[87%] lg:flex-none" : ""}`}>
+          <button type="button" onClick={() => router.push(backRoute)} className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
             <ArrowLeftIcon />
-            Back to marketplace
+            {openedFromListings ? "Back to my listings" : "Back to marketplace"}
           </button>
+
+          {isPropertyLoading ? (
+            <div className="rounded-xl border border-border-card bg-white px-4 py-3 text-sm font-medium text-gray5">
+              Loading property details...
+            </div>
+          ) : null}
+
+          {propertyLoadError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+              {propertyLoadError}
+            </div>
+          ) : null}
 
           <PropertyGallery images={propertyDetails.images} moreImagesLabel="+15 more" />
 
@@ -200,12 +409,17 @@ const PropertyPage = () => {
                     <WarningRingIcon />
                   </span>
                 </span>
-                <span>Location is approximate. Owner identity is protected</span>
+                <span>
+                  {propertyDetails.isApproximate
+                    ? "Location is approximate. Owner identity is protected"
+                    : "Location visibility is restricted for privacy."}
+                </span>
               </div>
             </div>
           </div>
         </section>
 
+        {showMatchmakingAside ? (
         <aside className="h-fit w-auto  rounded-xl border border-border-card bg-white p-6 shadow-[0_10px_30px_rgba(16,24,40,0.08)]">
           {showInterestForm ? (
             <div className="space-y-5">
@@ -309,6 +523,7 @@ const PropertyPage = () => {
             </div>
           )}
         </aside>
+        ) : null}
       </div>
 
     </main>
