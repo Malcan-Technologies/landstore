@@ -13,10 +13,14 @@ const statusStyles = {
   reserved: "bg-[#EEF4FF] text-[#2563EB]",
 };
 
-const ListingCard = ({ listing, showFooter = true }) => {
+const ListingCard = ({ listing, showFooter = true, onAction }) => {
   const fallbackImage = "/Land.jpg";
   const statusClassName =
     statusStyles[listing.statusKey] ?? statusStyles.active;
+
+  const handleActionClick = (action) => {
+    onAction?.(action, listing);
+  };
 
   return (
     <article className="rounded-2xl border border-border-card bg-white p-3 py-4 shadow-[0px_4px_18px_rgba(15,61,46,0.04)]">
@@ -119,6 +123,7 @@ const ListingCard = ({ listing, showFooter = true }) => {
                         <button
                           key={action.label}
                           type="button"
+                          onClick={() => handleActionClick(action)}
                           className="inline-flex h-8 sm:w-auto w-full justify-center sm:justify-start items-center gap-2 rounded-lg border border-[#FECACA] px-3 text-[12px] font-medium text-[#EF4444] transition hover:bg-[#FEF2F2]"
                         >
                           <Delete size={16} className="text-current" />
@@ -132,6 +137,7 @@ const ListingCard = ({ listing, showFooter = true }) => {
                         <button
                           key={action.label}
                           type="button"
+                          onClick={() => handleActionClick(action)}
                           className="inline-flex h-8 sm:w-auto w-full justify-center sm:justify-start items-center gap-2 rounded-lg border border-border-input px-3 text-[12px] font-medium text-gray2 transition hover:bg-background-primary"
                         >
                           <EyeOpen size={16} color="currentColor" />
@@ -145,6 +151,7 @@ const ListingCard = ({ listing, showFooter = true }) => {
                         <button
                           key={action.label}
                           type="button"
+                          onClick={() => handleActionClick(action)}
                           className="inline-flex h-8 sm:w-auto w-full justify-center sm:justify-start items-center rounded-lg bg-[#EAF8F1] px-2 py-2 sm:text-[12px] text-[9px] font-semibold text-green-secondary transition hover:bg-[#DCF3E8]"
                         >
                           {action.label}
@@ -156,6 +163,7 @@ const ListingCard = ({ listing, showFooter = true }) => {
                       <button
                         key={action.label}
                         type="button"
+                        onClick={() => handleActionClick(action)}
                         className="inline-flex h-8 sm:w-auto w-full justify-center sm:justify-start items-center rounded-lg border border-border-input px-3 sm:text-[12px] text-[9px] font-medium text-gray2 transition hover:bg-background-primary"
                       >
                         {action.type === "default" ? (

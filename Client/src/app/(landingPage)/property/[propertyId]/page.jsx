@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Image from "next/image";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import Modal from "@/components/common/Modal";
+import PropertyGallery from "@/components/landingPage/property/PropertyGallery";
 import MapView from "@/components/userDashboard/explore/MapView";
 import Bag from "@/components/svg/Bag";
 import Bag2 from "@/components/svg/Bag2";
@@ -86,25 +85,6 @@ const PropertyPage = () => {
   const [interestType, setInterestType] = useState(interestTypeOptions[0]);
   const [message, setMessage] = useState("");
   const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
-  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-
-  const handleOpenGallery = useCallback((index) => {
-    setActiveImageIndex(index);
-    setIsGalleryOpen(true);
-  }, []);
-
-  const handleCloseGallery = useCallback(() => {
-    setIsGalleryOpen(false);
-  }, []);
-
-  const handlePreviousImage = useCallback(() => {
-    setActiveImageIndex((prev) => (prev === 0 ? propertyDetails.images.length - 1 : prev - 1));
-  }, []);
-
-  const handleNextImage = useCallback(() => {
-    setActiveImageIndex((prev) => (prev === propertyDetails.images.length - 1 ? 0 : prev + 1));
-  }, []);
 
   return (
     <main className="bg-background-primary py-20">
@@ -115,43 +95,7 @@ const PropertyPage = () => {
             Back to marketplace
           </button>
 
-          <div className="grid gap-2 sm:grid-cols-3 items-stretch">
-            <button type="button" onClick={() => handleOpenGallery(0)} className="relative sm:h-100 h-60 sm:rounded-l-xl rounded-t-xl text-left sm:col-span-2 w-full">
-              <Image
-                src={propertyDetails.images[0]}
-                alt="Main property view"
-                fill
-                className="sm:rounded-l-xl sm:rounded-tr-none rounded-t-xl object-cover"
-                sizes="(min-width: 1024px) 66vw, 100vw"
-                unoptimized
-              />
-            </button>
-            <div className="flex h-30 gap-2 sm:h-auto sm:flex-col">
-              <button type="button" onClick={() => handleOpenGallery(1)} className="relative sm:h-49 flex-1 rounded-r-none rounded-bl-xl text-left sm:w-full sm:flex-none sm:rounded-bl-none sm:rounded-tr-xl">
-                <Image
-                  src={propertyDetails.images[1]}
-                  alt="Property gallery image 2"
-                  fill
-                  className="rounded-r-none rounded-bl-xl object-cover sm:rounded-bl-none sm:rounded-tr-xl"
-                  sizes="(min-width: 1024px) 24vw, 80vw"
-                  unoptimized
-                />
-              </button>
-              <button type="button" onClick={() => handleOpenGallery(2)} className="relative sm:h-49 flex-1 rounded-r-xl text-left sm:w-full sm:flex-none sm:rounded-br-xl">
-                <Image
-                  src={propertyDetails.images[2]}
-                  alt="Property gallery image 3"
-                  fill
-                  className="rounded-br-xl object-cover sm:rounded-br-xl"
-                  sizes="(min-width: 1024px) 24vw, 80vw"
-                  unoptimized
-                />
-                <div className="absolute inset-0 flex items-center justify-center rounded-r-xl bg-black/30 text-white sm:rounded-br-xl">
-                  +15 more
-                </div>
-              </button>
-            </div>
-          </div>
+          <PropertyGallery images={propertyDetails.images} moreImagesLabel="+15 more" />
 
           <header className="flex flex-col gap-4 border-b w-full border-border-input pb-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-2 w-full">
@@ -245,7 +189,7 @@ const PropertyPage = () => {
                   mapClassName="h-[322px] w-full rounded-lg"
                   ringClassName="z-[1]"
                 />
-                <div className="pointer-events-none absolute bottom-6 right-6 z-[2] rounded-[14px] border border-border-card bg-white px-4 py-3 text-[12px] font-semibold text-gray7 shadow-[0_6px_18px_rgba(15,23,42,0.16)]">
+                <div className="pointer-events-none absolute bottom-6 right-6 z-2 rounded-[14px] border border-border-card bg-white px-4 py-3 text-[12px] font-semibold text-gray7 shadow-[0_6px_18px_rgba(15,23,42,0.16)]">
                   LAT {propertyDetails.lat.toFixed(2)} / LNG {propertyDetails.lng.toFixed(2)}
                 </div>
               </div>
@@ -367,81 +311,6 @@ const PropertyPage = () => {
         </aside>
       </div>
 
-      <Modal
-        open={isGalleryOpen}
-        onClose={handleCloseGallery}
-        panelClassName="w-full max-w-[1100px] overflow-visible bg-transparent px-4 py-4 text-left shadow-none md:px-5 md:py-5"
-        overlayClassName="bg-black/70"
-        containerClassName="flex min-h-full items-center justify-center p-4"
-        closeButtonClassName="absolute right-5 top-4 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-[34px] leading-none text-white/80 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
-        closeLabel="Close gallery"
-      >
-        <div className="relative space-y-4 rounded-[28px] bg-[#0D0D0D] p-4 shadow-2xl md:p-5">
-          <div className="relative z-10 overflow-hidden rounded-[22px] bg-black/50">
-            <div className="relative h-[70vh] min-h-105 w-full">
-              <Image
-                src={propertyDetails.images[activeImageIndex]}
-                alt={`Property gallery image ${activeImageIndex + 1}`}
-                fill
-                className="object-contain"
-                sizes="100vw"
-                unoptimized
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handlePreviousImage}
-              className="absolute left-4 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
-              aria-label="Previous image"
-            >
-              <span className="text-[22px] leading-none">‹</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleNextImage}
-              className="absolute right-4 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
-              aria-label="Next image"
-            >
-              <span className="text-[22px] leading-none">›</span>
-            </button>
-          </div>
-
-          <div className="relative z-10 flex items-center justify-between gap-3 text-sm text-white/80">
-            <span>
-              Image {activeImageIndex + 1} of {propertyDetails.images.length}
-            </span>
-          </div>
-
-          <div className="relative z-10 flex gap-3 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
-            {propertyDetails.images.map((image, index) => {
-              const isActive = activeImageIndex === index;
-
-              return (
-                <button
-                  key={image}
-                  type="button"
-                  onClick={() => setActiveImageIndex(index)}
-                  className={`relative h-20 w-28 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
-                    isActive ? "border-green-secondary" : "border-transparent opacity-70 hover:opacity-100"
-                  }`}
-                  aria-label={`Open image ${index + 1}`}
-                >
-                  <Image
-                    src={image}
-                    alt={`Property thumbnail ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="112px"
-                    unoptimized
-                  />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </Modal>
     </main>
   );
 };
