@@ -23,14 +23,14 @@ const InfoWindowCard = ({ image, price, area, category }) => (
         )}
       </div>
       <div className="flex flex-1 flex-col gap-2 px-4 py-3 text-sm">
-        <p className="text-base font-semibold tracking-tight">{price}</p>
+        <p className="text-base font-bold tracking-tight">{price}</p>
         <div className="flex items-center gap-2 text-white">
-          <Road size={12} color="white" aria-hidden />
-          <span className="text-xs uppercase tracking-wide opacity-90">{area}</span>
+          <Road size={12} color="var(--color-gray4)" aria-hidden />
+          <span className="text-xs tracking-wide opacity-90 font-medium text-gray3">{area}</span>
         </div>
         <div className="flex items-center gap-2 text-white">
-          <Building size={12} color="white" aria-hidden />
-          <span className="text-xs uppercase tracking-wide opacity-90">{category}</span>
+          <Building size={12} color="var(--color-gray4)" aria-hidden />
+          <span className="text-xs tracking-wide opacity-90 font-medium text-gray3">{category}</span>
         </div>
       </div>
     </div>

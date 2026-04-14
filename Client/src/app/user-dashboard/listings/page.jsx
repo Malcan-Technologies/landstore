@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import EyeOpen from "@/components/svg/EyeOpen";
 import Star from "@/components/svg/Star";
 import UpRight from "@/components/svg/UpRight";
+import DeleteListingModal from "@/components/userDashboard/listings/DeleteListingModal";
 import ListingCard from "@/components/userDashboard/listings/ListingCard";
 import { landService } from "@/services/landService";
 
@@ -25,12 +27,12 @@ const listingStats = [
   },
 ];
 
-const listingTabs = [
-  { id: "all", label: "All listings (12)", active: true },
-  { id: "drafts", label: "Drafts (5)" },
-  { id: "review", label: "Under Review (8)" },
-  { id: "active", label: "Active (3)" },
-  { id: "inactive", label: "Inactive / History (10)" },
+const listingTabConfig = [
+  { id: "all", label: "All listings" },
+  { id: "drafts", label: "Drafts" },
+  { id: "review", label: "Under Review" },
+  { id: "active", label: "Active" },
+  { id: "inactive", label: "Inactive / History" },
 ];
 
 const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
@@ -48,6 +50,13 @@ const extractListingItems = (response) => {
   if (Array.isArray(response?.data)) return response.data;
   if (Array.isArray(response)) return response;
   return [];
+};
+
+const extractPaginationTotal = (response) => {
+  if (Number.isFinite(response?.pagination?.total)) return response.pagination.total;
+  if (Number.isFinite(response?.data?.pagination?.total)) return response.data.pagination.total;
+  if (Number.isFinite(response?.result?.pagination?.total)) return response.result.pagination.total;
+  return null;
 };
 
 const formatDate = (value) => {
@@ -163,8 +172,62 @@ const mapListingToCard = (item) => {
 };
 
 const ListingsPage = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [listings, setListings] = useState([]);
+  const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
+  const [listingToDelete, setListingToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [totalListings, setTotalListings] = useState(null);
+
+  const openListingDetails = (listingId) => {
+    if (!listingId) return;
+    router.push(`/property/${listingId}?source=listings`);
+  };
+
+  const handleListingAction = async (action, listing) => {
+    if (!listing?.id) return;
+
+    if (actionSuccess) setActionSuccess("");
+    if (actionError) setActionError("");
+
+    if (action?.type === "default") {
+      router.push(`/user-dashboard/listings/create-listing?edit=${listing.id}`);
+      return;
+    }
+
+    if (action?.type === "view") {
+      openListingDetails(listing.id);
+      return;
+    }
+
+    if (action?.type === "delete") {
+      setListingToDelete(listing);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isDeleting) return;
+    setListingToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!listingToDelete?.id || isDeleting) return;
+
+    try {
+      setIsDeleting(true);
+      await landService.deleteListing(listingToDelete.id);
+      setListings((prev) => prev.filter((item) => item.id !== listingToDelete.id));
+      setTotalListings((prev) => (Number.isFinite(prev) ? Math.max(0, prev - 1) : prev));
+      setActionSuccess("Listing deleted successfully.");
+      setListingToDelete(null);
+    } catch (error) {
+      setActionError(error.message || "Failed to delete listing. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -173,12 +236,15 @@ const ListingsPage = () => {
       try {
         const response = await landService.getAllListings();
         const items = extractListingItems(response);
+        const total = extractPaginationTotal(response);
 
         if (!isMounted) return;
         setListings(items.map(mapListingToCard));
+        setTotalListings(total);
       } catch {
         if (!isMounted) return;
         setListings([]);
+        setTotalListings(0);
       }
     };
 
@@ -203,6 +269,32 @@ const ListingsPage = () => {
         return listings;
     }
   }, [activeTab, listings]);
+
+  const listingTabs = useMemo(() => {
+    const counts = {
+      drafts: 0,
+      review: 0,
+      active: 0,
+      inactive: 0,
+    };
+
+    listings.forEach((listing) => {
+      if (listing.statusKey === "draft") counts.drafts += 1;
+      if (listing.statusKey === "review") counts.review += 1;
+      if (listing.statusKey === "active") counts.active += 1;
+      if (listing.statusKey === "reserved") counts.inactive += 1;
+    });
+
+    const allCount = Number.isFinite(totalListings) ? totalListings : listings.length;
+
+    return listingTabConfig.map((tab) => {
+      if (tab.id === "all") {
+        return { ...tab, count: allCount };
+      }
+
+      return { ...tab, count: counts[tab.id] ?? 0 };
+    });
+  }, [listings, totalListings]);
 
   return (
     <main className="bg-background-primary py-14">
@@ -262,6 +354,18 @@ const ListingsPage = () => {
           </div>
         </section>
 
+        {actionError ? (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-600">
+            {actionError}
+          </div>
+        ) : null}
+
+        {actionSuccess ? (
+          <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[12px] text-green-700">
+            {actionSuccess}
+          </div>
+        ) : null}
+
         <div className="no-scrollbar mt-6 flex flex-nowrap items-center gap-x-4 gap-y-3 overflow-x-auto border-b border-border-card text-[11px] font-medium text-gray5 sm:gap-x-5 sm:text-[12px] md:gap-x-8 md:text-[14px]">
           {listingTabs.map((tab) => (
             <button
@@ -271,7 +375,8 @@ const ListingsPage = () => {
               aria-pressed={activeTab === tab.id}
               className={`relative shrink-0 whitespace-nowrap pb-3 transition sm:pb-3.5 md:pb-4 ${activeTab === tab.id ? "text-green-secondary" : "hover:text-gray2"}`}
             >
-              {tab.label}
+              <span className="mr-1.5 font-semibold">{tab.count}</span>
+              <span>{tab.label}</span>
               {activeTab === tab.id ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-green-secondary" /> : null}
             </button>
           ))}
@@ -279,9 +384,22 @@ const ListingsPage = () => {
 
         <section className="mt-6 space-y-4">
           {filteredListings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              onAction={handleListingAction}
+              onCardClick={(selectedListing) => openListingDetails(selectedListing?.id)}
+            />
           ))}
         </section>
+
+        <DeleteListingModal
+          open={Boolean(listingToDelete)}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+          isLoading={isDeleting}
+          listingTitle={listingToDelete?.title || ""}
+        />
       </div>
     </main>
   );

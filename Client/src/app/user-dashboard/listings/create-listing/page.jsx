@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import CreateListingLayout from "@/components/userDashboard/listings/createListing/CreateListingLayout";
 import BasicInfoStep from "@/components/userDashboard/listings/createListing/BasicInfoStep";
@@ -28,11 +29,23 @@ const featureTagEnumMap = {
   Electricity: "electricity",
 };
 
+const dealTypeLabelMap = Object.fromEntries(Object.entries(dealTypeEnumMap).map(([label, value]) => [value, label]));
+const terrainLabelMap = Object.fromEntries(Object.entries(terrainEnumMap).map(([label, value]) => [value, label]));
+const featureTagLabelMap = Object.fromEntries(Object.entries(featureTagEnumMap).map(([label, value]) => [value, label]));
+
 const extractItems = (response) => {
   if (Array.isArray(response?.data)) return response.data;
   if (Array.isArray(response?.result)) return response.result;
   if (Array.isArray(response)) return response;
   return [];
+};
+
+const extractProperty = (response) => {
+  if (response?.property) return response.property;
+  if (response?.data?.property) return response.data.property;
+  if (response?.result?.property) return response.result.property;
+  if (response?.data) return response.data;
+  return null;
 };
 
 const toSelectOptions = (items) =>
@@ -43,6 +56,11 @@ const toSelectOptions = (items) =>
 const toNumberOrZero = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const toNumberOrFallback = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 };
 
 const getStartOfToday = () => {
@@ -76,7 +94,9 @@ const buildListingCode = () => {
 
 const initialFormData = {
   photos: [],
+  existingPhotos: [],
   documents: [],
+  existingDocuments: [],
   dealTypes: ["Buy", "JV"],
   terrain: ["Flat"],
   features: [],
@@ -99,6 +119,8 @@ const initialFormData = {
   leaseStartDate: "",
   leasePeriod: "30-years",
   calendarYear: String(new Date().getFullYear()),
+  listingId: "",
+  listingCode: "",
   status: "draft",
   acceptedTerms: false,
 };
@@ -110,6 +132,10 @@ const stepFieldMap = {
 };
 
 const CreateListingPage = () => {
+  const searchParams = useSearchParams();
+  const editingListingId = searchParams.get("edit") || "";
+  const isEditMode = Boolean(editingListingId);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState(initialFormData);
   const [referenceOptions, setReferenceOptions] = useState({
@@ -122,6 +148,7 @@ const CreateListingPage = () => {
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isListingLoading, setIsListingLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
 
   const updateField = (field, value) => {
@@ -168,7 +195,7 @@ const CreateListingPage = () => {
     const stepErrors = {};
 
     if (step === 1) {
-      if (!Array.isArray(values.photos) || values.photos.length < 1) {
+      if (!isEditMode && (!Array.isArray(values.photos) || values.photos.length < 1)) {
         stepErrors.photos = "Please upload at least one photo.";
       }
       if (!values.category) stepErrors.category = "Please select a category.";
@@ -206,7 +233,7 @@ const CreateListingPage = () => {
     }
 
     if (step === 3) {
-      if (!Array.isArray(values.documents) || values.documents.length < 1) {
+      if (!isEditMode && (!Array.isArray(values.documents) || values.documents.length < 1)) {
         stepErrors.documents = "Please upload at least one document.";
       }
       if (!values.acceptedTerms) stepErrors.acceptedTerms = "Please accept the anti-bypass agreement.";
@@ -287,10 +314,128 @@ const CreateListingPage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadListingForEdit = async () => {
+      if (!isEditMode || !editingListingId) return;
+
+      try {
+        setIsListingLoading(true);
+
+        const response = await landService.getListingById(editingListingId);
+        const property = extractProperty(response);
+
+        if (!isMounted) return;
+        if (!property?.id) {
+          setSubmitError("Failed to load listing for editing.");
+          return;
+        }
+
+        const mappedDealTypes = Array.isArray(property.dealTypes)
+          ? property.dealTypes
+              .map((item) => dealTypeLabelMap[String(item).toLowerCase()] || "")
+              .filter((item) => item && dealTypeEnumMap[item])
+          : [];
+
+        const mappedTerrain = Array.isArray(property.terrainChips)
+          ? property.terrainChips
+              .map((item) => terrainLabelMap[String(item).toLowerCase()] || "")
+              .filter((item) => item && terrainEnumMap[item])
+          : [];
+
+        const mappedFeatures = Array.isArray(property.featureTags)
+          ? property.featureTags
+              .map((item) => featureTagLabelMap[String(item).toLowerCase()] || "")
+              .filter((item) => item && featureTagEnumMap[item])
+          : [];
+
+        const titleParts = String(property.title || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+        const fallbackDistrict = titleParts[0] || "";
+        const fallbackState = titleParts[1] || "";
+
+        const existingPhotos = property?.media?.fileUrl ? [property.media.fileUrl] : [];
+        const existingDocuments = Array.isArray(property?.documents)
+          ? property.documents
+              .map((doc, index) => ({
+                id: doc?.id || `existing-doc-${index + 1}`,
+                name:
+                  doc?.media?.fileUrl?.split("/").pop() ||
+                  doc?.fileUrl?.split("/").pop() ||
+                  `Document ${index + 1}`,
+                fileUrl: doc?.media?.fileUrl || doc?.fileUrl || "",
+              }))
+              .filter((doc) => Boolean(doc.fileUrl || doc.name))
+          : [];
+
+        const leaseStartYear = property.leaseholdDetails?.startYear;
+        const leaseStartDate =
+          typeof leaseStartYear === "number"
+            ? new Date(Date.UTC(leaseStartYear, 0, 1)).toISOString()
+            : "";
+
+        const leasePeriodYears = property.leaseholdDetails?.leasePeriodYears;
+        const leasePeriodValue = leasePeriodYears ? `${leasePeriodYears}-years` : initialFormData.leasePeriod;
+
+        setFormData((prev) => ({
+          ...prev,
+          listingId: property.id || editingListingId,
+          listingCode: property.listingCode || "",
+          category: property.categoryId || prev.category,
+          ownership: property.ownershipTypeId || prev.ownership,
+          utilization: property.utilizationId || prev.utilization,
+          titleType: property.titleTypeId || prev.titleType,
+          landArea: property.landArea !== undefined && property.landArea !== null ? String(property.landArea) : "",
+          areaUnit: property.landAreaUnit || prev.areaUnit,
+          rizabMalayu: property.tanahRizabMelayu ? "yes" : "no",
+          pricePerSqft: property.pricePerSqrft !== undefined && property.pricePerSqrft !== null ? String(property.pricePerSqrft) : "",
+          description: property.description || "",
+          negeri: property.location?.state || fallbackState,
+          daerah: property.location?.district || fallbackDistrict,
+          mukim: property.location?.mukim || "",
+          seksyen: property.location?.section || "",
+          latitude: toNumberOrFallback(property.location?.latitude, prev.latitude),
+          longitude: toNumberOrFallback(property.location?.longitude, prev.longitude),
+          leaseStartDate,
+          leasePeriod: leasePeriodValue,
+          calendarYear: leaseStartYear ? String(leaseStartYear) : prev.calendarYear,
+          dealTypes: mappedDealTypes.length > 0 ? mappedDealTypes : prev.dealTypes,
+          terrain: mappedTerrain.length > 0 ? mappedTerrain : prev.terrain,
+          features: mappedFeatures,
+          status: property.status || prev.status,
+          acceptedTerms: Boolean(property.agreementAccepted),
+          existingPhotos,
+          existingDocuments,
+          photos: [],
+          documents: [],
+        }));
+
+        setCurrentStep(1);
+        setFieldErrors({});
+      } catch (error) {
+        if (!isMounted) return;
+        setSubmitError(error.message || "Failed to load listing for editing.");
+      } finally {
+        if (isMounted) {
+          setIsListingLoading(false);
+        }
+      }
+    };
+
+    loadListingForEdit();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isEditMode, editingListingId]);
+
   const createListingFormData = () => {
     const payload = new FormData();
 
-    const listingCode = buildListingCode();
+    const listingCode = formData.listingCode || buildListingCode();
     const title = [formData.daerah, formData.negeri].filter(Boolean).join(", ") || "Land listing";
     const landArea = toNumberOrZero(formData.landArea);
     const pricePerSqrft = toNumberOrZero(formData.pricePerSqft);
@@ -393,30 +538,40 @@ const CreateListingPage = () => {
       setIsSubmitting(true);
       const payload = createListingFormData();
 
-      await landService.createListing(payload, {
+      const requestConfig = {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      });
+      };
+
+      if (isEditMode && editingListingId) {
+        await landService.updateListing(editingListingId, payload, requestConfig);
+      } else {
+        await landService.createListing(payload, requestConfig);
+      }
 
       (formData.photos || []).forEach((file) => {
         revokeFilePreviewUrl(file);
       });
 
-      setSubmitSuccess("Listing submitted successfully.");
-      setCurrentStep(1);
-      setFieldErrors({});
-      setFormData((prev) => ({
-        ...initialFormData,
-        category: referenceOptions.categories[0]?.value || "",
-        ownership: referenceOptions.ownershipTypes[0]?.value || "",
-        utilization: referenceOptions.utilizations[0]?.value || "",
-        titleType: referenceOptions.titleTypes[0]?.value || "",
-        dealTypes: prev.dealTypes,
-        terrain: prev.terrain,
-      }));
+      if (isEditMode) {
+        setSubmitSuccess("Listing updated successfully.");
+      } else {
+        setSubmitSuccess("Listing submitted successfully.");
+        setCurrentStep(1);
+        setFieldErrors({});
+        setFormData((prev) => ({
+          ...initialFormData,
+          category: referenceOptions.categories[0]?.value || "",
+          ownership: referenceOptions.ownershipTypes[0]?.value || "",
+          utilization: referenceOptions.utilizations[0]?.value || "",
+          titleType: referenceOptions.titleTypes[0]?.value || "",
+          dealTypes: prev.dealTypes,
+          terrain: prev.terrain,
+        }));
+      }
     } catch (error) {
-      setSubmitError(error.message || "Failed to submit listing. Please try again.");
+      setSubmitError(error.message || "Failed to save listing. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -448,7 +603,7 @@ const CreateListingPage = () => {
   }
 
   const handleNext = () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isListingLoading) return;
 
     setSubmitSuccess("");
 
@@ -466,7 +621,7 @@ const CreateListingPage = () => {
   };
 
   const handleBack = () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isListingLoading) return;
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
@@ -476,12 +631,28 @@ const CreateListingPage = () => {
       onBack={handleBack}
       onNext={handleNext}
       isLastStep={currentStep === 3}
-      nextLabel={currentStep === 3 ? (isSubmitting ? "Submitting..." : "Submit for approval") : "Next step"}
+      nextLabel={
+        currentStep === 3
+          ? isSubmitting
+            ? isEditMode
+              ? "Updating..."
+              : "Submitting..."
+            : isEditMode
+              ? "Update listing"
+              : "Submit for approval"
+          : "Next step"
+      }
     >
       <div className="space-y-3">
         {isReferenceLoading ? (
           <div className="rounded-lg border border-border-card bg-white px-3 py-2 text-[12px] text-gray5">
             Loading listing reference data...
+          </div>
+        ) : null}
+
+        {isListingLoading ? (
+          <div className="rounded-lg border border-border-card bg-white px-3 py-2 text-[12px] text-gray5">
+            Loading listing details...
           </div>
         ) : null}
 

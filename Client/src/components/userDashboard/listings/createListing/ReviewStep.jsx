@@ -6,6 +6,22 @@ import Upload from "@/components/svg/Upload";
 const ReviewStep = ({ formData, updateField, errors = {} }) => {
   const documentInputRef = useRef(null);
   const documents = formData.documents ?? [];
+  const existingDocuments = formData.existingDocuments ?? [];
+  const isEditMode = Boolean(formData.listingId);
+  const documentRows = [
+    ...existingDocuments.map((doc) => ({
+      key: `existing-${doc.id || doc.name}`,
+      name: doc.name || doc.fileUrl || "Existing document",
+      fileUrl: doc.fileUrl || "",
+      isExisting: true,
+    })),
+    ...documents.map((file, index) => ({
+      key: `new-${file.name}-${index}`,
+      name: file.name,
+      isExisting: false,
+      index,
+    })),
+  ];
 
   const handleDocumentUpload = (event) => {
     const selectedFiles = Array.from(event.target.files ?? []);
@@ -55,23 +71,35 @@ const ReviewStep = ({ formData, updateField, errors = {} }) => {
         onChange={handleDocumentUpload}
       />
 
-      {documents.length > 0 ? (
+      {documentRows.length > 0 ? (
         <div className="rounded-xl border border-border-card bg-white p-3">
           <p className="mb-2 text-[12px] font-medium text-gray2">Uploaded documents</p>
           <div className="space-y-1.5">
-            {documents.map((file, index) => (
-              <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-3 text-[12px] text-gray5">
-                <span className="truncate">{file.name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeDocument(index)}
-                  className="text-red-500 transition hover:text-red-600"
-                >
-                  Remove
-                </button>
+            {documentRows.map((doc) => (
+              <div key={doc.key} className="flex items-center justify-between gap-3 text-[12px] text-gray5">
+                <span className="truncate">{doc.name}</span>
+                {doc.isExisting ? (
+                  <span className="inline-flex items-center rounded-full bg-[#F4F7F5] px-2 py-0.5 text-[10px] font-medium text-gray5">
+                    Existing
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => removeDocument(doc.index)}
+                    className="text-red-500 transition hover:text-red-600"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
             ))}
           </div>
+        </div>
+      ) : null}
+
+      {isEditMode ? (
+        <div className="rounded-xl border border-border-card bg-white px-3 py-2 text-[11px] text-gray5">
+          Existing listing documents remain attached. Upload files only if you want to add new documents.
         </div>
       ) : null}
 
