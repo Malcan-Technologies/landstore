@@ -86,12 +86,15 @@ export const getAllEntityTypesController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const entityTypes = await getAllEntityTypes();
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const result = await getAllEntityTypes(page, limit);
 
 		res.status(200).json({
 			success: true,
-			data: entityTypes,
-			count: entityTypes.length,
+			data: result.items,
+			pagination: result.pagination,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);

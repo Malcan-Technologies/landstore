@@ -77,20 +77,23 @@ export const createCategoryController = async (
 };
 
 /**
- * Get all categories
- * GET /api/categories
+ * Get all categories (paginated)
+ * GET /api/categories?page=1&limit=10
  */
 export const getAllCategoriesController = async (
 	req: Request,
 	res: Response
 ): Promise<void> => {
 	try {
-		const categories = await getAllCategories();
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const result = await getAllCategories(page, limit);
 
 		res.status(200).json({
 			success: true,
-			data: categories,
-			count: categories.length,
+			data: result.items,
+			pagination: result.pagination,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);

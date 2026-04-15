@@ -4,6 +4,7 @@ import {
 	deleteListLandById,
 	getListLandById,
 	getListLands,
+	getAllListings,
 	updateListLandById,
 	uploadPropertyImages,
 	uploadPropertyDocuments,
@@ -319,6 +320,32 @@ export const deleteListLandController = async (req: Request, res: Response) => {
 			requester.id,
 			requester.userType
 		);
+
+		return res.status(200).json(result);
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ message });
+	}
+};
+
+/**
+ * Get all public listings endpoint
+ * Accessible by any authenticated user
+ * Returns all approved listings with pagination
+ */
+export const getAllListingsController = async (req: Request, res: Response) => {
+	try {
+		getRequesterUserOrThrow(req); // Verify user is authenticated
+
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const query: GetLandsQuery = {
+			page,
+			limit,
+		};
+
+		const result = await getAllListings(query);
 
 		return res.status(200).json(result);
 	} catch (error: unknown) {

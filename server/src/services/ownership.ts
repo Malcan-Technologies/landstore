@@ -33,30 +33,47 @@ export const createOwnershipType = async (name: string) => {
 };
 
 /**
- * Get all ownership types with property count
+ * Get all ownership types with property count (paginated)
  */
-export const getAllOwnershipTypes = async () => {
+export const getAllOwnershipTypes = async (page: number = 1, limit: number = 10) => {
+	const validPage = Number.isFinite(page) && page > 0 ? page : 1;
+	const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+	const skip = (validPage - 1) * validLimit;
+
 	try {
-		const types = await db.propertyOwnershipType.findMany({
-			include: {
-				properties: {
-					select: {
-						id: true,
+		const [types, total] = await Promise.all([
+			db.propertyOwnershipType.findMany({
+				include: {
+					properties: {
+						select: {
+							id: true,
+						},
 					},
 				},
-			},
-			orderBy: {
-				name: "asc",
-			},
-		});
+				orderBy: {
+					name: "asc",
+				},
+				skip,
+				take: validLimit,
+			}),
+			db.propertyOwnershipType.count(),
+		]);
 
-		return types.map((type: any) => ({
-			id: type.id,
-			name: type.name,
-			propertyCount: type.properties.length,
-			createdAt: type.createdAt,
-			updatedAt: type.updatedAt,
-		}));
+		return {
+			items: types.map((type: any) => ({
+				id: type.id,
+				name: type.name,
+				propertyCount: type.properties.length,
+				createdAt: type.createdAt,
+				updatedAt: type.updatedAt,
+			})),
+			pagination: {
+				page: validPage,
+				limit: validLimit,
+				total,
+				totalPages: Math.ceil(total / validLimit) || 1,
+			},
+		};
 	} catch (error: unknown) {
 		throw error;
 	}

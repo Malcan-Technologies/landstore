@@ -33,30 +33,47 @@ export const createInterestType = async (name: string) => {
 };
 
 /**
- * Get all interest types with enquiry count
+ * Get all interest types with enquiry count (paginated)
  */
-export const getAllInterestTypes = async () => {
+export const getAllInterestTypes = async (page: number = 1, limit: number = 10) => {
+	const validPage = Number.isFinite(page) && page > 0 ? page : 1;
+	const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+	const skip = (validPage - 1) * validLimit;
+
 	try {
-		const interestTypes = await db.interestType.findMany({
-			include: {
-				enquiries: {
-					select: {
-						id: true,
+		const [interestTypes, total] = await Promise.all([
+			db.interestType.findMany({
+				include: {
+					enquiries: {
+						select: {
+							id: true,
+						},
 					},
 				},
-			},
-			orderBy: {
-				name: "asc",
-			},
-		});
+				orderBy: {
+					name: "asc",
+				},
+				skip,
+				take: validLimit,
+			}),
+			db.interestType.count(),
+		]);
 
-		return interestTypes.map((interestType: any) => ({
-			id: interestType.id,
-			name: interestType.name,
-			enquiryCount: interestType.enquiries.length,
-			createdAt: interestType.createdAt,
-			updatedAt: interestType.updatedAt,
-		}));
+		return {
+			items: interestTypes.map((interestType: any) => ({
+				id: interestType.id,
+				name: interestType.name,
+				enquiryCount: interestType.enquiries.length,
+				createdAt: interestType.createdAt,
+				updatedAt: interestType.updatedAt,
+			})),
+			pagination: {
+				page: validPage,
+				limit: validLimit,
+				total,
+				totalPages: Math.ceil(total / validLimit) || 1,
+			},
+		};
 	} catch (error: unknown) {
 		throw error;
 	}
