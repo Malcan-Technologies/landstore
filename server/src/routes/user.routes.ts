@@ -13,6 +13,7 @@ import {
   resetPasswordController,
   verifyEmailCallbackController,
   verifyEmailController,
+  getMyProfileController
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
@@ -47,6 +48,9 @@ userRouter.post("/reset-password", resetPasswordController);
 
 // Get current authenticated user (requires auth)
 userRouter.get("/me", requireApiAuth, getCurrentUserController);
+
+// Get my complete profile using authenticated user ID (requires auth)
+userRouter.get("/my-profile", requireApiAuth, getMyProfileController);
 
 // Get complete user profile with all registration data (requires auth)
 userRouter.get("/profile", requireApiAuth, getUserCompleteProfileController);

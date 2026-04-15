@@ -31,14 +31,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/sign-in/email",
+              "raw": "{{baseUrl}}/users/login",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "auth",
-                "sign-in",
-                "email"
+                "users",
+                "login"
               ]
             }
           },
@@ -81,6 +80,24 @@
               "path": [
                 "auth",
                 "get-session"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get session Copy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/my-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "my-profile"
               ]
             }
           },
@@ -471,36 +488,6 @@
                   "key": ":id",
                   "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
                 }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Complete User Profile",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Basit Sheikh\",\r\n    \"identityNo\": \"123456-12-1234\",\r\n    \"firstName\": \"Basit\",\r\n    \"lastName\": \"Sheikh\",\r\n    \"name\": \"Basit Sheikh\",\r\n    \"companyName\": null,\r\n    \"koperasiName\": null,\r\n    \"registrationNo\": null\r\n}\r\n\r\n// {\r\n//   \"email\": \"company@example.com\",\r\n//   \"userType\": \"user\",\r\n//   \"phone\": \"+60123456789\",\r\n//   \"profileType\": \"company\",\r\n//   \"companyName\": \"ABC Properties Sdn Bhd\",\r\n//   \"registrationNo\": \"123456789\",\r\n//   \"name\": \"ABC Properties\",\r\n//   \"email\": \"company@example.com\",\r\n//   \"fullName\": null,\r\n//   \"identityNo\": null,\r\n//   \"firstName\": null,\r\n//   \"lastName\": null,\r\n//   \"koperasiName\": null\r\n// }\r\n\r\n// {\r\n//   \"email\": \"koperasi@example.com\",\r\n//   \"userType\": \"user\",\r\n//   \"phone\": \"+60123456789\",\r\n//   \"profileType\": \"koperasi\",\r\n//   \"koperasiName\": \"Koperasi Tanah ABC\",\r\n//   \"registrationNo\": \"987654321\",\r\n//   \"name\": \"Koperasi Tanah ABC\",\r\n//   \"fullName\": null,\r\n//   \"identityNo\": null,\r\n//   \"companyName\": null,\r\n//   \"firstName\": null,\r\n//   \"lastName\": null\r\n// }",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users/complete-profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "complete-profile"
               ]
             }
           },
@@ -2625,6 +2612,177 @@
                 {
                   "key": ":id",
                   "value": "ad53afb9-459b-43e8-8681-0794e0bd4999"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notification Preferences",
+      "item": [
+        {
+          "name": "Create Notification Preferences",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Notification Preferences",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Notification Preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Notification Preferences Copy",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All Notification Preferences",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Notification Preferences By Id",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
                 }
               ]
             }

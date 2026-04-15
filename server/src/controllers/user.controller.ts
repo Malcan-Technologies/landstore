@@ -209,6 +209,83 @@ export const completeProfileController = async (req: Request, res: Response) => 
 	}
 };
 
+/**
+ * LOGIN
+ * POST /api/users/login
+ * Body: { email, password }
+ * 
+ * Authenticates user and returns session with userType
+ */
+export const loginController = async (req: Request, res: Response) => {
+	try {
+		const { email, password } = req.body;
+
+		if (!email || typeof email !== "string" || !email.trim()) {
+			return res.status(400).json({
+				success: false,
+				message: "Valid email is required",
+			});
+		}
+
+		if (!password || typeof password !== "string" || password.length < 1) {
+			return res.status(400).json({
+				success: false,
+				message: "Password is required",
+			});
+		}
+
+		try {
+			// Call Better Auth sign-in endpoint
+			const response = await auth.api.signInEmail({
+				body: {
+					email: email.toLowerCase(),
+					password,
+				},
+			});
+
+			// Check if sign-in was successful
+			if (!response?.user?.id || !response?.user?.email) {
+				return res.status(401).json({
+					success: false,
+					message: "Invalid email or password",
+				});
+			}
+
+			// Fetch user with userType from database
+			const user = await getUserByEmail(response.user.email);
+
+			// Return enhanced response with userType
+			return res.status(200).json({
+				success: true,
+				redirect: false,
+				token: response.token || "",
+				user: {
+					id: response.user.id,
+					name: response.user.name,
+					email: response.user.email,
+					emailVerified: response.user.emailVerified,
+					image: response.user.image,
+					userType: user.userType, // Include userType from database
+					createdAt: response.user.createdAt,
+					updatedAt: response.user.updatedAt,
+				},
+			});
+		} catch (authError: unknown) {
+			const err = authError as any;
+			return res.status(401).json({
+				success: false,
+				message: err?.message || "Invalid email or password",
+			});
+		}
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
 export const getCurrentUserController = async (req: Request, res: Response) => {
 	try {
 		// Better Auth provides user in request via middleware
@@ -243,6 +320,42 @@ export const getUserCompleteProfileController = async (req: Request, res: Respon
 		return res.status(200).json({ 
 			success: true,
 			message: "User profile retrieved successfully", 
+			result: completeProfile 
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ 
+			success: false,
+			message 
+		});
+	}
+};
+
+/**
+ * GET MY PROFILE
+ * GET /api/users/my-profile
+ * 
+ * Get authenticated user's complete profile using req.user.id from middleware
+ * Requires authentication
+ */
+export const getMyProfileController = async (req: Request, res: Response) => {
+	try {
+		// Get user ID from authenticated request (via requireApiAuth middleware)
+		const user = (req as any).user;
+		if (!user || !user.id) {
+			return res.status(401).json({ 
+				success: false,
+				error: "Unauthorized",
+				message: "Authentication required. Please log in to access your profile." 
+			});
+		}
+
+		// Fetch complete profile using authenticated user ID
+		const completeProfile = await getUserCompleteProfile(user.id);
+
+		return res.status(200).json({ 
+			success: true,
+			message: "My profile retrieved successfully", 
 			result: completeProfile 
 		});
 	} catch (error: unknown) {
