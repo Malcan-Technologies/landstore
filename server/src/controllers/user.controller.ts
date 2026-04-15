@@ -240,24 +240,32 @@ export const loginController = async (req: Request, res: Response) => {
 		}
 
 		try {
-			// Call Better Auth's sign-in which returns a Response object
+			// Call Better Auth with proper request context - convert headers to array format
+			const headerArray = Object.entries(req.headers).map(([key, value]) => 
+				[key, String(value)] as [string, string]
+			);
+
 			const betterAuthResponse = await auth.api.signInEmail({
 				body: {
 					email: email.toLowerCase(),
 					password,
 				},
+				headers: new Headers(headerArray), // ✅ Pass headers in proper format
 				asResponse: true,
 			});
 
-			// Extract Set-Cookie headers from Better Auth response and forward to Express
-			if (betterAuthResponse?.headers) {
-				const setCookieHeader = betterAuthResponse.headers.get("set-cookie");
-				if (setCookieHeader) {
-					res.setHeader("set-cookie", setCookieHeader);
-				}
+			// Get Set-Cookie header from Better Auth response
+			// Better Auth returns multiple cookies separated by commas
+			const setCookieHeader = betterAuthResponse.headers.get("set-cookie");
+			if (setCookieHeader) {
+				// Split multiple cookies and set them as an array
+				const cookies = setCookieHeader.split(", ");
+				res.setHeader("set-cookie", cookies);
 			}
 
-			// Parse the response body (it's a ReadableStream, need to read it)
+			console.log(betterAuthResponse)
+
+			// Parse the response body
 			let responseBody: any = null;
 			if (betterAuthResponse?.body) {
 				try {
@@ -297,7 +305,7 @@ export const loginController = async (req: Request, res: Response) => {
 			});
 
 			// Return enhanced response with userType
-			// Set-Cookie headers are already set above from Better Auth response
+			// Session cookie is managed by Better Auth with all session config applied
 			return res.status(200).json({
 				success: true,
 				redirect: false,

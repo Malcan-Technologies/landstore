@@ -373,8 +373,6 @@ export const searchPropertiesByRadiusController = async (
 	res: Response
 ) => {
 	try {
-		getRequesterUserOrThrow(req); // Verify user is authenticated
-
 		const { latitude, longitude, radiusKm } = req.body;
 
 		// Validate required fields
