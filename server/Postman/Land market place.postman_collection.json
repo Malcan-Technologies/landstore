@@ -604,7 +604,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": ""
+                  "value": "345c94ea-b0b6-4e82-af69-839adb310f94"
                 }
               ]
             }
@@ -738,38 +738,19 @@
           "response": []
         },
         {
-          "name": "Get All Folders hirarchy",
+          "name": "short listed properties",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/folders/hierarchy/all",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "folders",
-                "hierarchy",
-                "all"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Sub folder tree",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/folders/:id/hierarchy",
+              "raw": "{{baseUrl}}/folders/:id/shortlist",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "folders",
                 ":id",
-                "hierarchy"
+                "shortlist"
               ],
               "variable": [
                 {
@@ -856,7 +837,7 @@
                 },
                 {
                   "key": "listingCode",
-                  "value": "LAND-2026-002",
+                  "value": "LAND-2026-006",
                   "type": "text",
                   "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
                 },
@@ -883,15 +864,15 @@
                   "type": "file",
                   "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
                   "src": [
-                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
+                    "/C:/Users/Lenovo/OneDrive/Desktop/author.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/F50.avif"
                   ]
                 },
                 {
                   "key": "documents",
                   "type": "file",
                   "uuid": "625f394d-38e2-459a-9dca-278290853ba4",
-                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Database Students.pdf"
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Dockerization Docs.pdf"
                 },
                 {
                   "key": "tanahRizabMelayu",
@@ -1000,9 +981,10 @@
                 },
                 {
                   "key": "listingCode",
-                  "value": "LAND-2026-001",
+                  "value": "LAND-2026-007",
                   "type": "text",
-                  "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
+                  "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c",
+                  "disabled": true
                 },
                 {
                   "key": "landArea",
@@ -1103,7 +1085,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "f79d451f-106f-4560-938a-4c68f37a5627"
+                  "value": "ad53afb9-459b-43e8-8681-0794e0bd4999"
                 }
               ]
             }
@@ -1196,7 +1178,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": ""
+                  "value": "132debd9-f4d0-4809-a12d-793d46aa601b"
                 }
               ]
             }

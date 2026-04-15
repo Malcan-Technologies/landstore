@@ -23,10 +23,8 @@ const requireApiAuth = async (
     // Attach user and session to request
     (req as any).user = session.user;
     (req as any).session = session.session;
-    console.log("   ✅ Authenticated:", session.user.email);
     return next();
   } catch (error) {
-    console.error("❌ Authentication error:", error);
     return res.status(401).json({ 
       error: "Unauthorized",
       message: "Invalid or expired authentication credentials. Please log in again." 
