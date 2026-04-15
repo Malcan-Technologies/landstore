@@ -18,6 +18,11 @@ const PropertyCard = ({
   menuButtonLabel = "Open card menu",
   onMenuClick,
   variant = "default",
+  enableCardClick = false,
+  isAuthenticated = true,
+  onLoginRequired,
+  onLikeClick,
+  isSaved,
 }) => {
   const router = useRouter();
   const {
@@ -38,16 +43,61 @@ const PropertyCard = ({
     location,
   } = land;
 
-  const [isSaved, setIsSaved] = useState(false);
+  const propertyDetailsHref = id ? `/property/${id}` : undefined;
 
-  const handleSaveToggle = (event) => {
+  const [internalIsSaved, setInternalIsSaved] = useState(false);
+  const savedState = typeof isSaved === "boolean" ? isSaved : internalIsSaved;
+
+  const handleRequireLogin = (event) => {
     event?.preventDefault?.();
     event?.stopPropagation?.();
-    setIsSaved((previous) => !previous);
+    onLoginRequired?.();
+  };
+
+  const handleSaveToggle = (event) => {
+    if (!isAuthenticated) {
+      handleRequireLogin(event);
+      return;
+    }
+
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (onLikeClick) {
+      onLikeClick({ propertyId: id, isSaved: savedState });
+      return;
+    }
+
+    setInternalIsSaved((previous) => !previous);
+  };
+
+  const handleOpenProperty = (event) => {
+    if (!isAuthenticated) {
+      handleRequireLogin(event);
+      return;
+    }
+
+    if (id) {
+      router.push(`/property/${id}`);
+    }
+  };
+
+  const handleViewDetailsClick = (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (!isAuthenticated) {
+      onLoginRequired?.();
+      return;
+    }
+
+    if (propertyDetailsHref) {
+      router.push(propertyDetailsHref);
+    }
   };
 
   const renderHeartIcon = (width, height) => {
-    if (isSaved) {
+    if (savedState) {
       return (
         <svg
           width={width}
@@ -71,11 +121,7 @@ const PropertyCard = ({
   if (variant === "compact") {
     const compactCardContent = (
       <article
-        onClick={() => {
-          if (id) {
-            router.push(`/property/${id}`);
-          }
-        }}
+        onClick={handleOpenProperty}
         className={`w-auto cursor-pointer rounded-lg border border-white/70 bg-white px-2 py-1.5 transition ${className}`.trim()}
       >
         <div className="flex items-stretch gap-3">
@@ -132,10 +178,10 @@ const PropertyCard = ({
                 type="button"
                 onClick={handleSaveToggle}
                 className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition ${
-                  isSaved ? "text-red-500" : "text-gray5"
+                  savedState ? "text-red-500" : "text-gray5"
                 }`.trim()}
-                aria-label={isSaved ? "Remove from saved" : "Save card"}
-                aria-pressed={isSaved}
+                aria-label={savedState ? "Remove from saved" : "Save card"}
+                aria-pressed={savedState}
               >
                 {renderHeartIcon(12, 12)}
               </button>
@@ -149,7 +195,10 @@ const PropertyCard = ({
   }
 
   return (
-    <article className={`h-fit w-full max-w-full min-w-0 self-start rounded-xl bg-white shadow-[0_10px_35px_rgba(15,61,46,0.05)] ${className}`.trim()}>
+    <article
+      onClick={enableCardClick ? handleOpenProperty : undefined}
+      className={`h-fit w-full max-w-full min-w-0 self-start rounded-xl bg-white shadow-[0_10px_35px_rgba(15,61,46,0.05)] ${enableCardClick ? "cursor-pointer" : ""} ${className}`.trim()}
+    >
       <div className="relative h-40 w-full overflow-hidden rounded-t-xl">
         <Image
           src={image}
@@ -163,17 +212,21 @@ const PropertyCard = ({
           type="button"
           onClick={handleSaveToggle}
           className={`absolute right-4 top-4 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white shadow transition ${
-            isSaved ? "text-red-500" : "text-gray2"
+            savedState ? "text-red-500" : "text-gray2"
           }`.trim()}
-          aria-label={isSaved ? "Remove from shortlist" : "Save to shortlist"}
-          aria-pressed={isSaved}
+          aria-label={savedState ? "Remove from shortlist" : "Save to shortlist"}
+          aria-pressed={savedState}
         >
           {renderHeartIcon(16, 16)}
         </button>
         {showMenuButton ? (
           <button
             type="button"
-            onClick={onMenuClick}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onMenuClick?.(event);
+            }}
             className="absolute bottom-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-gray7 shadow-sm"
             aria-label={menuButtonLabel}
           >
@@ -232,8 +285,9 @@ const PropertyCard = ({
         </div>
 
         <Button
-          href={id ? `/property/${id}` : undefined}
-          className="mt-1 w-full justify-center rounded-xl px-4 py-2 text-[14px] font-medium !shadow-none"
+          href={propertyDetailsHref}
+          onClick={handleViewDetailsClick}
+          className="mt-1 w-full justify-center rounded-xl px-4 py-2 text-[14px] font-medium shadow-none!"
           colorClass="bg-activebg text-green-primary hover:bg-font-green"
         >
           <span className="flex items-center justify-center gap-2 text-green-primary">

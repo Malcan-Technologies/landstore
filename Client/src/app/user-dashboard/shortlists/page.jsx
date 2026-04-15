@@ -16,6 +16,22 @@ const initialShortlistFolders = [
   { id: "johor-potentials", label: "Johor Potentials", count: 3 },
 ];
 
+const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
+
+const formatPrice = (value) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return "RM 0";
+
+  return `RM ${numericValue.toLocaleString("en-US")}`;
+};
+
+const formatArea = (landArea, landAreaUnit) => {
+  const numericValue = Number(landArea);
+  const area = Number.isFinite(numericValue) ? numericValue.toLocaleString("en-US") : String(landArea || "-");
+  const unit = landAreaUnit ? ` ${landAreaUnit}` : "";
+  return `${area}${unit}`;
+};
+
 /*
 const shortlistedProperties = [
   {
@@ -160,6 +176,7 @@ const shortlistedProperties = [];
 
 const ShortlistsPage = () => {
   const [folders, setFolders] = useState(initialShortlistFolders);
+  const [properties, setProperties] = useState(shortlistedProperties);
   const [activeFolderId, setActiveFolderId] = useState(initialShortlistFolders[0].id);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [chooseFolderOpen, setChooseFolderOpen] = useState(false);
@@ -205,12 +222,61 @@ const ShortlistsPage = () => {
         .filter(Boolean);
     };
 
+    const normalizeProperties = (payload) => {
+      const items = Array.isArray(payload) ? payload : payload?.data;
+      if (!Array.isArray(items)) {
+        return [];
+      }
+
+      return items.flatMap((folder) => {
+        const folderId = folder?.id ?? folder?._id;
+        const folderProperties = Array.isArray(folder?.properties) ? folder.properties : [];
+
+        return folderProperties
+          .map((entry) => {
+            const property = entry?.property;
+            const propertyId = property?.id ?? entry?.propertyId;
+
+            if (!folderId || !propertyId) {
+              return null;
+            }
+
+            return {
+              id: propertyId,
+              status: "Active",
+              statusColor: "var(--color-green-secondary)",
+              image: fallbackListingImage,
+              category: property?.category?.name || "-",
+              area: formatArea(property?.landArea, property?.landAreaUnit),
+              code: property?.listingCode || "-",
+              title: property?.title || "Land listing",
+              dealTags: [],
+              price: formatPrice(property?.price),
+              valuation: property?.pricePerSqrft
+                ? `RM ${Number(property.pricePerSqrft).toLocaleString("en-US")}/sqft`
+                : "-",
+              folderId,
+            };
+          })
+          .filter(Boolean);
+      });
+    };
+
     (async () => {
       try {
         const response = await folderService.getFolders();
         const normalized = normalizeFolders(response);
+        const normalizedProperties = normalizeProperties(response);
+
+        if (mounted) {
+          setProperties(normalizedProperties);
+        }
 
         if (!mounted || normalized.length === 0) {
+          if (mounted) {
+            setFolders([]);
+            setActiveFolderId(null);
+          }
           return;
         }
 
@@ -376,8 +442,8 @@ const ShortlistsPage = () => {
   };
 
   const visibleProperties = useMemo(
-    () => shortlistedProperties.filter((property) => property.folderId === activeFolderId),
-    [activeFolderId]
+    () => properties.filter((property) => property.folderId === activeFolderId),
+    [activeFolderId, properties]
   );
 
   return (
