@@ -540,6 +540,13 @@ export const getUserCompleteProfile = async (userId: string) => {
       individuals: true,
       companies: true,
       koperasi: true,
+      notificationPrefs: true,
+      profileMedia: true,
+      entityTypes: {
+        include: {
+          entityType: true,
+        },
+      },
     },
   });
 
@@ -559,37 +566,83 @@ export const getUserCompleteProfile = async (userId: string) => {
     profileType = "koperasi";
   }
 
-  // Build individual profile if exists
+  // Build individual profile if exists (with all fields)
   const individual = user.individuals
     ? {
+        id: user.individuals.id,
+        userId: user.individuals.userId,
         fullName: user.individuals.fullName,
         identityNo: user.individuals.identityNo,
+        createdAt: user.individuals.createdAt,
+        updatedAt: user.individuals.updatedAt,
       }
     : null;
 
-  // Build company profile if exists
+  // Build company profile if exists (with all fields)
   const company = user.companies
     ? {
+        id: user.companies.id,
+        userId: user.companies.userId,
         companyName: user.companies.companyName,
         registrationNo: user.companies.registrationNo,
+        createdAt: user.companies.createdAt,
+        updatedAt: user.companies.updatedAt,
       }
     : null;
 
-  // Build koperasi profile if exists
+  // Build koperasi profile if exists (with all fields)
   const koperasi = user.koperasi
     ? {
+        id: user.koperasi.id,
+        userId: user.koperasi.userId,
         koperasiName: user.koperasi.koperasiName,
         registrationNo: user.koperasi.registrationNo,
+        createdAt: user.koperasi.createdAt,
+        updatedAt: user.koperasi.updatedAt,
       }
     : null;
 
-  // Build complete profile response
+  // Build notification preferences
+  const notificationPreferences = user.notificationPrefs
+    ? {
+        id: user.notificationPrefs.id,
+        userId: user.notificationPrefs.userId,
+        emailEnabled: user.notificationPrefs.emailEnabled,
+        pushEnabled: user.notificationPrefs.pushEnabled,
+        createdAt: user.notificationPrefs.createdAt,
+        updatedAt: user.notificationPrefs.updatedAt,
+      }
+    : null;
+
+  // Build profile media
+  const profilePicture = user.profileMedia
+    ? {
+        id: user.profileMedia.id,
+        fileUrl: user.profileMedia.fileUrl,
+        mediaType: user.profileMedia.mediaType,
+        mediaCategory: user.profileMedia.mediaCategory,
+        userId: user.profileMedia.userId,
+      }
+    : null;
+
+  // Build entity types list
+  const entityTypesData = user.entityTypes.map((ue) => ({
+    id: ue.id,
+    entityTypeId: ue.entityTypeId,
+    entityType: ue.entityType,
+  }));
+
+  // Build complete profile response with all fields
   const profile = {
     // Basic user info from Better Auth and user table
     id: user.id,
+    name: user.name,
     email: user.email,
+    emailVerified: user.emailVerified,
+    image: user.image,
     userType: user.userType,
     phone: user.phone,
+    profileMediaId: user.profileMediaId,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
 
@@ -598,6 +651,15 @@ export const getUserCompleteProfile = async (userId: string) => {
     individual,
     company,
     koperasi,
+
+    // Profile picture/media
+    profilePicture,
+
+    // User preferences
+    notificationPreferences,
+
+    // Entity types associated with user
+    entityTypes: entityTypesData,
   };
 
   return profile;

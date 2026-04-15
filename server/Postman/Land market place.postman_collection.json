@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
+              "raw": "// {\r\n//     \"email\": \"basitshykh8@gmail.com\",\r\n//     \"password\": \"Test@1234567\"\r\n// }\r\n{\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@123456789\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -31,14 +31,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/sign-in/email",
+              "raw": "{{baseUrl}}/users/login",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "auth",
-                "sign-in",
-                "email"
+                "users",
+                "login"
               ]
             }
           },
@@ -87,6 +86,24 @@
           "response": []
         },
         {
+          "name": "Get session Copy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/my-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "my-profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Register(Individual)",
           "request": {
             "method": "POST",
@@ -99,7 +116,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitshykh888@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\r\n        \"Land owner\"\r\n    ]\r\n}",
+              "raw": "{\r\n    \"email\": \"ahsanmaqsood1644@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\r\n        \"Land owner\"\r\n    ]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -253,6 +270,123 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Reset Password Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"dawartoor30@gmail.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"token\": \"{{token}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "verify-email"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"token\": \"{{token}}\",\r\n    \"newPassword\" : \"Test@123456789\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/my-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "my-profile"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -265,13 +399,23 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/",
+              "raw": "{{baseUrl}}/users/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           },
@@ -362,36 +506,6 @@
                   "key": ":id",
                   "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
                 }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Complete User Profile",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Basit Sheikh\",\r\n    \"identityNo\": \"123456-12-1234\",\r\n    \"firstName\": \"Basit\",\r\n    \"lastName\": \"Sheikh\",\r\n    \"name\": \"Basit Sheikh\",\r\n    \"companyName\": null,\r\n    \"koperasiName\": null,\r\n    \"registrationNo\": null\r\n}\r\n\r\n// {\r\n//   \"email\": \"company@example.com\",\r\n//   \"userType\": \"user\",\r\n//   \"phone\": \"+60123456789\",\r\n//   \"profileType\": \"company\",\r\n//   \"companyName\": \"ABC Properties Sdn Bhd\",\r\n//   \"registrationNo\": \"123456789\",\r\n//   \"name\": \"ABC Properties\",\r\n//   \"email\": \"company@example.com\",\r\n//   \"fullName\": null,\r\n//   \"identityNo\": null,\r\n//   \"firstName\": null,\r\n//   \"lastName\": null,\r\n//   \"koperasiName\": null\r\n// }\r\n\r\n// {\r\n//   \"email\": \"koperasi@example.com\",\r\n//   \"userType\": \"user\",\r\n//   \"phone\": \"+60123456789\",\r\n//   \"profileType\": \"koperasi\",\r\n//   \"koperasiName\": \"Koperasi Tanah ABC\",\r\n//   \"registrationNo\": \"987654321\",\r\n//   \"name\": \"Koperasi Tanah ABC\",\r\n//   \"fullName\": null,\r\n//   \"identityNo\": null,\r\n//   \"companyName\": null,\r\n//   \"firstName\": null,\r\n//   \"lastName\": null\r\n// }",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users/complete-profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "complete-profile"
               ]
             }
           },
@@ -599,13 +713,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/folders/",
+              "raw": "{{baseUrl}}/folders/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "folders",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -829,7 +955,7 @@
           "response": []
         },
         {
-          "name": "Get all listings",
+          "name": "My listings",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -848,6 +974,43 @@
               "path": [
                 "list-lands",
                 ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All listings",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/all-listings?page=1&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "all-listings"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1035,13 +1198,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/categories/",
+              "raw": "{{baseUrl}}/categories/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "categories",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1166,13 +1341,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/ownership-types/",
+              "raw": "{{baseUrl}}/ownership-types/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "ownership-types",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1297,13 +1484,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/title-types/",
+              "raw": "{{baseUrl}}/title-types/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "title-types",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1428,13 +1627,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/utilizations/",
+              "raw": "{{baseUrl}}/utilizations/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "utilizations",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1559,13 +1770,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/notifications/",
+              "raw": "{{baseUrl}}/notifications/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "notifications",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1690,13 +1913,23 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/entity-types/",
+              "raw": "{{baseUrl}}/entity-types/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "entity-types",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           },
@@ -1821,13 +2054,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/interest-types/",
+              "raw": "{{baseUrl}}/interest-types/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "interest-types",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1952,13 +2197,23 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/leaseholds/",
+              "raw": "{{baseUrl}}/leaseholds/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "leaseholds",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           },
@@ -2093,13 +2348,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/enquiries/",
+              "raw": "{{baseUrl}}/enquiries/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "enquiries",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -2297,12 +2564,24 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/locations",
+              "raw": "{{baseUrl}}/locations?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "locations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -2351,6 +2630,177 @@
                 {
                   "key": ":id",
                   "value": "ad53afb9-459b-43e8-8681-0794e0bd4999"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notification Preferences",
+      "item": [
+        {
+          "name": "Create Notification Preferences",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Notification Preferences",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Notification Preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Notification Preferences Copy",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All Notification Preferences",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Notification Preferences By Id",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
                 }
               ]
             }
