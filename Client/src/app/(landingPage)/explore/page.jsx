@@ -425,8 +425,8 @@ const ExplorePage = () => {
         ) : null}
 
         <section className="flex-1 space-y-6">
-          <div className="flex  gap-6 ">
-            <div className="hidden h-[calc(100vh-6rem)] xl:flex xl:flex-col xl:gap-5">
+          <div className="flex gap-6">
+            <div className="hidden h-[calc(100vh-6rem)] xl:flex xl:w-[42%] xl:flex-col xl:gap-5">
               <header className="rounded-3xl px-6 py-5 pl-0">
                 <p className="text-[24px] font-bold text-gray2">Found {listingsNearCenter.length} properties</p>
                 <p className={`text-[14px] ${fetchError ? "text-[#DC2626]" : "text-gray5"}`}>{headerDescription}</p>
@@ -458,7 +458,7 @@ const ExplorePage = () => {
               </div>
             </div>
 
-            <div className="relative w-full h-[calc(100vh-6rem)]">
+            <div className="relative h-[calc(100vh-6rem)] w-full xl:w-[58%]">
               <div ref={filterMenuRef} className={`absolute right-4 top-4 z-10 ${isDesktopFilterHidden ? "block" : "md:hidden"}`}>
                 <button
                   type="button"

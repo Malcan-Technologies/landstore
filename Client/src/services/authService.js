@@ -84,6 +84,16 @@ export const authService = {
     }
   },
 
+  // Get my profile
+  myProfile: async () => {
+    try {
+      const response = await api.get('/users/my-profile', withOriginHeader());
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Change password
   changePassword: async (passwordData) => {
     try {

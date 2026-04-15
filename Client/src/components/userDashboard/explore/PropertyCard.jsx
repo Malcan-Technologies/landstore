@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Arrow from "@/components/svg/Arrow";
@@ -10,6 +10,8 @@ import Heart from "@/components/svg/Heart";
 import Pointer from "@/components/svg/Pointer";
 import Building from "@/components/svg/Building";
 import Bag from "@/components/svg/Bag";
+
+const fallbackImageSrc = "/Land.jpg";
 
 const PropertyCard = ({
   land,
@@ -44,9 +46,22 @@ const PropertyCard = ({
   } = land;
 
   const propertyDetailsHref = id ? `/property/${id}` : undefined;
+  const resolvedImageFromProps = useMemo(() => {
+    if (typeof image !== "string") {
+      return fallbackImageSrc;
+    }
+
+    const trimmedImage = image.trim();
+    return trimmedImage ? trimmedImage : fallbackImageSrc;
+  }, [image]);
 
   const [internalIsSaved, setInternalIsSaved] = useState(false);
+  const [resolvedImageSrc, setResolvedImageSrc] = useState(resolvedImageFromProps);
   const savedState = typeof isSaved === "boolean" ? isSaved : internalIsSaved;
+
+  useEffect(() => {
+    setResolvedImageSrc(resolvedImageFromProps);
+  }, [resolvedImageFromProps]);
 
   const handleRequireLogin = (event) => {
     event?.preventDefault?.();
@@ -72,11 +87,6 @@ const PropertyCard = ({
   };
 
   const handleOpenProperty = (event) => {
-    if (!isAuthenticated) {
-      handleRequireLogin(event);
-      return;
-    }
-
     if (id) {
       router.push(`/property/${id}`);
     }
@@ -125,14 +135,15 @@ const PropertyCard = ({
         className={`w-auto cursor-pointer rounded-lg border border-white/70 bg-white px-2 py-1.5 transition ${className}`.trim()}
       >
         <div className="flex items-stretch gap-3">
-          <div className="relative h-auto min-h-full w-28 shrink-0 self-stretch overflow-hidden rounded-md bg-[#F8E5DD]">
+          <div className="relative h-24 w-28 shrink-0 self-stretch overflow-hidden rounded-md bg-[#F8E5DD]">
             <Image
-              src={image}
+              src={resolvedImageSrc}
               alt={title}
               fill
               sizes="90px"
               className="h-full w-full object-cover"
               unoptimized
+              onError={() => setResolvedImageSrc(fallbackImageSrc)}
             />
           </div>
 
@@ -201,12 +212,13 @@ const PropertyCard = ({
     >
       <div className="relative h-40 w-full overflow-hidden rounded-t-xl">
         <Image
-          src={image}
+          src={resolvedImageSrc}
           alt={title}
           fill
           sizes="(max-width: 768px) 100vw, 400px"
           className="object-cover"
           unoptimized
+          onError={() => setResolvedImageSrc(fallbackImageSrc)}
         />
         <button
           type="button"
