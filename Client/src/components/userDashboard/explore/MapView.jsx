@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, InfoWindowF, MarkerF, useLoadScript } from "@react-google-maps/api";
 import InfoWindowCard from "@/components/userDashboard/explore/InfoWindowCard";
 
@@ -16,6 +16,62 @@ const mapOptions = {
 const isFiniteLatLng = (value) => Number.isFinite(value?.lat) && Number.isFinite(value?.lng);
 
 const defaultCenter = { lat: 4.2105, lng: 101.9758 }; // Malaysia
+
+const toRadians = (value) => (value * Math.PI) / 180;
+
+const getDistanceKm = (lat1, lng1, lat2, lng2) => {
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+};
+
+const getViewportPayload = (mapInstance) => {
+  if (!mapInstance?.getCenter || !mapInstance?.getBounds) {
+    return null;
+  }
+
+  const center = mapInstance.getCenter();
+  const bounds = mapInstance.getBounds();
+
+  if (!center || !bounds) {
+    return null;
+  }
+
+  const northEast = bounds.getNorthEast();
+  const southWest = bounds.getSouthWest();
+
+  const centerLat = center.lat();
+  const centerLng = center.lng();
+  const north = northEast.lat();
+  const east = northEast.lng();
+  const south = southWest.lat();
+  const west = southWest.lng();
+
+  if (![centerLat, centerLng, north, east, south, west].every((value) => Number.isFinite(value))) {
+    return null;
+  }
+
+  const cornerDistanceKm = getDistanceKm(centerLat, centerLng, north, east);
+  const oppositeCornerDistanceKm = getDistanceKm(centerLat, centerLng, south, west);
+  const radiusKm = Math.max(cornerDistanceKm, oppositeCornerDistanceKm, 0.1);
+
+  return {
+    center: { lat: centerLat, lng: centerLng },
+    radiusKm,
+    bounds: {
+      north,
+      east,
+      south,
+      west,
+    },
+  };
+};
 
 const baseMarkerSvg = (color) => `
   <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -59,8 +115,10 @@ const MapView = ({
   markerColor,
   hideMarkerPin = false,
   onMapClick,
+  onViewportChange,
 }) => {
   const [activeMarker, setActiveMarker] = useState(defaultActiveMarkerId);
+  const mapRef = useRef(null);
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
   });
@@ -117,12 +175,41 @@ const MapView = ({
     [onMapClick]
   );
 
+  const emitViewportChange = useCallback(() => {
+    if (!onViewportChange || !mapRef.current) {
+      return;
+    }
+
+    const viewportPayload = getViewportPayload(mapRef.current);
+    if (!viewportPayload) {
+      return;
+    }
+
+    onViewportChange(viewportPayload);
+  }, [onViewportChange]);
+
+  const handleMapLoad = useCallback(
+    (mapInstance) => {
+      mapRef.current = mapInstance;
+      emitViewportChange();
+    },
+    [emitViewportChange]
+  );
+
+  const handleMapUnmount = useCallback(() => {
+    mapRef.current = null;
+  }, []);
+
+  const handleMapIdle = useCallback(() => {
+    emitViewportChange();
+  }, [emitViewportChange]);
+
   const infoWindowOptions = useMemo(() => {
     if (typeof window === "undefined" || !window.google) return undefined;
     return {
       pixelOffset: new window.google.maps.Size(0, infoWindowOffset),
     };
-  }, [infoWindowOffset, isLoaded]);
+  }, [infoWindowOffset]);
 
   if (loadError) {
     return (
@@ -142,7 +229,16 @@ const MapView = ({
 
   return (
     <div className={combinedContainerClassName}>
-      <GoogleMap mapContainerClassName={mapClassName} center={safeCenter} zoom={zoom} options={mapOptions} onClick={handleMapClick}>
+      <GoogleMap
+        mapContainerClassName={mapClassName}
+        center={safeCenter}
+        zoom={zoom}
+        options={mapOptions}
+        onLoad={handleMapLoad}
+        onUnmount={handleMapUnmount}
+        onIdle={handleMapIdle}
+        onClick={handleMapClick}
+      >
         {validMarkers.map((marker) => (
           hideMarkerPin ? (
             activeMarker === marker.id && activeMarkerData ? (

@@ -66,6 +66,20 @@ export const landService = {
     }
   },
 
+  // Search properties around a map center using visible map radius
+  exploreMap: async ({ latitude, longitude, radiusKm, page = 1, limit = 50 }) => {
+    try {
+      const response = await api.post(
+        '/list-lands/search/by-radius',
+        { latitude, longitude, radiusKm },
+        { params: { page, limit } }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Backward-compatible aliases
   createLand: async (landData, config = {}) => {
     return landService.createListing(landData, config);
