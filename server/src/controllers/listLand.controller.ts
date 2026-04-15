@@ -9,6 +9,8 @@ import {
 	uploadPropertyImages,
 	uploadPropertyDocuments,
 	getUploadedMediaAndDocuments,
+	searchPropertiesByRadius,
+	type CreateListLandPayload,
 } from "../services/listLand.js";
 import type { GetLandsQuery } from "../../types/express/land.types.js";
 
@@ -175,7 +177,7 @@ export const createListLandController = async (req: Request, res: Response) => {
 			...normalizedBody,
 			landMediaIds: mediaIds.length > 0 ? mediaIds : req.body.landMediaIds,
 			documentIds: documentIds.length > 0 ? documentIds : req.body.documentIds,
-		};
+		} as CreateListLandPayload;
 
 		// Create property with images, documents and all other details
 		const property = await createListLand(requester.id, payload);
@@ -351,5 +353,78 @@ export const getAllListingsController = async (req: Request, res: Response) => {
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
 		return res.status(statusCode).json({ message });
+	}
+};
+
+/**
+ * SEARCH PROPERTIES BY RADIUS
+ * POST /api/list-lands/search/by-radius
+ * Body: { latitude, longitude, radiusKm }
+ * Query: { page?, limit? }
+ *
+ * Searches for active properties within a geographic radius using:
+ * 1. Bounding box calculation for initial filtering
+ * 2. Pythagorean theorem for precise distance verification
+ *
+ * Returns: { items, pagination, searchParams }
+ */
+export const searchPropertiesByRadiusController = async (
+	req: Request,
+	res: Response
+) => {
+	try {
+		getRequesterUserOrThrow(req); // Verify user is authenticated
+
+		const { latitude, longitude, radiusKm } = req.body;
+
+		// Validate required fields
+		if (latitude === undefined || latitude === null) {
+			return res.status(400).json({
+				success: false,
+				message: "Latitude is required",
+			});
+		}
+
+		if (longitude === undefined || longitude === null) {
+			return res.status(400).json({
+				success: false,
+				message: "Longitude is required",
+			});
+		}
+
+		if (radiusKm === undefined || radiusKm === null) {
+			return res.status(400).json({
+				success: false,
+				message: "Radius (radiusKm) is required",
+			});
+		}
+
+		const page = toNumberOrUndefined(req.query.page) || 1;
+		const limit = toNumberOrUndefined(req.query.limit) || 10;
+
+		// Import the search function
+		const { searchPropertiesByRadius } = await import(
+			"../services/listLand.js"
+		);
+
+		const result = await searchPropertiesByRadius(
+			latitude,
+			longitude,
+			radiusKm,
+			page,
+			limit
+		);
+
+		return res.status(200).json({
+			success: true,
+			message: "Properties found within radius",
+			data: result,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
 	}
 };

@@ -134,7 +134,7 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 		
 		// Create verification URL
 		const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
-		const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
+		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
 		const verificationURL = `${baseURL}/api/users/verify-email-callback?token=${verificationToken}&redirectTo=${encodeURIComponent(frontendURL)}`;
 
 		// Store verification token in database with 24 hour expiration
@@ -214,7 +214,12 @@ export const completeProfileController = async (req: Request, res: Response) => 
  * POST /api/users/login
  * Body: { email, password }
  * 
- * Authenticates user and returns session with userType
+ * Uses Better Auth's sign-in which handles:
+ * - Password verification
+ * - Session creation  
+ * - Cookie management (httpOnly, secure, sameSite)
+ * 
+ * Then enriches response with userType and sends welcome email
  */
 export const loginController = async (req: Request, res: Response) => {
 	try {
@@ -235,16 +240,40 @@ export const loginController = async (req: Request, res: Response) => {
 		}
 
 		try {
-			// Call Better Auth sign-in endpoint
-			const response = await auth.api.signInEmail({
+			// Call Better Auth's sign-in which returns a Response object
+			const betterAuthResponse = await auth.api.signInEmail({
 				body: {
 					email: email.toLowerCase(),
 					password,
 				},
+				asResponse: true,
 			});
 
+			// Extract Set-Cookie headers from Better Auth response and forward to Express
+			if (betterAuthResponse?.headers) {
+				const setCookieHeader = betterAuthResponse.headers.get("set-cookie");
+				if (setCookieHeader) {
+					res.setHeader("set-cookie", setCookieHeader);
+				}
+			}
+
+			// Parse the response body (it's a ReadableStream, need to read it)
+			let responseBody: any = null;
+			if (betterAuthResponse?.body) {
+				try {
+					const bodyText = await betterAuthResponse.text();
+					responseBody = JSON.parse(bodyText);
+				} catch (parseError) {
+					console.error("Failed to parse Better Auth response body:", parseError);
+					return res.status(500).json({
+						success: false,
+						message: "Failed to process login response",
+					});
+				}
+			}
+
 			// Check if sign-in was successful
-			if (!response?.user?.id || !response?.user?.email) {
+			if (!responseBody?.user?.id || !responseBody?.user?.email) {
 				return res.status(401).json({
 					success: false,
 					message: "Invalid email or password",
@@ -252,22 +281,36 @@ export const loginController = async (req: Request, res: Response) => {
 			}
 
 			// Fetch user with userType from database
-			const user = await getUserByEmail(response.user.email);
+			const user = await getUserByEmail(responseBody.user.email);
+
+			// Prepare userName for welcome email
+			const emailPrefix = responseBody.user.email.split('@')[0];
+			const userName = responseBody.user.name || emailPrefix || 'User';
+
+			// Send welcome email asynchronously (don't wait for it)
+			emailService.sendWelcomeEmail(
+				responseBody.user.email,
+				userName
+			).catch((error) => {
+				console.error("Failed to send welcome email:", error);
+				// Continue with login response even if email fails
+			});
 
 			// Return enhanced response with userType
+			// Set-Cookie headers are already set above from Better Auth response
 			return res.status(200).json({
 				success: true,
 				redirect: false,
-				token: response.token || "",
+				token: responseBody.session?.token || "",
 				user: {
-					id: response.user.id,
-					name: response.user.name,
-					email: response.user.email,
-					emailVerified: response.user.emailVerified,
-					image: response.user.image,
+					id: responseBody.user.id,
+					name: responseBody.user.name,
+					email: responseBody.user.email,
+					emailVerified: responseBody.user.emailVerified,
+					image: responseBody.user.image,
 					userType: user.userType, // Include userType from database
-					createdAt: response.user.createdAt,
-					updatedAt: response.user.updatedAt,
+					createdAt: responseBody.user.createdAt,
+					updatedAt: responseBody.user.updatedAt,
 				},
 			});
 		} catch (authError: unknown) {
@@ -518,10 +561,9 @@ export const requestPasswordResetController = async (req: Request, res: Response
 		// Generate secure reset token
 		const resetToken = randomBytes(32).toString("hex");
 		
-		// Create reset URL with token and redirect URL
-		const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
-		const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
-		const resetURL = `${baseURL}/api/users/reset-password-callback?token=${resetToken}&redirectTo=${encodeURIComponent(frontendURL + "/reset-password")}`;
+		// Create reset URL - send directly to frontend with token
+		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
+		const resetURL = `${frontendURL}?token=${resetToken}`;
 
 		// Store reset token in database with 1 hour expiration
 		const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -557,6 +599,7 @@ export const requestPasswordResetController = async (req: Request, res: Response
  * RESET PASSWORD CALLBACK (Optional - for email clicks)
  * GET /api/users/reset-password-callback
  * Query: { token, redirectTo }
+ * Redirects to http://localhost:3000 with token for password reset
  */
 export const resetPasswordCallbackController = async (req: Request, res: Response) => {
 	try {
@@ -564,7 +607,7 @@ export const resetPasswordCallbackController = async (req: Request, res: Respons
 
 		if (!token || typeof token !== "string") {
 			return res.redirect(
-				`${redirectTo || "http://localhost:5173/reset-password"}?error=invalid_token`
+				`${redirectTo || "http://localhost:3000"}?error=invalid_token`
 			);
 		}
 
@@ -580,17 +623,17 @@ export const resetPasswordCallbackController = async (req: Request, res: Respons
 
 		if (!verification) {
 			return res.redirect(
-				`${redirectTo || "http://localhost:5173/reset-password"}?error=expired_token`
+				`${redirectTo || "http://localhost:3000"}?error=expired_token`
 			);
 		}
 
 		// Redirect to frontend with token
 		return res.redirect(
-			`${redirectTo || "http://localhost:5173/reset-password"}?token=${token}`
+			`${redirectTo || "http://localhost:3000"}?token=${token}`
 		);
 	} catch (error: unknown) {
 		return res.redirect(
-			`${(req.query.redirectTo as string) || "http://localhost:5173/reset-password"}?error=server_error`
+			`${(req.query.redirectTo as string) || "http://localhost:3000"}?error=server_error`
 		);
 	}
 };
@@ -686,6 +729,7 @@ export const resetPasswordController = async (req: Request, res: Response) => {
  * VERIFY EMAIL CALLBACK (for email clicks)
  * GET /api/users/verify-email-callback
  * Query: { token, redirectTo }
+ * Redirects to http://localhost:3000 with token for email verification
  */
 export const verifyEmailCallbackController = async (req: Request, res: Response) => {
 	try {
@@ -693,7 +737,7 @@ export const verifyEmailCallbackController = async (req: Request, res: Response)
 
 		if (!token || typeof token !== "string") {
 			return res.redirect(
-				`${redirectTo || "http://localhost:5173"}?error=invalid_token`
+				`${redirectTo || "http://localhost:3000"}?error=invalid_token`
 			);
 		}
 
@@ -709,17 +753,17 @@ export const verifyEmailCallbackController = async (req: Request, res: Response)
 
 		if (!verification) {
 			return res.redirect(
-				`${redirectTo || "http://localhost:5173"}?error=expired_token`
+				`${redirectTo || "http://localhost:3000"}?error=expired_token`
 			);
 		}
 
 		// Redirect to frontend with token for final confirmation
 		return res.redirect(
-			`${redirectTo || "http://localhost:5173"}?verificationToken=${token}`
+			`${redirectTo || "http://localhost:3000"}?verificationToken=${token}`
 		);
 	} catch (error: unknown) {
 		return res.redirect(
-			`${(req.query.redirectTo as string) || "http://localhost:5173"}?error=server_error`
+			`${(req.query.redirectTo as string) || "http://localhost:3000"}?error=server_error`
 		);
 	}
 };

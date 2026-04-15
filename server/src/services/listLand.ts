@@ -741,3 +741,150 @@ export const deleteListLandById = async (
 		throw error;
 	}
 };
+
+/**
+ * Search properties within a geographic radius
+ *
+ * Algorithm:
+ * 1. Calculate bounding box from center point and radius
+ * 2. Query all active properties within the bounding box
+ * 3. Refine results using Pythagorean theorem to check if within actual circle
+ *
+ * Formula for geographic coordinates:
+ * - dY = radius (km) / 111.11
+ * - dX = dY / cos(latitude in radians)
+ * - Bounding Box: (lat - dY, lat + dY, lon - dX, lon + dX)
+ *
+ * Distance calculation:
+ * - distance² = (lat1 - lat2)² + (lon1 - lon2)²
+ * - if distance² < radius², point is within radius
+ */
+export const searchPropertiesByRadius = async (
+	latitude: number | string,
+	longitude: number | string,
+	radiusKm: number | string,
+	page: number = 1,
+	limit: number = 10
+) => {
+	try {
+		// Parse and validate inputs
+		const lat = Number(latitude);
+		const lon = Number(longitude);
+		const radius = Number(radiusKm);
+
+		if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+			throw createHttpError("Invalid latitude. Must be between -90 and 90", 400);
+		}
+
+		if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+			throw createHttpError("Invalid longitude. Must be between -180 and 180", 400);
+		}
+
+		if (!Number.isFinite(radius) || radius <= 0) {
+			throw createHttpError("Invalid radius. Must be a positive number", 400);
+		}
+
+		// Step 1: Calculate bounding box
+		// dY = radius (km) / 111.11 km per degree of latitude
+		const dY = radius / 111.11;
+
+		// dX = dY / cos(latitude in radians)
+		const latRadians = (lat * Math.PI) / 180;
+		const dX = dY / Math.cos(latRadians);
+
+		const minLat = lat - dY;
+		const maxLat = lat + dY;
+		const minLon = lon - dX;
+		const maxLon = lon + dX;
+
+		// Step 2: Query properties within the bounding box with status = "active"
+		const skip = (page - 1) * limit;
+
+		const boxResults = await db.property.findMany({
+			where: {
+				status: "active",
+				location: {
+					latitude: {
+						gte: new Prisma.Decimal(minLat),
+						lte: new Prisma.Decimal(maxLat),
+					},
+					longitude: {
+						gte: new Prisma.Decimal(minLon),
+						lte: new Prisma.Decimal(maxLon),
+					},
+				},
+			},
+			include: includePropertyRelations,
+			skip,
+			take: limit,
+		});
+
+		// Step 3: Refine results using Pythagorean theorem
+		// Filter properties that are actually within the radius circle
+		const radiusSquared = radius * radius;
+
+		const results = boxResults.filter((property) => {
+			if (!property.location) return false;
+
+			const propLat = Number(property.location.latitude);
+			const propLon = Number(property.location.longitude);
+
+			// Calculate distance² = (lat1 - lat2)² + (lon1 - lon2)²
+			const latDiff = lat - propLat;
+			const lonDiff = lon - propLon;
+
+			// Note: This is an approximation since we're treating lat/lon as Cartesian coordinates
+			// For more accuracy, use Haversine formula, but Pythagorean is good for small radii
+			const distanceSquared = Math.pow(latDiff, 2) + Math.pow(lonDiff, 2);
+
+			// Only include if within the radius
+			return distanceSquared <= Math.pow(dY, 2);
+		});
+
+		// Get total count for pagination (approximate based on bounding box)
+		const totalCount = await db.property.count({
+			where: {
+				status: "active",
+				location: {
+					latitude: {
+						gte: new Prisma.Decimal(minLat),
+						lte: new Prisma.Decimal(maxLat),
+					},
+					longitude: {
+						gte: new Prisma.Decimal(minLon),
+						lte: new Prisma.Decimal(maxLon),
+					},
+				},
+			},
+		});
+
+		return {
+			items: results,
+			pagination: {
+				page,
+				limit,
+				total: results.length,
+				totalInBoundingBox: totalCount,
+				totalPages: Math.ceil(results.length / limit),
+			},
+			searchParams: {
+				centerLat: lat,
+				centerLon: lon,
+				radiusKm: radius,
+				boundingBox: {
+					minLat,
+					maxLat,
+					minLon,
+					maxLon,
+				},
+			},
+		};
+	} catch (error: unknown) {
+		const err = error as Error & { statusCode?: number };
+		if (err.statusCode) {
+			throw error;
+		}
+
+		throw createHttpError("Failed to search properties by radius", 500);
+	}
+};
