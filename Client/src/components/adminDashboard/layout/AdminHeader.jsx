@@ -13,7 +13,7 @@ import ThreeBars from "@/components/svg/ThreeBars";
 import Button from "@/components/common/Button";
 import LoginModal from "@/components/auth/LoginModal";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
-import { notificationItems } from "@/components/userDashboard/notifications/notificationData";
+import { notificationService } from "@/services/notificationService";
 import { logoutUser } from "@/store/authSlice";
 
 const ADMIN_AUTH_STORAGE_KEY = "landstore_admin_auth";
@@ -28,8 +28,53 @@ const AdminHeader = ({ onMenuClick }) => {
   const [authTab, setAuthTab] = useState("login");
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const notificationRef = useRef(null);
   const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isAuth || !user?.id) {
+      setNotifications([]);
+      return;
+    }
+
+    let mounted = true;
+
+    const mapNotification = (item) => {
+      const apiType = item?.type;
+      const type = apiType === "urgent" ? "warning" : "success";
+      const createdAt = item?.createdAt ? new Date(item.createdAt) : null;
+
+      return {
+        id: item?.id,
+        title: apiType === "urgent" ? "Action needed" : "Notification",
+        message: item?.content || "",
+        timeLabel: createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toLocaleString() : "",
+        type,
+        href: "/user-dashboard/notifications",
+        read: Boolean(item?.isRead),
+      };
+    };
+
+    (async () => {
+      try {
+        const response = await notificationService.getNotifications({ page: 1, limit: 5, userId: user.id });
+        const items = Array.isArray(response) ? response : response?.data;
+        const mapped = Array.isArray(items) ? items.map(mapNotification).filter((n) => n?.id) : [];
+        if (mounted) {
+          setNotifications(mapped);
+        }
+      } catch (_error) {
+        if (mounted) {
+          setNotifications([]);
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAuth, user?.id]);
 
   useEffect(() => {
     const tokenFromUrl = searchParams?.get("token") || "";
@@ -120,7 +165,7 @@ const AdminHeader = ({ onMenuClick }) => {
                   </button>
 
                   {notificationOpen ? (
-                    <NotificationPopup notifications={notificationItems} onClose={() => setNotificationOpen(false)} />
+                    <NotificationPopup notifications={notifications} onClose={() => setNotificationOpen(false)} />
                   ) : null}
                 </div>
 

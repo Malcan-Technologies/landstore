@@ -1,12 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSelector } from "react-redux";
 
+import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
+import ChooseFolder from "@/components/userDashboard/explore/ChooseFolder";
 import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
 import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import MapView from "@/components/userDashboard/explore/MapView";
 import Funnel from "@/components/svg/Funnel";
+import { folderService } from "@/services/folderService";
 import { landService } from "@/services/landService";
+import { checkAuth } from "@/utils/auth";
 
 const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
 const defaultMapCenter = { lat: 3.0459, lng: 101.7083 };
@@ -129,19 +134,36 @@ const mapListingToExploreCard = (listing) => {
 };
 
 const ExplorePage = () => {
+  const { isAuth, hydrated } = useSelector((state) => state.auth);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isDesktopFilterHidden, setIsDesktopFilterHidden] = useState(false);
+  const [isLoginRequiredOpen, setIsLoginRequiredOpen] = useState(false);
+  const [isChooseFolderOpen, setIsChooseFolderOpen] = useState(false);
+  const [folders, setFolders] = useState([]);
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
+  const [pendingPropertyId, setPendingPropertyId] = useState(null);
+  const [savedPropertyIds, setSavedPropertyIds] = useState(() => new Set());
   const [listings, setListings] = useState([]);
   const [mapViewport, setMapViewport] = useState({
     center: defaultMapCenter,
     radiusKm: defaultRadiusKm,
   });
   const [isLoadingListings, setIsLoadingListings] = useState(false);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
+  const [isSavingToFolder, setIsSavingToFolder] = useState(false);
   const [fetchError, setFetchError] = useState("");
 
   const filterMenuRef = useRef(null);
   const lastRequestKeyRef = useRef("");
   const requestIdRef = useRef(0);
+
+  const isLoggedIn = useMemo(() => {
+    if (hydrated) {
+      return Boolean(isAuth);
+    }
+
+    return checkAuth();
+  }, [hydrated, isAuth]);
 
   useEffect(() => {
     if (!isFilterModalOpen) {
@@ -288,8 +310,113 @@ const ExplorePage = () => {
     return "Secured and verified property listings";
   }, [fetchError, isLoadingListings]);
 
+  const handleLoginRequired = useCallback(() => {
+    setIsLoginRequiredOpen(true);
+  }, []);
+
+  const normalizeFolders = useCallback((payload) => {
+    const items = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.items)
+          ? payload.items
+          : Array.isArray(payload?.data?.items)
+            ? payload.data.items
+            : [];
+
+    return items
+      .map((folder) => {
+        const id = folder?.id ?? folder?._id;
+        const label = folder?.label ?? folder?.name;
+        if (!id || !label) {
+          return null;
+        }
+
+        const parentId = folder?.parentId ?? folder?.parentFolderId ?? null;
+
+        return {
+          id,
+          label,
+          parentId,
+        };
+      })
+      .filter(Boolean);
+  }, []);
+
+  const handleLikeClick = useCallback(async ({ propertyId, isSaved: currentlySaved }) => {
+    if (!isLoggedIn) {
+      setIsLoginRequiredOpen(true);
+      return;
+    }
+
+    if (!propertyId) {
+      return;
+    }
+
+    if (currentlySaved) {
+      setSavedPropertyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(propertyId);
+        return next;
+      });
+      return;
+    }
+
+    setPendingPropertyId(propertyId);
+    setIsLoadingFolders(true);
+    setIsChooseFolderOpen(true);
+
+    try {
+      const response = await folderService.getFolders();
+      const normalized = normalizeFolders(response);
+      setFolders(normalized);
+      setSelectedFolderId(normalized[0]?.id ?? null);
+    } catch {
+      setFolders([]);
+      setSelectedFolderId(null);
+    } finally {
+      setIsLoadingFolders(false);
+    }
+  }, [isLoggedIn, normalizeFolders]);
+
+  const handleCloseChooseFolder = useCallback(() => {
+    if (isSavingToFolder) {
+      return;
+    }
+
+    setIsChooseFolderOpen(false);
+    setIsLoadingFolders(false);
+    setIsSavingToFolder(false);
+    setPendingPropertyId(null);
+    setSelectedFolderId(null);
+  }, [isSavingToFolder]);
+
+  const handleConfirmChooseFolder = useCallback(async () => {
+    if (!pendingPropertyId || !selectedFolderId || isSavingToFolder) {
+      return;
+    }
+
+    setIsSavingToFolder(true);
+
+    try {
+      await folderService.addToFolder(selectedFolderId, pendingPropertyId);
+
+      setSavedPropertyIds((prev) => {
+        const next = new Set(prev);
+        next.add(pendingPropertyId);
+        return next;
+      });
+
+      handleCloseChooseFolder();
+    } catch {
+      setIsSavingToFolder(false);
+    }
+  }, [handleCloseChooseFolder, isSavingToFolder, pendingPropertyId, selectedFolderId]);
+
   return (
-    <main className="bg-background-primary pt-10 pb-2">
+    <>
+      <main className="bg-background-primary pt-10 pb-2">
       <div className="sm:mx-10 mx-1 flex w-auto gap-6 px-2 lg:items-start lg:px-2 ">
         {!isDesktopFilterHidden ? (
           <div className="hidden md:block h-[calc(100vh-6rem)] xl:h-[calc(100vh-6rem)]">
@@ -318,7 +445,15 @@ const ExplorePage = () => {
                 ) : null}
 
                 {listingsNearCenter.map((land) => (
-                  <PropertyCard key={land.id} land={land} />
+                  <PropertyCard
+                    key={land.id}
+                    land={land}
+                    enableCardClick
+                    isAuthenticated={isLoggedIn}
+                    onLoginRequired={handleLoginRequired}
+                    onLikeClick={handleLikeClick}
+                    isSaved={savedPropertyIds.has(land.id)}
+                  />
                 ))}
               </div>
             </div>
@@ -357,7 +492,17 @@ const ExplorePage = () => {
                   style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
                 >
                   {listingsNearCenter.map((land) => (
-                    <PropertyCard key={land.id} land={land} variant="compact" className="" />
+                    <PropertyCard
+                      key={land.id}
+                      land={land}
+                      variant="compact"
+                      enableCardClick
+                      className=""
+                      isAuthenticated={isLoggedIn}
+                      onLoginRequired={handleLoginRequired}
+                      onLikeClick={handleLikeClick}
+                      isSaved={savedPropertyIds.has(land.id)}
+                    />
                   ))}
                 </div>
               </div>
@@ -365,7 +510,30 @@ const ExplorePage = () => {
           </div>
         </section>
       </div>
-    </main>
+      </main>
+
+      <LoginRequiredModal
+        open={isLoginRequiredOpen}
+        onClose={() => setIsLoginRequiredOpen(false)}
+        message="Login is required to access this page"
+      />
+
+      <ChooseFolder
+        open={isChooseFolderOpen}
+        onClose={handleCloseChooseFolder}
+        folders={folders}
+        selectedFolderId={selectedFolderId}
+        onSelect={setSelectedFolderId}
+        onBack={handleCloseChooseFolder}
+        onConfirm={handleConfirmChooseFolder}
+        title="Choose folder"
+        description="Select a folder to save this property to shortlist"
+        backLabel="Cancel"
+        confirmLabel="Save to folder"
+        isConfirmDisabled={!selectedFolderId || isLoadingFolders || isSavingToFolder}
+        isConfirmLoading={isLoadingFolders || isSavingToFolder}
+      />
+    </>
   );
 };
 
