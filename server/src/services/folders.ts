@@ -1,5 +1,6 @@
 import db from "../../config/prisma.js";
 import { generateSignedUrl } from "./s3Upload.js";
+import { generateMediaSignedUrl } from "./signedUrlTransformer.js";
 
 const createHttpError = (message: string, statusCode: number) => {
 	const error = new Error(message) as Error & { statusCode?: number };
@@ -153,9 +154,7 @@ export const getFolderById = async (
 				landArea: sp.property.landArea,
 				landAreaUnit: sp.property.landAreaUnit,
 				location: sp.property.location,
-				imageUrl: sp.property.media?.fileUrl
-					? await generateSignedUrl(sp.property.media.fileUrl)
-					: null,
+				imageUrl: await generateMediaSignedUrl(sp.property.media?.fileUrl),
 				shortlistedAt: sp.createdAt,
 			}))
 		);
@@ -550,9 +549,7 @@ export const getFolderHierarchy = async (
 				landArea: sp.property.landArea,
 				landAreaUnit: sp.property.landAreaUnit,
 				location: sp.property.location,
-				imageUrl: sp.property.media?.fileUrl
-					? await generateSignedUrl(sp.property.media.fileUrl)
-					: null,
+				imageUrl: await generateMediaSignedUrl(sp.property.media?.fileUrl),
 				shortlistedAt: sp.createdAt,
 			}))
 		);
@@ -569,9 +566,7 @@ export const getFolderHierarchy = async (
 						landArea: sp.property.landArea,
 						landAreaUnit: sp.property.landAreaUnit,
 						location: sp.property.location,
-						imageUrl: sp.property.media?.fileUrl
-							? await generateSignedUrl(sp.property.media.fileUrl)
-							: null,
+						imageUrl: await generateMediaSignedUrl(sp.property.media?.fileUrl),
 						shortlistedAt: sp.createdAt,
 					}))
 				);

@@ -1,6 +1,7 @@
 import { DealType, FeatureTag, Prisma, TerrainType } from "@prisma/client";
 import db from "../../config/prisma.js";
 import { uploadFileToS3, deleteFileFromS3, generateSignedUrl } from "./s3Upload.js";
+import { transformPropertyWithSignedUrls } from "./signedUrlTransformer.js";
 
 type MulterFile = Express.Multer.File;
 
@@ -140,36 +141,6 @@ const includePropertyRelations = {
 	leaseholdDetails: true,
 	media: true,
 } as const;
-
-/**
- * Helper: Transform property media with signed URLs
- * Converts stored S3 file keys into temporary signed URLs
- */
-const transformPropertyWithSignedUrls = async (property: any) => {
-	if (!property.media || property.media.length === 0) {
-		return property;
-	}
-
-	const mediaWithUrls = await Promise.all(
-		property.media.map(async (media: any) => {
-			try {
-				return {
-					...media,
-					fileUrl: media.fileUrl ? await generateSignedUrl(media.fileUrl) : null,
-				};
-			} catch (error) {
-				console.error("Error generating signed URL for media:", media.id, error);
-				// Return media with original fileUrl if signing fails
-				return media;
-			}
-		})
-	);
-
-	return {
-		...property,
-		media: mediaWithUrls,
-	};
-};
 
 /**
  * Get uploaded media and documents with their file URLs
@@ -560,9 +531,7 @@ export const getAllListings = async (query: GetLandsQuery) => {
  * Get single property by ID
  */
 export const getListLandById = async (
-	propertyId: string,
-	userId: string,
-	userType: string
+	propertyId: string
 ) => {
 	const property = await db.property.findUnique({
 		where: { id: propertyId },
@@ -571,10 +540,6 @@ export const getListLandById = async (
 
 	if (!property) {
 		throw createHttpError("Property not found", 404);
-	}
-
-	if (userType !== "admin" && property.userId !== userId) {
-		throw createHttpError("Forbidden", 403);
 	}
 
 	// Transform property with signed URLs
@@ -592,8 +557,6 @@ export const getListLandById = async (
  */
 export const updateListLandById = async (
 	propertyId: string,
-	userId: string,
-	userType: string,
 	payload: UpdateListLandPayload
 ) => {
 	const existingProperty = await db.property.findUnique({
@@ -602,10 +565,6 @@ export const updateListLandById = async (
 
 	if (!existingProperty) {
 		throw createHttpError("Property not found", 404);
-	}
-
-	if (userType !== "admin" && existingProperty.userId !== userId) {
-		throw createHttpError("Forbidden", 403);
 	}
 
 	try {
@@ -780,9 +739,7 @@ export const updateListLandById = async (
  * Delete property by ID (Hard Delete)
  */
 export const deleteListLandById = async (
-	propertyId: string,
-	userId: string,
-	userType: string
+	propertyId: string
 ) => {
 	const existingProperty = await db.property.findUnique({
 		where: { id: propertyId },
@@ -792,9 +749,7 @@ export const deleteListLandById = async (
 		throw createHttpError("Property not found", 404);
 	}
 
-	if (userType !== "admin" && existingProperty.userId !== userId) {
-		throw createHttpError("Forbidden", 403);
-	}
+	
 
 	try {
 		await db.$transaction([

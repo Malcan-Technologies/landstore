@@ -227,13 +227,11 @@ export const getListLandsController = async (req: Request, res: Response) => {
  */
 export const getListLandByIdController = async (req: Request, res: Response) => {
 	try {
-		const requester = getRequesterUserOrThrow(req);
+		// This endpoint is public - no authentication required
 		const propertyId = getPropertyIdParamOrThrow(req);
 
 		const property = await getListLandById(
-			propertyId,
-			requester.id,
-			requester.userType
+			propertyId
 		);
 
 		return res.status(200).json({ property });
@@ -291,8 +289,6 @@ export const updateListLandController = async (req: Request, res: Response) => {
 
 		const property = await updateListLandById(
 			propertyId,
-			requester.id,
-			requester.userType,
 			payload
 		);
 
@@ -318,9 +314,7 @@ export const deleteListLandController = async (req: Request, res: Response) => {
 		const propertyId = getPropertyIdParamOrThrow(req);
 
 		const result = await deleteListLandById(
-			propertyId,
-			requester.id,
-			requester.userType
+			propertyId
 		);
 
 		return res.status(200).json(result);
