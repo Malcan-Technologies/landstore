@@ -116,7 +116,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"ahsanmaqsood1644@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\r\n        \"Land owner\"\r\n    ]\r\n}",
+              "raw": "{\r\n    \"email\": \"ahsanmaqsood177@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\r\n        \"Land owner\"\r\n    ]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -365,6 +365,24 @@
               "path": [
                 "users",
                 "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/my-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "my-profile"
               ]
             }
           },
@@ -937,6 +955,162 @@
           "response": []
         },
         {
+          "name": "Update listing",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Any",
+                  "type": "text",
+                  "uuid": "008976aa-243b-4cbd-8994-12e529a14ffa"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "99f16847-4681-4984-b0cc-e9debe0c2c64",
+                  "type": "text",
+                  "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e"
+                },
+                {
+                  "key": "ownershipTypeId",
+                  "value": "a5a937da-bb18-4157-bdf6-a42c3df0b947",
+                  "type": "text",
+                  "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e"
+                },
+                {
+                  "key": "utilizationId",
+                  "value": "162a0a33-7531-4e5b-b668-4992a8ba139f",
+                  "type": "text",
+                  "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391"
+                },
+                {
+                  "key": "titleTypeId",
+                  "value": "2a56fa5d-781d-46e6-86ea-335fef8e1e7b",
+                  "type": "text",
+                  "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad"
+                },
+                {
+                  "key": "landAreaUnit",
+                  "value": "km",
+                  "type": "text",
+                  "uuid": "38a78f65-281b-4355-ae3d-cb501205a75b"
+                },
+                {
+                  "key": "listingCode",
+                  "value": "LAND-2026-001",
+                  "type": "text",
+                  "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
+                },
+                {
+                  "key": "landArea",
+                  "value": "5000",
+                  "type": "text",
+                  "uuid": "2a4c37b1-f4ef-47b9-a8c6-abefe71ba879"
+                },
+                {
+                  "key": "price",
+                  "value": "400000",
+                  "type": "text",
+                  "uuid": "eaefa9e7-2ec3-4631-8073-9ccdfc1950ab"
+                },
+                {
+                  "key": "pricePerSqrft",
+                  "value": "1250",
+                  "type": "text",
+                  "uuid": "36d4ab24-5df2-4a36-8bf4-09b827255eeb"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
+                  "src": [
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
+                  ],
+                  "disabled": true
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "uuid": "625f394d-38e2-459a-9dca-278290853ba4",
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Database Students.pdf",
+                  "disabled": true
+                },
+                {
+                  "key": "tanahRizabMelayu",
+                  "value": "true",
+                  "description": "true // false",
+                  "type": "text",
+                  "uuid": "a8bcdfdc-b899-4044-876b-891bfe9e0409"
+                },
+                {
+                  "key": "dealTypes",
+                  "value": "buy",
+                  "description": "buy / jv/ financing",
+                  "type": "text",
+                  "uuid": "9c1ec4ce-b890-4bb8-9192-e0c2d5fb3020"
+                },
+                {
+                  "key": "terrainChips",
+                  "value": "flat",
+                  "description": "flat / hilly / mix",
+                  "type": "text",
+                  "uuid": "d50b4700-1009-466b-ac77-d90848749b73"
+                },
+                {
+                  "key": "featureTags",
+                  "value": "road_access",
+                  "description": "road_access/ water / electricity",
+                  "type": "text",
+                  "uuid": "77871cf6-5145-4766-a442-c4692652bd21",
+                  "disabled": true
+                },
+                {
+                  "key": "estimatedValuation",
+                  "value": "5000000",
+                  "type": "text",
+                  "uuid": "9b44ad7f-a4bb-4bd5-b2a6-b00c9d20a831",
+                  "disabled": true
+                },
+                {
+                  "key": "description",
+                  "value": "this is description",
+                  "type": "text",
+                  "uuid": "2b76bf15-3406-42fd-adc0-41a736d6821a",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text",
+                  "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024",
+                  "description": "active / draft / under review / reserved"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "f79d451f-106f-4560-938a-4c68f37a5627"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "My listings",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
@@ -1030,9 +1204,9 @@
           "response": []
         },
         {
-          "name": "Update listing",
+          "name": "Delete Listing",
           "request": {
-            "method": "PATCH",
+            "method": "DELETE",
             "header": [],
             "body": {
               "mode": "formdata",
@@ -1058,28 +1232,28 @@
           "response": []
         },
         {
-          "name": "Delete Listing",
+          "name": "Explore Map",
           "request": {
-            "method": "DELETE",
+            "method": "POST",
             "header": [],
             "body": {
-              "mode": "formdata",
-              "formdata": []
+              "mode": "raw",
+              "raw": "{\r\n    \"latitude\" : \"3.1738\",\r\n    \"longitude\": \"101.595\",\r\n    \"radiusKm\": \"5\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{baseUrl}}/list-lands/::id",
+              "raw": "{{baseUrl}}/list-lands/search/by-radius",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "list-lands",
-                "::id"
-              ],
-              "variable": [
-                {
-                  "key": ":id",
-                  "value": ""
-                }
+                "search",
+                "by-radius"
               ]
             }
           },

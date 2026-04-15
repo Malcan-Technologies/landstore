@@ -41,11 +41,9 @@ userRouter.post("/verify-email", verifyEmailController);
 /**
  * PASSWORD RESET ENDPOINTS (No auth required):
  * POST /api/users/forgot-password - Request password reset link
- * GET /api/users/reset-password-callback - Handle email link click
  * POST /api/users/reset-password - Reset password with token
  */
 userRouter.post("/forgot-password", requestPasswordResetController);
-userRouter.get("/reset-password-callback", resetPasswordCallbackController);
 userRouter.post("/reset-password", resetPasswordController);
 
 // Get current authenticated user (requires auth)
