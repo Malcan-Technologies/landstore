@@ -10,12 +10,6 @@ import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import Funnel from "@/components/svg/Funnel";
 import { folderService } from "@/services/folderService";
 
-const initialShortlistFolders = [
-  { id: "saved", label: "Saved", count: 3 },
-  { id: "investment-ideas", label: "Investment ideas", count: 3 },
-  { id: "johor-potentials", label: "Johor Potentials", count: 3 },
-];
-
 /*
 const shortlistedProperties = [
   {
@@ -159,8 +153,8 @@ const shortlistedProperties = [
 const shortlistedProperties = [];
 
 const ShortlistsPage = () => {
-  const [folders, setFolders] = useState(initialShortlistFolders);
-  const [activeFolderId, setActiveFolderId] = useState(initialShortlistFolders[0].id);
+  const [folders, setFolders] = useState([]);
+  const [activeFolderId, setActiveFolderId] = useState(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [chooseFolderOpen, setChooseFolderOpen] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
@@ -210,12 +204,17 @@ const ShortlistsPage = () => {
         const response = await folderService.getFolders();
         const normalized = normalizeFolders(response);
 
-        if (!mounted || normalized.length === 0) {
+        if (!mounted) {
           return;
         }
 
         setFolders(normalized);
-        setActiveFolderId((prev) => (normalized.some((folder) => folder.id === prev) ? prev : normalized[0].id));
+        setActiveFolderId((prev) => {
+          if (normalized.length === 0) {
+            return null;
+          }
+          return normalized.some((folder) => folder.id === prev) ? prev : normalized[0].id;
+        });
       } catch (_error) {
         if (!mounted) {
           return;

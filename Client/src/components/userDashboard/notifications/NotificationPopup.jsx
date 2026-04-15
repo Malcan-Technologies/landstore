@@ -56,7 +56,7 @@ const NotificationPopup = ({ notifications = [], onClose }) => {
               type="button"
               key={notification.id}
               onClick={() => handleNavigate(notification.href)}
-              className={`block px-3 py-2.5 transition hover:brightness-[0.99] sm:px-4 sm:py-3 ${style.itemClassName} ${index !== notifications.length - 1 ? "border-b border-border-card" : ""}`}
+              className={`w-full block px-3 py-2.5 transition hover:brightness-[0.99] sm:px-4 sm:py-3 ${style.itemClassName} ${index !== notifications.length - 1 ? "border-b border-border-card" : ""}`}
             >
               <div className="flex items-start gap-2.5 sm:gap-3">
                 <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md sm:h-6 sm:w-6 ${style.iconClassName}`}>
