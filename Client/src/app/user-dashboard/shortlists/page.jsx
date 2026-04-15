@@ -9,9 +9,7 @@ import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
 import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import Funnel from "@/components/svg/Funnel";
 import { folderService } from "@/services/folderService";
-
 const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
-
 const formatPrice = (value) => {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue)) return "RM 0";
