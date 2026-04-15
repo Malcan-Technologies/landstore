@@ -201,7 +201,12 @@ const ShortlistsPage = () => {
             return null;
           }
 
-          const count = typeof folder?.count === "number" ? folder.count : folder?.propertiesCount;
+          const count =
+            typeof folder?.count === "number"
+              ? folder.count
+              : typeof folder?.propertyCount === "number"
+                ? folder.propertyCount
+                : folder?.propertiesCount;
           const parentId = folder?.parentId ?? folder?.parentFolderId ?? null;
 
           return {
@@ -226,7 +231,7 @@ const ShortlistsPage = () => {
 
         return folderProperties
           .map((entry) => {
-            const property = entry?.property;
+            const property = entry?.property ?? entry;
             const propertyId = property?.id ?? entry?.propertyId;
 
             if (!folderId || !propertyId) {
