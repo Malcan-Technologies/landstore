@@ -27,7 +27,7 @@ export const authService = {
   // Login user
   login: async (credentials) => {
     try {
-      const response = await api.post('/auth/sign-in/email', credentials, withOriginAndNo401Redirect());
+      const response = await api.post('/users/login', credentials, withOriginAndNo401Redirect());
       return response.data;
     } catch (error) {
       throw error;

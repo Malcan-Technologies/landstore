@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import Modal from "@/components/common/Modal";
@@ -9,24 +9,11 @@ import Arrow from "@/components/svg/Arrow";
 import EyeClose from "@/components/svg/EyeClose";
 import EyeOpen from "@/components/svg/EyeOpen";
 import Exclamation from "@/components/svg/Exclamation";
+import { authService } from "@/services/authService";
 import { loginSuccess } from "@/store/authSlice";
 
 const ADMIN_AUTH_STORAGE_KEY = "landstore_admin_auth";
 const MAX_ADMIN_ATTEMPTS = 3;
-
-const getStoredAdminAuth = () => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const rawValue = window.localStorage.getItem(ADMIN_AUTH_STORAGE_KEY);
-    return rawValue ? JSON.parse(rawValue) : null;
-  } catch {
-    window.localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
-    return null;
-  }
-};
 
 const persistAdminAuth = (payload) => {
   if (typeof window === "undefined") {
@@ -44,7 +31,7 @@ const clearAdminAuth = () => {
   window.localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
 };
 
-const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
+const AdminRouteGate = ({ children }) => {
   const router = useRouter();
   const dispatch = useDispatch();
   const { user, hydrated } = useSelector((state) => state.auth);
@@ -56,22 +43,15 @@ const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
   const [isReady, setIsReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [attemptCount, setAttemptCount] = useState(0);
-
-  const normalizedAdminEmail = useMemo(() => adminEmail.trim(), [adminEmail]);
-  const normalizedAdminPassword = useMemo(() => adminPassword.trim(), [adminPassword]);
 
   useEffect(() => {
     if (!hydrated) {
       return;
     }
 
-    const storedAdmin = getStoredAdminAuth();
-    const isStoredAdminSessionValid = Boolean(
-      storedAdmin?.email && normalizedAdminEmail && storedAdmin.email === normalizedAdminEmail
-    );
-
-    if (isStoredAdminSessionValid || user?.userType === "admin") {
+    if (user?.userType === "admin") {
       setIsAllowed(true);
     } else {
       clearAdminAuth();
@@ -79,36 +59,9 @@ const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
     }
 
     setIsReady(true);
-  }, [hydrated, normalizedAdminEmail, user?.userType]);
+  }, [hydrated, user?.userType]);
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
-
-    const isValidAdmin =
-      normalizedAdminEmail &&
-      normalizedAdminPassword &&
-      trimmedEmail === normalizedAdminEmail &&
-      trimmedPassword === normalizedAdminPassword;
-
-    if (isValidAdmin) {
-      const adminUser = {
-        email: trimmedEmail,
-        name: "Admin",
-        userType: "admin",
-      };
-
-      dispatch(loginSuccess(adminUser));
-      persistAdminAuth({ email: trimmedEmail, userType: "admin" });
-      setErrorMessage("");
-      setIsRedirecting(false);
-      setAttemptCount(0);
-      setIsAllowed(true);
-      return;
-    }
-
+  const handleFailedAttempt = (message) => {
     const nextAttemptCount = attemptCount + 1;
     const attemptsRemaining = MAX_ADMIN_ATTEMPTS - nextAttemptCount;
 
@@ -116,17 +69,62 @@ const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
     clearAdminAuth();
 
     if (attemptsRemaining > 0) {
-      setErrorMessage(`Wrong admin credentials. ${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} left.`);
+      setErrorMessage(`${message} ${attemptsRemaining} attempt${attemptsRemaining === 1 ? "" : "s"} left.`);
       setIsRedirecting(false);
       return;
     }
 
-    setErrorMessage("Wrong admin credentials. No attempts left.");
+    setErrorMessage(`${message} No attempts left.`);
     setIsRedirecting(true);
 
     window.setTimeout(() => {
       router.replace("/");
     }, 1400);
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (isSubmitting || isRedirecting) {
+      return;
+    }
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setErrorMessage("Email and password are required.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const response = await authService.login({
+        email: trimmedEmail,
+        password: trimmedPassword,
+      });
+      const loggedInUser = response?.user;
+
+      if (loggedInUser?.userType === "admin") {
+        dispatch(loginSuccess(loggedInUser));
+        persistAdminAuth({ email: loggedInUser.email || trimmedEmail, userType: "admin" });
+        setErrorMessage("");
+        setIsRedirecting(false);
+        setAttemptCount(0);
+        setIsAllowed(true);
+        router.replace("/admin");
+        return;
+      }
+
+      handleFailedAttempt("Only admin accounts can access this route.");
+    } catch (error) {
+      const apiMessage = error?.response?.data?.message || error?.message || "Wrong admin credentials.";
+      handleFailedAttempt(apiMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!hydrated || !isReady) {
@@ -181,7 +179,7 @@ const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="h-11 w-full rounded-xl border border-border-input px-4 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
-              disabled={isRedirecting}
+              disabled={isRedirecting || isSubmitting}
             />
           </div>
 
@@ -198,14 +196,14 @@ const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
                 autoComplete="new-password"
                 onChange={(event) => setPassword(event.target.value)}
                 className="h-11 w-full rounded-xl border border-border-input px-4 pr-11 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
-                disabled={isRedirecting}
+                disabled={isRedirecting || isSubmitting}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((current) => !current)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray5"
                 aria-label="Toggle password visibility"
-                disabled={isRedirecting}
+                disabled={isRedirecting || isSubmitting}
               >
                 {showPassword ? <EyeOpen size={16} /> : <EyeClose size={16} />}
               </button>
@@ -216,10 +214,10 @@ const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
             <Button
               type="submit"
               className="h-11 w-full justify-center rounded-xl text-[16px] font-medium"
-              disabled={isRedirecting}
+              disabled={isRedirecting || isSubmitting}
             >
               <span className="flex items-center gap-2">
-                <span>{isRedirecting ? "Checking..." : "Sign in as admin"}</span>
+                <span>{isRedirecting ? "Redirecting..." : isSubmitting ? "Checking..." : "Sign in as admin"}</span>
                 <Arrow size={14} color="white" />
               </span>
             </Button>
