@@ -10,12 +10,6 @@ import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import Funnel from "@/components/svg/Funnel";
 import { folderService } from "@/services/folderService";
 
-const initialShortlistFolders = [
-  { id: "saved", label: "Saved", count: 3 },
-  { id: "investment-ideas", label: "Investment ideas", count: 3 },
-  { id: "johor-potentials", label: "Johor Potentials", count: 3 },
-];
-
 const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
 
 const formatPrice = (value) => {
@@ -175,9 +169,9 @@ const shortlistedProperties = [
 const shortlistedProperties = [];
 
 const ShortlistsPage = () => {
-  const [folders, setFolders] = useState(initialShortlistFolders);
+  const [folders, setFolders] = useState([]);
   const [properties, setProperties] = useState(shortlistedProperties);
-  const [activeFolderId, setActiveFolderId] = useState(initialShortlistFolders[0].id);
+  const [activeFolderId, setActiveFolderId] = useState(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [chooseFolderOpen, setChooseFolderOpen] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
