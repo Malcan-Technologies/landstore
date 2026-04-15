@@ -195,6 +195,7 @@ const AdminRouteGate = ({ children, adminEmail, adminPassword }) => {
                 type={showPassword ? "text" : "password"}
                 placeholder="**********"
                 value={password}
+                autoComplete="new-password"
                 onChange={(event) => setPassword(event.target.value)}
                 className="h-11 w-full rounded-xl border border-border-input px-4 pr-11 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
                 disabled={isRedirecting}
