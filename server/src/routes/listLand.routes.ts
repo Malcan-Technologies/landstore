@@ -1,5 +1,6 @@
 import { Router } from "express";
 import requireApiAuth from "../middleware/requireApiAuth.js";
+import { requireAdmin } from "../middleware/authorization.js";
 import upload from "../middleware/multer.js";
 import {
 	createListLandController,
@@ -17,16 +18,16 @@ const listLandRouter = Router();
 listLandRouter.post("/", requireApiAuth, upload.any(), createListLandController);
 
 // Search properties by geographic radius
-listLandRouter.post("/search/by-radius", requireApiAuth, searchPropertiesByRadiusController);
+listLandRouter.post("/search/by-radius", searchPropertiesByRadiusController);
 
 // Get all public listings (accessible to any authenticated user)
-listLandRouter.get("/all-listings", requireApiAuth, getAllListingsController);
+listLandRouter.get("/all-listings", requireApiAuth, requireAdmin,getAllListingsController);
 
 // Get all properties (user-specific or all for admin)
 listLandRouter.get("/", requireApiAuth, getListLandsController);
 
 // Get single property
-listLandRouter.get("/:id", requireApiAuth, getListLandByIdController);
+listLandRouter.get("/:id", getListLandByIdController);
 
 // Update property with optional image and document uploads
 listLandRouter.patch("/:id", requireApiAuth, upload.any(), updateListLandController);

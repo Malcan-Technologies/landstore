@@ -1,6 +1,6 @@
 import { DealType, FeatureTag, Prisma, TerrainType } from "@prisma/client";
 import db from "../../config/prisma.js";
-import { uploadFileToS3, deleteFileFromS3 } from "./s3Upload.js";
+import { uploadFileToS3, deleteFileFromS3, generateSignedUrl } from "./s3Upload.js";
 
 type MulterFile = Express.Multer.File;
 
@@ -142,6 +142,28 @@ const includePropertyRelations = {
 } as const;
 
 /**
+ * Helper: Transform property media with signed URLs
+ * Converts stored S3 file keys into temporary signed URLs
+ */
+const transformPropertyWithSignedUrls = async (property: any) => {
+	if (!property.media || property.media.length === 0) {
+		return property;
+	}
+
+	const mediaWithUrls = await Promise.all(
+		property.media.map(async (media: any) => ({
+			...media,
+			fileUrl: media.fileUrl ? await generateSignedUrl(media.fileUrl) : null,
+		}))
+	);
+
+	return {
+		...property,
+		media: mediaWithUrls,
+	};
+};
+
+/**
  * Get uploaded media and documents with their file URLs
  */
 export const getUploadedMediaAndDocuments = async (
@@ -177,14 +199,27 @@ export const getUploadedMediaAndDocuments = async (
 			})
 		: [];
 
-	return {
-		images: uploadedImages,
-		documents: uploadedDocuments.map((doc) => ({
+	// Generate signed URLs for all images
+	const imagesWithSignedUrls = await Promise.all(
+		uploadedImages.map(async (image) => ({
+			...image,
+			fileUrl: image.fileUrl ? await generateSignedUrl(image.fileUrl) : null,
+		}))
+	);
+
+	// Generate signed URLs for all documents
+	const documentsWithSignedUrls = await Promise.all(
+		uploadedDocuments.map(async (doc) => ({
 			id: doc.id,
-			fileUrl: doc.media?.fileUrl,
+			fileUrl: doc.media?.fileUrl ? await generateSignedUrl(doc.media.fileUrl) : null,
 			verificationStatus: doc.verificationStatus,
 			createdAt: doc.createdAt,
-		})),
+		}))
+	);
+
+	return {
+		images: imagesWithSignedUrls,
+		documents: documentsWithSignedUrls,
 	};
 };
 
@@ -437,8 +472,13 @@ export const getListLands = async (
 		db.property.count({ where }),
 	]);
 
+	// Transform items with signed URLs
+	const itemsWithSignedUrls = await Promise.all(
+		items.map((item) => transformPropertyWithSignedUrls(item))
+	);
+
 	return {
-		items,
+		items: itemsWithSignedUrls,
 		pagination: {
 			page,
 			limit,
@@ -478,8 +518,13 @@ export const getAllListings = async (query: GetLandsQuery) => {
 		db.property.count({ where }),
 	]);
 
+	// Transform items with signed URLs
+	const itemsWithSignedUrls = await Promise.all(
+		items.map((item) => transformPropertyWithSignedUrls(item))
+	);
+
 	return {
-		items,
+		items: itemsWithSignedUrls,
 		pagination: {
 			page,
 			limit,
@@ -510,7 +555,8 @@ export const getListLandById = async (
 		throw createHttpError("Forbidden", 403);
 	}
 
-	return property;
+	// Transform property with signed URLs
+	return await transformPropertyWithSignedUrls(property);
 };
 
 /**
@@ -858,8 +904,13 @@ export const searchPropertiesByRadius = async (
 			},
 		});
 
+		// Transform results with signed URLs
+		const resultsWithSignedUrls = await Promise.all(
+			results.map((item) => transformPropertyWithSignedUrls(item))
+		);
+
 		return {
-			items: results,
+			items: resultsWithSignedUrls,
 			pagination: {
 				page,
 				limit,

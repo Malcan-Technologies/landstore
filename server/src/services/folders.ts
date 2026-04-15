@@ -1,4 +1,5 @@
 import db from "../../config/prisma.js";
+import { generateSignedUrl } from "./s3Upload.js";
 
 const createHttpError = (message: string, statusCode: number) => {
 	const error = new Error(message) as Error & { statusCode?: number };
@@ -142,11 +143,9 @@ export const getFolderById = async (
 			);
 		}
 
-		return {
-			id: folder.id,
-			name: folder.name,
-			propertyCount: folder.properties.length,
-			properties: folder.properties.map((sp: any) => ({
+		// Transform properties with signed URLs
+		const propertiesWithUrls = await Promise.all(
+			folder.properties.map(async (sp: any) => ({
 				id: sp.property.id,
 				title: sp.property.title,
 				listingCode: sp.property.listingCode,
@@ -154,9 +153,18 @@ export const getFolderById = async (
 				landArea: sp.property.landArea,
 				landAreaUnit: sp.property.landAreaUnit,
 				location: sp.property.location,
-				imageUrl: sp.property.media?.fileUrl,
+				imageUrl: sp.property.media?.fileUrl
+					? await generateSignedUrl(sp.property.media.fileUrl)
+					: null,
 				shortlistedAt: sp.createdAt,
-			})),
+			}))
+		);
+
+		return {
+			id: folder.id,
+			name: folder.name,
+			propertyCount: folder.properties.length,
+			properties: propertiesWithUrls,
 			createdAt: folder.createdAt,
 			updatedAt: folder.updatedAt,
 		};
@@ -532,13 +540,9 @@ export const getFolderHierarchy = async (
 			);
 		}
 
-		// Build hierarchical structure
-		return {
-			id: folder.id,
-			name: folder.name,
-			parentFolderId: folder.parentFolderId,
-			propertyCount: folder.properties.length,
-			properties: folder.properties.map((sp: any) => ({
+		// Transform main folder properties with signed URLs
+		const mainPropertiesWithUrls = await Promise.all(
+			folder.properties.map(async (sp: any) => ({
 				id: sp.property.id,
 				title: sp.property.title,
 				listingCode: sp.property.listingCode,
@@ -546,28 +550,52 @@ export const getFolderHierarchy = async (
 				landArea: sp.property.landArea,
 				landAreaUnit: sp.property.landAreaUnit,
 				location: sp.property.location,
-				imageUrl: sp.property.media?.fileUrl,
+				imageUrl: sp.property.media?.fileUrl
+					? await generateSignedUrl(sp.property.media.fileUrl)
+					: null,
 				shortlistedAt: sp.createdAt,
-			})),
-			subFolders: folder.subFolders.map((sf: any) => ({
-				id: sf.id,
-				name: sf.name,
-				parentFolderId: sf.parentFolderId,
-				propertyCount: sf.properties.length,
-				properties: sf.properties.map((sp: any) => ({
-					id: sp.property.id,
-					title: sp.property.title,
-					listingCode: sp.property.listingCode,
-					price: sp.property.price,
-					landArea: sp.property.landArea,
-					landAreaUnit: sp.property.landAreaUnit,
-					location: sp.property.location,
-					imageUrl: sp.property.media?.fileUrl,
-					shortlistedAt: sp.createdAt,
-				})),
-				createdAt: sf.createdAt,
-				updatedAt: sf.updatedAt,
-			})),
+			}))
+		);
+
+		// Transform subfolders with signed URLs
+		const subFoldersWithUrls = await Promise.all(
+			folder.subFolders.map(async (sf: any) => {
+				const subPropertiesWithUrls = await Promise.all(
+					sf.properties.map(async (sp: any) => ({
+						id: sp.property.id,
+						title: sp.property.title,
+						listingCode: sp.property.listingCode,
+						price: sp.property.price,
+						landArea: sp.property.landArea,
+						landAreaUnit: sp.property.landAreaUnit,
+						location: sp.property.location,
+						imageUrl: sp.property.media?.fileUrl
+							? await generateSignedUrl(sp.property.media.fileUrl)
+							: null,
+						shortlistedAt: sp.createdAt,
+					}))
+				);
+
+				return {
+					id: sf.id,
+					name: sf.name,
+					parentFolderId: sf.parentFolderId,
+					propertyCount: sf.properties.length,
+					properties: subPropertiesWithUrls,
+					createdAt: sf.createdAt,
+					updatedAt: sf.updatedAt,
+				};
+			})
+		);
+
+		// Build hierarchical structure
+		return {
+			id: folder.id,
+			name: folder.name,
+			parentFolderId: folder.parentFolderId,
+			propertyCount: folder.properties.length,
+			properties: mainPropertiesWithUrls,
+			subFolders: subFoldersWithUrls,
 			createdAt: folder.createdAt,
 			updatedAt: folder.updatedAt,
 		};
