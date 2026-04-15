@@ -65,12 +65,16 @@ export const getAllUtilizationsController = async (
 	res: Response
 ) => {
 	try {
-		const utilizations = await getAllUtilizations();
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const result = await getAllUtilizations(page, limit);
 
 		res.status(200).json({
 			success: true,
 			message: "Utilizations retrieved successfully",
-			data: utilizations,
+			data: result.items,
+			pagination: result.pagination,
 		});
 	} catch (error: any) {
 		const { statusCode, message } = getErrorPayload(error);

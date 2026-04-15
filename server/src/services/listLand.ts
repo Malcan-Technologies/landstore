@@ -449,6 +449,47 @@ export const getListLands = async (
 };
 
 /**
+ * Get all public listings accessible to any authenticated user
+ * Returns all properties with approved status
+ */
+export const getAllListings = async (query: GetLandsQuery) => {
+	const page =
+		Number.isFinite(query.page) && query.page && query.page > 0
+			? query.page
+			: 1;
+	const limit =
+		Number.isFinite(query.limit) && query.limit && query.limit > 0
+			? Math.min(query.limit, 100)
+			: 10;
+	const skip = (page - 1) * limit;
+
+	const where: Prisma.PropertyWhereInput = {
+		status: { not: null }, // Only show properties with a status set
+	};
+
+	const [items, total] = await Promise.all([
+		db.property.findMany({
+			where,
+			include: includePropertyRelations,
+			orderBy: { createdAt: "desc" },
+			skip,
+			take: limit,
+		}),
+		db.property.count({ where }),
+	]);
+
+	return {
+		items,
+		pagination: {
+			page,
+			limit,
+			total,
+			totalPages: Math.ceil(total / limit) || 1,
+		},
+	};
+};
+
+/**
  * Get single property by ID
  */
 export const getListLandById = async (
