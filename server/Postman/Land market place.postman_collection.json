@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "// {\r\n//     \"email\": \"basitshykh8@gmail.com\",\r\n//     \"password\": \"Test@1234567\"\r\n// }\r\n{\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@123456789\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}\r\n// {\r\n//     \"email\": \"dawartoor30@gmail.com\",\r\n//     \"password\": \"Test@123456789\"\r\n// }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -365,24 +365,6 @@
               "path": [
                 "users",
                 "reset-password"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "My Profile",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/my-profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "my-profile"
               ]
             }
           },

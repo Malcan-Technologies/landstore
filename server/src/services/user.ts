@@ -1,21 +1,3 @@
-/**
- * USER SERVICE
- * 
- * UNIFIED REGISTRATION FLOW (Better Auth):
- * 1. Client calls POST /api/users/register with ALL data (email, password, profile info)
- *    → Better Auth hashes password and stores encrypted in Account.password
- *    → User record created with email
- *    → User profile completed with phone, userType, and custom fields
- *    → Returns full user profile with all details
- * 
- * 2. Client signs in via POST /api/auth/sign-in with email & password
- *    → Better Auth verifies password against Account.password (hashed comparison)
- *    → Session created and returned
- * 
- * ⚠️ IMPORTANT: Passwords are ALWAYS hashed by Better Auth before database storage.
- * Account.password field stores ONLY hashed passwords, never plain text.
- */
-
 import db from "../../config/prisma.js";
 import { auth } from "../../config/auth.js";
 import type { User, UserType } from "@prisma/client";
@@ -448,10 +430,33 @@ export const getUserByEmail = async (email: string) => {
   return user;
 };
 
-export const getAllUsers = async () => {
-  return db.user.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+export const getAllUsers = async (page: number = 1, limit: number = 10) => {
+  const validPage = Number.isFinite(page) && page > 0 ? page : 1;
+  const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+  const skip = (validPage - 1) * validLimit;
+
+  try {
+    const [users, total] = await Promise.all([
+      db.user.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: validLimit,
+      }),
+      db.user.count(),
+    ]);
+
+    return {
+      items: users,
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        total,
+        totalPages: Math.ceil(total / validLimit) || 1,
+      },
+    };
+  } catch (error: unknown) {
+    throw error;
+  }
 };
 
 export const updateUserById = async (id: string, payload: UpdateUserPayload) => {

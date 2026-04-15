@@ -39,63 +39,53 @@ export const createFolder = async (
 /**
  * Get all shortlist folders for a user
  */
-export const getFoldersByUserId = async (userId: string) => {
+export const getFoldersByUserId = async (userId: string, page: number = 1, limit: number = 10) => {
+	const validPage = Number.isFinite(page) && page > 0 ? page : 1;
+	const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+	const skip = (validPage - 1) * validLimit;
+
 	try {
-		const folders = await db.shortlistFolder.findMany({
-			where: {
-				userId,
-			},
-			include: {
-				properties: {
-					include: {
-						property: {
-							select: {
-								id: true,
-								title: true,
-								listingCode: true,
-								price: true,
-								landArea: true,
-								landAreaUnit: true,
-								location: {
-									select: {
-										state: true,
-										district: true,
-									},
-								},
-								media: {
-									select: {
-										fileUrl: true,
-									},
+		const [folders, total] = await Promise.all([
+			db.shortlistFolder.findMany({
+				where: {
+					userId,
+				},
+				include: {
+					properties: {
+						include: {
+							property: {
+								select: {
+									id: true,
+									title: true,
+									listingCode: true,
+									price: true,
+									landArea: true,
+									landAreaUnit: true,
 								},
 							},
 						},
 					},
 				},
-			},
-			orderBy: {
-				createdAt: "desc",
-			},
-		});
+				skip,
+				take: validLimit,
+			}),
+			db.shortlistFolder.count({
+				where: { userId },
+			}),
+		]);
 
-		return folders.map((folder: any) => ({
-			id: folder.id,
-			name: folder.name,
-			propertyCount: folder.properties.length,
-			properties: folder.properties.map((sp: any) => ({
-				id: sp.property.id,
-				title: sp.property.title,
-				listingCode: sp.property.listingCode,
-				price: sp.property.price,
-				landArea: sp.property.landArea,
-				landAreaUnit: sp.property.landAreaUnit,
-				location: sp.property.location,
-				imageUrl: sp.property.media?.fileUrl,
-				shortlistedAt: sp.createdAt,
-			})),
-			createdAt: folder.createdAt,
-			updatedAt: folder.updatedAt,
-		}));
-	} catch (error: unknown) {
+		const totalPages = Math.ceil(total / validLimit);
+
+		return {
+			items: folders,
+			pagination: {
+				page: validPage,
+				limit: validLimit,
+				total,
+				totalPages,
+			},
+		};
+	} catch (error) {
 		throw error;
 	}
 };
@@ -663,46 +653,70 @@ export const moveFolder = async (
 };
 
 /**
- * Get all root folders and their hierarchy for a user
+ * Get all root folders and their hierarchy for a user (paginated)
  */
 export const getAllFoldersHierarchy = async (
-	userId: string
-): Promise<any[]> => {
-	try {
-		// Get only root folders (parentFolderId is null)
-		const rootFolders = await db.shortlistFolder.findMany({
-			where: {
-				userId,
-				parentFolderId: null,
-			},
-			include: {
-				subFolders: {
-					include: {
-						properties: true,
-						subFolders: true,
-					},
-				},
-				properties: true,
-			},
-			orderBy: { createdAt: "desc" },
-		});
+	userId: string,
+	page: number = 1,
+	limit: number = 10
+): Promise<any> => {
+	const validPage = Number.isFinite(page) && page > 0 ? page : 1;
+	const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+	const skip = (validPage - 1) * validLimit;
 
-		return rootFolders.map((folder: any) => ({
-			id: folder.id,
-			name: folder.name,
-			parentFolderId: folder.parentFolderId,
-			propertyCount: folder.properties.length,
-			subFolderCount: folder.subFolders.length,
-			subFolders: folder.subFolders.map((sf: any) => ({
-				id: sf.id,
-				name: sf.name,
-				parentFolderId: sf.parentFolderId,
-				propertyCount: sf.properties.length,
-				subFolderCount: sf.subFolders.length,
+	try {
+		// Get only root folders (parentFolderId is null) with pagination
+		const [rootFolders, total] = await Promise.all([
+			db.shortlistFolder.findMany({
+				where: {
+					userId,
+					parentFolderId: null,
+				},
+				include: {
+					subFolders: {
+						include: {
+							properties: true,
+							subFolders: true,
+						},
+					},
+					properties: true,
+				},
+				orderBy: { createdAt: "desc" },
+				skip,
+				take: validLimit,
+			}),
+			db.shortlistFolder.count({
+				where: {
+					userId,
+					parentFolderId: null,
+				},
+			}),
+		]);
+
+		return {
+			items: rootFolders.map((folder: any) => ({
+				id: folder.id,
+				name: folder.name,
+				parentFolderId: folder.parentFolderId,
+				propertyCount: folder.properties.length,
+				subFolderCount: folder.subFolders.length,
+				subFolders: folder.subFolders.map((sf: any) => ({
+					id: sf.id,
+					name: sf.name,
+					parentFolderId: sf.parentFolderId,
+					propertyCount: sf.properties.length,
+					subFolderCount: sf.subFolders.length,
+				})),
+				createdAt: folder.createdAt,
+				updatedAt: folder.updatedAt,
 			})),
-			createdAt: folder.createdAt,
-			updatedAt: folder.updatedAt,
-		}));
+			pagination: {
+				page: validPage,
+				limit: validLimit,
+				total,
+				totalPages: Math.ceil(total / validLimit) || 1,
+			},
+		};
 	} catch (error: unknown) {
 		throw error;
 	}

@@ -6,6 +6,7 @@ import {
 	deleteListLandController,
 	getListLandByIdController,
 	getListLandsController,
+	getAllListingsController,
 	updateListLandController,
 } from "../controllers/listLand.controller.js";
 
@@ -14,7 +15,10 @@ const listLandRouter = Router();
 // Create property with images and documents: Images + Documents uploaded to S3 -> Media/Document records created -> Property created
 listLandRouter.post("/", requireApiAuth, upload.any(), createListLandController);
 
-// Get all properties
+// Get all public listings (accessible to any authenticated user)
+listLandRouter.get("/all-listings", requireApiAuth, getAllListingsController);
+
+// Get all properties (user-specific or all for admin)
 listLandRouter.get("/", requireApiAuth, getListLandsController);
 
 // Get single property

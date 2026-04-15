@@ -93,8 +93,8 @@ export const createFolderController = async (
 };
 
 /**
- * Get all folders for the authenticated user
- * GET /api/folders
+ * Get all folders for the authenticated user (paginated)
+ * GET /api/folders?page=1&limit=10
  */
 export const getFoldersController = async (
 	req: Request,
@@ -102,13 +102,15 @@ export const getFoldersController = async (
 ): Promise<void> => {
 	try {
 		const requester = getRequesterUserOrThrow(req);
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
 
-		const folders = await getFoldersByUserId(requester.id);
+		const result = await getFoldersByUserId(requester.id, page, limit);
 
 		res.status(200).json({
 			success: true,
-			data: folders,
-			count: folders.length,
+			data: result.items,
+			pagination: result.pagination,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);
@@ -418,13 +420,15 @@ export const getAllFoldersHierarchyController = async (
 ): Promise<void> => {
 	try {
 		const requester = getRequesterUserOrThrow(req);
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
 
-		const hierarchy = await getAllFoldersHierarchy(requester.id);
+		const result = await getAllFoldersHierarchy(requester.id, page, limit);
 
 		res.status(200).json({
 			success: true,
-			data: hierarchy,
-			count: hierarchy.length,
+			data: result.items,
+			pagination: result.pagination,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);

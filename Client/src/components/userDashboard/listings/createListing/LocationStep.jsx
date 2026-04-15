@@ -2,6 +2,7 @@ import CircleRadioGroup from "@/components/common/CircleRadioGroup";
 import LeaseholdCalendarInput from "@/components/userDashboard/listings/createListing/LeaseholdCalendarInput";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import MapView from "@/components/userDashboard/explore/MapView";
+import { getFilePreviewUrl } from "@/utils/filePreview";
 
 const negeriOptions = [
   { value: "selangor", label: "Selangor" },
@@ -21,7 +22,7 @@ const defaultTitleTypeOptions = [
   { value: "leasehold", label: "Leasehold" },
 ];
 
-const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTypeOptions }) => {
+const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTypeOptions, errors = {} }) => {
   const normalizedTitleTypeOptions =
     Array.isArray(titleTypeOptions) && titleTypeOptions.length > 0
       ? titleTypeOptions
@@ -33,7 +34,7 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
 
   const locationMarker = {
     id: "listing-location-marker",
-    image: formData.photos?.[0] ? URL.createObjectURL(formData.photos[0]) : null,
+    image: formData.photos?.[0] ? getFilePreviewUrl(formData.photos[0]) : null,
     price: formData.pricePerSqft ? `RM ${formData.pricePerSqft}` : "Price pending",
     area: formData.landArea ? `${formData.landArea} ${formData.areaUnit}` : "Area pending",
     category: formData.category || "Land listing",
@@ -51,6 +52,7 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
             onChange={(value) => updateField("negeri", value)}
             options={negeriOptions}
             placeholder="Select Negeri"
+            error={errors.negeri}
           />
           <SelectDropdown
             label="Daerah"
@@ -58,24 +60,31 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
             onChange={(value) => updateField("daerah", value)}
             options={daerahOptions}
             placeholder="Select Daerah"
+            error={errors.daerah}
           />
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-[12px] font-medium text-gray2 sm:text-[13px]">Mukim</label>
             <input
               value={formData.mukim}
               onChange={(event) => updateField("mukim", event.target.value)}
               placeholder="e.g Hulu Langat"
-              className="h-9 w-full rounded-xl border border-border-input bg-white px-3 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:h-10 sm:px-3.5 sm:text-[13px] md:h-11 md:text-[14px]"
+              className={`h-9 w-full rounded-xl border border-border-input bg-white px-3 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:h-10 sm:px-3.5 sm:text-[13px] md:h-11 md:text-[14px] ${errors.mukim ? "border-red-400 focus:border-red-400" : ""}`.trim()}
             />
+            {errors.mukim ? (
+              <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.mukim}</p>
+            ) : null}
           </div>
-          <div>
+          <div className="relative">
             <label className="mb-2 block text-[12px] font-medium text-gray2 sm:text-[13px]">Seksyen</label>
             <input
               value={formData.seksyen}
               onChange={(event) => updateField("seksyen", event.target.value)}
               placeholder="e.g Hulu Langat"
-              className="h-9 w-full rounded-xl border border-border-input bg-white px-3 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:h-10 sm:px-3.5 sm:text-[13px] md:h-11 md:text-[14px]"
+              className={`h-9 w-full rounded-xl border border-border-input bg-white px-3 text-[12px] text-gray2 outline-none transition focus:border-green-secondary sm:h-10 sm:px-3.5 sm:text-[13px] md:h-11 md:text-[14px] ${errors.seksyen ? "border-red-400 focus:border-red-400" : ""}`.trim()}
             />
+            {errors.seksyen ? (
+              <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.seksyen}</p>
+            ) : null}
           </div>
           <div>
             <label className="mb-2 block text-[12px] font-medium text-gray2 sm:text-[13px]">Lot number (Admin only)</label>
@@ -117,7 +126,7 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
         </div>
       </div>
 
-      <div className="border-t border-border-card pt-5 sm:pt-6">
+      <div className="relative border-t border-border-card pt-5 sm:pt-6">
         <p className="mb-3 text-[12px] font-medium text-gray2 sm:mb-4 sm:text-[13px]">Title type</p>
         <div className="flex w-full gap-3">
           {normalizedTitleTypeOptions.map((option) => (
@@ -132,11 +141,14 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
               {option.label}
             </button>
           ))}
-            </div>
+        </div>
+        {errors.titleType ? (
+          <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.titleType}</p>
+        ) : null}
         <div className="flex flex-col sm:flex-row sm:gap-3 gap-1">
-          {isLeasehold && (
+          {!isLeasehold && (
             <>
-              <div className="mt-3 flex-1">
+              <div className="relative mt-3 flex-1">
                 <LeaseholdCalendarInput
                   label="Leasehold start year"
                   value={formData.leaseStartDate}
@@ -144,6 +156,11 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
                   onChange={(value) => updateField("leaseStartDate", value)}
                   onCalendarYearChange={(value) => updateField("calendarYear", value)}
                 />
+                {errors.leaseStartDate ? (
+                  <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">
+                    {errors.leaseStartDate}
+                  </p>
+                ) : null}
               </div>
               <div className="mt-3 flex-1">
                 <SelectDropdown
@@ -152,6 +169,7 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
                   onChange={(value) => updateField("leasePeriod", value)}
                   options={leaseOptions}
                   placeholder="Select period"
+                  error={errors.leasePeriod}
                 />
               </div>
             </>

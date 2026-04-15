@@ -28,6 +28,8 @@
  */
 
 import type { Request, Response } from "express";
+import { randomBytes } from "crypto";
+import { hashPassword } from "better-auth/crypto";
 import {
 	completeUserProfile,
 	deleteUserById,
@@ -36,8 +38,9 @@ import {
 	updateUserById,
 	getUserCompleteProfile,
 	signUpAndCompleteProfile,
-	getUserByEmail,
+	getUserByEmail
 } from "../services/user.js";
+import { emailService } from "../services/email.js";
 import { auth } from "../../config/auth.js";
 import db from "../../config/prisma.js";
 
@@ -126,12 +129,35 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			name
 		});
 
+		// Generate email verification token
+		const verificationToken = randomBytes(32).toString("hex");
+		
+		// Create verification URL
+		const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
+		const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
+		const verificationURL = `${baseURL}/api/users/verify-email-callback?token=${verificationToken}&redirectTo=${encodeURIComponent(frontendURL)}`;
+
+		// Store verification token in database with 24 hour expiration
+		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+		await db.verification.create({
+			data: {
+				identifier: `email_verification_${email.toLowerCase()}`,
+				value: verificationToken,
+				token: verificationToken,
+				expiresAt: expiresAt,
+			},
+		});
+
+		// Send verification email
+		await emailService.sendVerificationEmail(email.toLowerCase(), verificationToken, verificationURL);
+
 		// Fetch complete profile with all details
 		const completeProfile = await getUserCompleteProfile(result.userId);
 
 		return res.status(201).json({
 			success: true,
-			message: "User registered successfully with hashed password",
+			message: "User registered successfully. Please check your email to verify your account.",
 			profile: completeProfile,
 		});
 	} catch (error: unknown) {
@@ -372,8 +398,11 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 			});
 		}
 
-		const users = await getAllUsers();
-		return res.status(200).json({ users });
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const result = await getAllUsers(page, limit);
+		return res.status(200).json({ data: result.items, pagination: result.pagination });
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
 		return res.status(statusCode).json({ message });
@@ -458,4 +487,312 @@ export const deleteUserController = async (req: Request, res: Response) => {
 	}
 };
 
+/**
+ * REQUEST PASSWORD RESET
+ * POST /api/users/forgot-password
+ * Body: { email }
+ * 
+ * Generates a reset token and sends magic link via email
+ */
+export const requestPasswordResetController = async (req: Request, res: Response) => {
+	try {
+		const { email } = req.body;
+
+		if (!email || typeof email !== "string" || !email.trim()) {
+			return res.status(400).json({
+				success: false,
+				message: "Valid email is required",
+			});
+		}
+
+		// Check if user exists
+		const user = await getUserByEmail(email.toLowerCase());
+		if (!user) {
+			// Don't reveal if email exists (security best practice)
+			return res.status(200).json({
+				success: true,
+				message: "If the email exists, a password reset link has been sent",
+			});
+		}
+
+		// Generate secure reset token
+		const resetToken = randomBytes(32).toString("hex");
+		
+		// Create reset URL with token and redirect URL
+		const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
+		const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
+		const resetURL = `${baseURL}/api/users/reset-password-callback?token=${resetToken}&redirectTo=${encodeURIComponent(frontendURL + "/reset-password")}`;
+
+		// Store reset token in database with 1 hour expiration
+		const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+		// Store using Verification table from Better Auth
+		await db.verification.create({
+			data: {
+				identifier: `password_reset_${email.toLowerCase()}`,
+				value: resetToken,
+				token: resetToken,
+				expiresAt: expiresAt,
+			},
+		});
+
+		// Send email with reset link
+		await emailService.sendMagicLink(email.toLowerCase(), resetToken, resetURL);
+
+		return res.status(200).json({
+			success: true,
+			message: "Password reset link has been sent to your email",
+			expiresIn: 3600, // 1 hour in seconds
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
+/**
+ * RESET PASSWORD CALLBACK (Optional - for email clicks)
+ * GET /api/users/reset-password-callback
+ * Query: { token, redirectTo }
+ */
+export const resetPasswordCallbackController = async (req: Request, res: Response) => {
+	try {
+		const { token, redirectTo } = req.query;
+
+		if (!token || typeof token !== "string") {
+			return res.redirect(
+				`${redirectTo || "http://localhost:5173/reset-password"}?error=invalid_token`
+			);
+		}
+
+		// Verify token exists and not expired
+		const verification = await db.verification.findFirst({
+			where: {
+				token: token,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
+
+		if (!verification) {
+			return res.redirect(
+				`${redirectTo || "http://localhost:5173/reset-password"}?error=expired_token`
+			);
+		}
+
+		// Redirect to frontend with token
+		return res.redirect(
+			`${redirectTo || "http://localhost:5173/reset-password"}?token=${token}`
+		);
+	} catch (error: unknown) {
+		return res.redirect(
+			`${(req.query.redirectTo as string) || "http://localhost:5173/reset-password"}?error=server_error`
+		);
+	}
+};
+
+/**
+ * RESET PASSWORD
+ * POST /api/users/reset-password
+ * Body: { token, newPassword }
+ * 
+ * Verifies token and resets the password
+ */
+export const resetPasswordController = async (req: Request, res: Response) => {
+	try {
+		const { token, newPassword } = req.body;
+
+		if (!token || typeof token !== "string") {
+			return res.status(400).json({
+				success: false,
+				message: "Valid reset token is required",
+			});
+		}
+
+		if (!newPassword || typeof newPassword !== "string" || newPassword.length < 8) {
+			return res.status(400).json({
+				success: false,
+				message: "Password must be at least 8 characters",
+			});
+		}
+
+		// Verify token exists and not expired
+		const verification = await db.verification.findFirst({
+			where: {
+				token: token,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
+
+		if (!verification) {
+			return res.status(400).json({
+				success: false,
+				message: "Reset token is invalid or expired",
+			});
+		}
+
+		// Extract email from identifier (format: "password_reset_{email}")
+		const email = verification.identifier.replace("password_reset_", "");
+		
+		const user = await getUserByEmail(email);
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		// Update password in Account table with hashed password
+		// Use Better Auth's native hashPassword function (same as signup)
+		const hashedPassword = await hashPassword(newPassword);
+		
+		await db.account.updateMany({
+			where: {
+				userId: user.id,
+				providerId: "credential",
+			},
+			data: {
+				password: hashedPassword,
+			},
+		});
+
+		// Delete the used verification token
+		await db.verification.delete({
+			where: {
+				id: verification.id,
+			},
+		});
+
+		return res.status(200).json({
+			success: true,
+			message: "Password has been reset successfully. Please log in with your new password.",
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
+/**
+ * VERIFY EMAIL CALLBACK (for email clicks)
+ * GET /api/users/verify-email-callback
+ * Query: { token, redirectTo }
+ */
+export const verifyEmailCallbackController = async (req: Request, res: Response) => {
+	try {
+		const { token, redirectTo } = req.query;
+
+		if (!token || typeof token !== "string") {
+			return res.redirect(
+				`${redirectTo || "http://localhost:5173"}?error=invalid_token`
+			);
+		}
+
+		// Verify token exists and not expired
+		const verification = await db.verification.findFirst({
+			where: {
+				token: token,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
+
+		if (!verification) {
+			return res.redirect(
+				`${redirectTo || "http://localhost:5173"}?error=expired_token`
+			);
+		}
+
+		// Redirect to frontend with token for final confirmation
+		return res.redirect(
+			`${redirectTo || "http://localhost:5173"}?verificationToken=${token}`
+		);
+	} catch (error: unknown) {
+		return res.redirect(
+			`${(req.query.redirectTo as string) || "http://localhost:5173"}?error=server_error`
+		);
+	}
+};
+
+/**
+ * CONFIRM EMAIL VERIFICATION
+ * POST /api/users/verify-email
+ * Body: { token }
+ * 
+ * Marks email as verified
+ */
+export const verifyEmailController = async (req: Request, res: Response) => {
+	try {
+		const { token } = req.body;
+
+		if (!token || typeof token !== "string") {
+			return res.status(400).json({
+				success: false,
+				message: "Valid verification token is required",
+			});
+		}
+
+		// Verify token exists and not expired
+		const verification = await db.verification.findFirst({
+			where: {
+				token: token,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
+
+		if (!verification) {
+			return res.status(400).json({
+				success: false,
+				message: "Verification token is invalid or expired",
+			});
+		}
+
+		// Extract email from identifier (format: "email_verification_{email}")
+		const email = verification.identifier.replace("email_verification_", "");
+		
+		const user = await getUserByEmail(email);
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		// Mark email as verified
+		await db.user.update({
+			where: { id: user.id },
+			data: { emailVerified: true },
+		});
+
+		// Delete the used verification token
+		await db.verification.delete({
+			where: {
+				id: verification.id,
+			},
+		});
+
+		return res.status(200).json({
+			success: true,
+			message: "Email verified successfully. Your account is now active!",
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
 

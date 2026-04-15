@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { authService } from "@/services/authService";
 import { validateForm, registerValidation } from "@/validators";
 import Button from "@/components/common/Button";
@@ -12,6 +12,8 @@ import EyeOpen from "@/components/svg/EyeOpen";
 import Building from "@/components/svg/Building";
 import Person from "@/components/svg/Person";
 import Persons from "@/components/svg/Persons";
+import { defaultCountries, parseCountry, usePhoneInput } from "react-international-phone";
+import ArrowDown from "../svg/ArrowDown";
 
 const entityOptions = [
   { key: "koperasi", label: "Koperasi", Icon: Persons },
@@ -32,6 +34,7 @@ const interestOptions = [
 const Register = ({ onRegisterSuccess }) => {
   const [entityType, setEntityType] = useState("individual");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedInterests, setSelectedInterests] = useState([
@@ -41,6 +44,7 @@ const Register = ({ onRegisterSuccess }) => {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const phoneFieldRef = useRef(null);
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -83,6 +87,52 @@ const Register = ({ onRegisterSuccess }) => {
     };
   }, [entityType]);
 
+  const countryOptions = useMemo(
+    () => defaultCountries.map((countryData) => parseCountry(countryData)).filter(Boolean),
+    []
+  );
+
+  const {
+    phone: fullPhoneNumber,
+    inputValue: phoneInputValue,
+    country: selectedCountry,
+    setCountry,
+    handlePhoneValueChange,
+  } = usePhoneInput({
+    defaultCountry: "my",
+    value: phoneNumber,
+    countries: defaultCountries,
+    disableDialCodeAndPrefix: true,
+    onChange: ({ phone }) => {
+      setPhoneNumber(phone || "");
+
+      if (errors.phone) {
+        setErrors((prev) => ({
+          ...prev,
+          phone: "",
+        }));
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!isCountryDropdownOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (phoneFieldRef.current && !phoneFieldRef.current.contains(event.target)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [isCountryDropdownOpen]);
+
   const toggleInterest = (option) => {
     setSelectedInterests((current) =>
       current.includes(option)
@@ -107,13 +157,15 @@ const Register = ({ onRegisterSuccess }) => {
     }
   };
 
-  const normalizeRegisterPhone = (value) => {
-    if (!value) return "";
+  const normalizeRegisterPhone = (value, visibleInputValue) => {
+    const normalizedValue = String(value || "").trim();
+    const visibleDigits = String(visibleInputValue || "").replace(/\D/g, "");
 
-    const digitsOnly = value.replace(/\D/g, "");
-    if (!digitsOnly) return "";
+    if (!normalizedValue || !visibleDigits) {
+      return "";
+    }
 
-    return digitsOnly.startsWith("60") ? digitsOnly : `60${digitsOnly}`;
+    return normalizedValue;
   };
 
   const buildRegisterPayload = () => {
@@ -126,7 +178,7 @@ const Register = ({ onRegisterSuccess }) => {
       profileType: entityType,
     };
 
-    const normalizedPhone = normalizeRegisterPhone(phoneNumber || formData.phone);
+    const normalizedPhone = normalizeRegisterPhone(fullPhoneNumber, phoneInputValue);
     if (normalizedPhone) {
       payload.phone = normalizedPhone;
     }
@@ -201,6 +253,7 @@ const Register = ({ onRegisterSuccess }) => {
   const resetRegisterState = () => {
     setEntityType("individual");
     setPhoneNumber("");
+    setIsCountryDropdownOpen(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
     setSelectedInterests([
@@ -359,21 +412,67 @@ const Register = ({ onRegisterSuccess }) => {
         <label htmlFor="register-phone" className="mb-1.5 block text-[14px] font-medium text-gray7 md:text-[15px]">
           Phone number
         </label>
-        <div className="flex h-10 items-center rounded-xl border border-border-input px-3.5 text-[14px] text-gray2">
-          <span className="pr-3">MY</span>
-          <span className="pr-3 text-gray5">+60</span>
-          <input
-            id="register-phone"
-            name="phone"
-            type="tel"
-            value={phoneNumber}
-            onChange={(event) => {
-              setPhoneNumber(event.target.value);
-              handleInputChange(event);
-            }}
-            placeholder="Enter phone number"
-            className="h-full w-full bg-transparent text-[14px] text-gray2 outline-none placeholder:text-gray5"
-          />
+        <div ref={phoneFieldRef} className="relative">
+          <div className="flex h-10 w-full items-center rounded-xl border border-border-input bg-white text-[14px] text-gray2 focus-within:border-green-primary">
+            <button
+              type="button"
+              onClick={() => setIsCountryDropdownOpen((prev) => !prev)}
+              className="ml-1 flex h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-[14px] font-medium text-gray2 hover:bg-background-primary"
+            >
+              <span className="uppercase">{String(selectedCountry?.iso2 || "my").toUpperCase()}</span>
+              <ArrowDown
+                size={12}
+                color="#9AA3AF"
+                className={`${isCountryDropdownOpen ? "rotate-180" : "rotate-0"} transition-transform`}
+              />
+            </button>
+            <span className="mx-1 h-5 w-px bg-border-input" />
+            <span className="mr-2 shrink-0 text-[14px] text-gray5">+{selectedCountry?.dialCode || "60"}</span>
+            <input
+              id="register-phone"
+              name="phone"
+              type="tel"
+              value={phoneInputValue}
+              onChange={(event) => {
+                handlePhoneValueChange(event);
+
+                if (errors.phone) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    phone: "",
+                  }));
+                }
+              }}
+              placeholder="Enter phone number"
+              className="h-full w-full min-w-0 bg-transparent pr-3 text-[14px] text-gray2 outline-none placeholder:text-gray5"
+            />
+          </div>
+
+          {isCountryDropdownOpen && (
+            <div className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border-input bg-white py-1 shadow-[0px_12px_24px_rgba(15,61,46,0.08)]">
+              {countryOptions.map((option) => {
+                const isSelected = option.iso2 === selectedCountry?.iso2;
+
+                return (
+                  <button
+                    key={option.iso2}
+                    type="button"
+                    onClick={() => {
+                      setCountry(option.iso2, { focusOnInput: false });
+                      setIsCountryDropdownOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] ${
+                      isSelected ? "bg-[#F4F7F5] text-gray2" : "text-gray5 hover:bg-[#F8FAF9]"
+                    }`}
+                  >
+                    <span className="w-7 shrink-0 font-medium uppercase text-gray2">{option.iso2}</span>
+                    <span className="w-12 shrink-0 text-gray5">+{option.dialCode}</span>
+                    <span className="truncate">{option.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
       </div>

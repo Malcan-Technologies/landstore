@@ -8,6 +8,7 @@ import DeleteFolderModal from "@/components/userDashboard/explore/DeleteFolderMo
 import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
 import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import Funnel from "@/components/svg/Funnel";
+import { folderService } from "@/services/folderService";
 
 const initialShortlistFolders = [
   { id: "saved", label: "Saved", count: 3 },
@@ -15,6 +16,7 @@ const initialShortlistFolders = [
   { id: "johor-potentials", label: "Johor Potentials", count: 3 },
 ];
 
+/*
 const shortlistedProperties = [
   {
     id: "LS-000128",
@@ -107,52 +109,7 @@ const shortlistedProperties = [
     folderId: "johor-potentials",
   },
   {
-    id: "LS-000128",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1470246973918-29a93221c455?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000129",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000130",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000131",
+    id: "LS-000141",
     status: "Active",
     statusColor: "var(--color-green-secondary)",
     image: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80",
@@ -167,7 +124,7 @@ const shortlistedProperties = [
     folderId: "investment-ideas",
   },
   {
-    id: "LS-000132",
+    id: "LS-000142",
     status: "Active",
     statusColor: "var(--color-green-secondary)",
     image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
@@ -182,97 +139,7 @@ const shortlistedProperties = [
     folderId: "investment-ideas",
   },
   {
-    id: "LS-000133",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1501183638710-841dd1904471?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "johor-potentials",
-  },
-  {
-    id: "LS-000128",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1470246973918-29a93221c455?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000129",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000130",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000131",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "investment-ideas",
-  },
-  {
-    id: "LS-000132",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "investment-ideas",
-  },
-  {
-    id: "LS-000133",
+    id: "LS-000153",
     status: "Active",
     statusColor: "var(--color-green-secondary)",
     image: "https://images.unsplash.com/photo-1501183638710-841dd1904471?auto=format&fit=crop&w=1200&q=80",
@@ -287,6 +154,9 @@ const shortlistedProperties = [
     folderId: "johor-potentials",
   },
 ];
+*/
+
+const shortlistedProperties = [];
 
 const ShortlistsPage = () => {
   const [folders, setFolders] = useState(initialShortlistFolders);
@@ -300,6 +170,63 @@ const ShortlistsPage = () => {
   const [renamingFolderId, setRenamingFolderId] = useState(null);
   const [folderToDelete, setFolderToDelete] = useState(null);
   const filterMenuRef = useRef(null);
+
+  const isLikelyUuid = (value) =>
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const normalizeFolders = (payload) => {
+      const items = Array.isArray(payload) ? payload : payload?.data;
+      if (!Array.isArray(items)) {
+        return [];
+      }
+
+      return items
+        .map((folder) => {
+          const id = folder?.id ?? folder?._id;
+          const label = folder?.label ?? folder?.name;
+          if (!id || !label) {
+            return null;
+          }
+
+          const count = typeof folder?.count === "number" ? folder.count : folder?.propertiesCount;
+          const parentId = folder?.parentId ?? folder?.parentFolderId ?? null;
+
+          return {
+            id,
+            label,
+            count: typeof count === "number" ? count : 0,
+            parentId,
+          };
+        })
+        .filter(Boolean);
+    };
+
+    (async () => {
+      try {
+        const response = await folderService.getFolders();
+        const normalized = normalizeFolders(response);
+
+        if (!mounted || normalized.length === 0) {
+          return;
+        }
+
+        setFolders(normalized);
+        setActiveFolderId((prev) => (normalized.some((folder) => folder.id === prev) ? prev : normalized[0].id));
+      } catch (_error) {
+        if (!mounted) {
+          return;
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isFilterMenuOpen) {
@@ -349,7 +276,7 @@ const ShortlistsPage = () => {
     setActiveFolderId(folder.id);
   };
 
-  const handleRenameFolderSave = (folderId, label) => {
+  const handleRenameFolderSave = async (folderId, label) => {
     const trimmedLabel = label.trim();
 
     if (!trimmedLabel) {
@@ -357,11 +284,18 @@ const ShortlistsPage = () => {
       return;
     }
 
-    setFolders((prev) => prev.map((folder) => (folder.id === folderId ? { ...folder, label: trimmedLabel } : folder)));
-    setRenamingFolderId(null);
+    try {
+      if (isLikelyUuid(folderId)) {
+        await folderService.renameFolder(folderId, { name: trimmedLabel });
+      }
+
+      setFolders((prev) => prev.map((folder) => (folder.id === folderId ? { ...folder, label: trimmedLabel } : folder)));
+    } finally {
+      setRenamingFolderId(null);
+    }
   };
 
-  const handleConfirmDeleteFolder = () => {
+  const handleConfirmDeleteFolder = async () => {
     if (!folderToDelete) {
       return;
     }
@@ -380,6 +314,9 @@ const ShortlistsPage = () => {
     if (folderIdsToDelete.has(activeFolderId)) {
       setActiveFolderId(remainingFolders[0]?.id ?? null);
     }
+
+    const idsToDeleteOnServer = Array.from(folderIdsToDelete).filter((id) => isLikelyUuid(id));
+    await Promise.allSettled(idsToDeleteOnServer.map((id) => folderService.deleteFolder(id)));
   };
 
   const handleBackToCreateFolder = () => {
@@ -387,7 +324,7 @@ const ShortlistsPage = () => {
     setCreateFolderOpen(true);
   };
 
-  const handleConfirmFolderCreation = () => {
+  const handleConfirmFolderCreation = async () => {
     const folderName = pendingFolderName.trim();
 
     if (!folderName) {
@@ -419,9 +356,23 @@ const ShortlistsPage = () => {
       parentId: selectedParentFolderId ?? null,
     };
 
-    setFolders((prev) => [...prev, newFolder]);
-    setActiveFolderId(newFolder.id);
-    handleCloseCreateFlow();
+    try {
+      const created = await folderService.createFolder({ name: folderName });
+      const createdId = created?.data?.id ?? created?.id ?? created?._id;
+
+      const folderToAdd = {
+        ...newFolder,
+        id: createdId || newFolder.id,
+      };
+
+      setFolders((prev) => [...prev, folderToAdd]);
+      setActiveFolderId(folderToAdd.id);
+    } catch (_error) {
+      setFolders((prev) => [...prev, newFolder]);
+      setActiveFolderId(newFolder.id);
+    } finally {
+      handleCloseCreateFlow();
+    }
   };
 
   const visibleProperties = useMemo(

@@ -213,8 +213,14 @@ export const deleteLeaseholdDetail = async (id: string) => {
  */
 export const getAllLeaseholdDetails = async (
   startYearFrom?: number,
-  startYearTo?: number
+  startYearTo?: number,
+  page: number = 1,
+  limit: number = 10
 ) => {
+  const validPage = Number.isFinite(page) && page > 0 ? page : 1;
+  const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+  const skip = (validPage - 1) * validLimit;
+
   const where: any = {};
 
   if (startYearFrom !== undefined) {
@@ -224,10 +230,29 @@ export const getAllLeaseholdDetails = async (
     where.startYear = { ...where.startYear, lte: startYearTo };
   }
 
-  return db.leaseholdDetail.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    const [details, total] = await Promise.all([
+      db.leaseholdDetail.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: validLimit,
+      }),
+      db.leaseholdDetail.count({ where }),
+    ]);
+
+    return {
+      items: details,
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        total,
+        totalPages: Math.ceil(total / validLimit) || 1,
+      },
+    };
+  } catch (error: unknown) {
+    throw error;
+  }
 };
 
 /**

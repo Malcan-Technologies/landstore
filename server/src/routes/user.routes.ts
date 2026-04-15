@@ -8,8 +8,11 @@ import {
   updateUserController,
   getUserCompleteProfileController,
   registerAndCompleteProfileController,
-  loginController,
-  getMyProfileController,
+  requestPasswordResetController,
+  resetPasswordCallbackController,
+  resetPasswordController,
+  verifyEmailCallbackController,
+  verifyEmailController,
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
@@ -17,12 +20,30 @@ import { requireAdmin } from "../middleware/authorization.js";
 const userRouter = Router();
 
 /**
- * AUTHENTICATION:
- * POST /api/users/login - Login with email and password
- * POST /api/users/register - Register and complete profile
+ * REGISTRATION:
+ * POST /api/users/register
+ * Body: { email, password, name, phone, userType, profileType, ... }
+ * Response: Full user profile with verification email sent
  */
-userRouter.post("/login", loginController);
 userRouter.post("/register", registerAndCompleteProfileController);
+
+/**
+ * EMAIL VERIFICATION ENDPOINTS (No auth required):
+ * GET /api/users/verify-email-callback - Handle email link click
+ * POST /api/users/verify-email - Confirm email verification with token
+ */
+userRouter.get("/verify-email-callback", verifyEmailCallbackController);
+userRouter.post("/verify-email", verifyEmailController);
+
+/**
+ * PASSWORD RESET ENDPOINTS (No auth required):
+ * POST /api/users/forgot-password - Request password reset link
+ * GET /api/users/reset-password-callback - Handle email link click
+ * POST /api/users/reset-password - Reset password with token
+ */
+userRouter.post("/forgot-password", requestPasswordResetController);
+userRouter.get("/reset-password-callback", resetPasswordCallbackController);
+userRouter.post("/reset-password", resetPasswordController);
 
 // Get current authenticated user (requires auth)
 userRouter.get("/me", requireApiAuth, getCurrentUserController);

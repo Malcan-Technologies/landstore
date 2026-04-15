@@ -50,8 +50,8 @@ const Header = () => {
     setProfileMenuOpen(false);
     await dispatch(logoutUser());
     router.push("/");
-    setAuthTab("login");
-    setIsLoginOpen(true);
+    // setAuthTab("login");
+    // setIsLoginOpen(true);
   };
 
   const handleOpenProfile = () => {
@@ -137,7 +137,7 @@ const Header = () => {
                 <span className="h-6 w-[1.5px] bg-border-card" aria-hidden />
 
                 <Button
-                  onClick={() => router.push("/user-dashboard/listings")}
+                  onClick={() => router.push("/user-dashboard/listings/create-listing")}
                   className="sm:h-10 h-8 justify-center gap-0 rounded-md !px-2 sm:gap-2 sm:px-4!"
                 >
                   <span className="flex h-6 w-6 items-center justify-center text-white">
