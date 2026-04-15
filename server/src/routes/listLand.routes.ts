@@ -8,12 +8,16 @@ import {
 	getListLandsController,
 	getAllListingsController,
 	updateListLandController,
+	searchPropertiesByRadiusController,
 } from "../controllers/listLand.controller.js";
 
 const listLandRouter = Router();
 
 // Create property with images and documents: Images + Documents uploaded to S3 -> Media/Document records created -> Property created
 listLandRouter.post("/", requireApiAuth, upload.any(), createListLandController);
+
+// Search properties by geographic radius
+listLandRouter.post("/search/by-radius", requireApiAuth, searchPropertiesByRadiusController);
 
 // Get all public listings (accessible to any authenticated user)
 listLandRouter.get("/all-listings", requireApiAuth, getAllListingsController);
