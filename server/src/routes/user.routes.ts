@@ -13,6 +13,7 @@ import {
   resetPasswordController,
   verifyEmailCallbackController,
   verifyEmailController,
+  getMyProfileController
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
