@@ -488,6 +488,7 @@ const Register = ({ onRegisterSuccess }) => {
             type={showPassword ? "text" : "password"}
             placeholder="**********"
             value={formData.password}
+            autoComplete="new-password"
             onChange={handleInputChange}
             className="h-10 w-full rounded-xl border border-border-input px-3.5 pr-10 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
           />
@@ -514,6 +515,7 @@ const Register = ({ onRegisterSuccess }) => {
             type={showConfirmPassword ? "text" : "password"}
             placeholder="**********"
             value={formData.confirmPassword}
+            autoComplete="new-password"
             onChange={handleInputChange}
             className="h-10 w-full rounded-xl border border-border-input px-3.5 pr-10 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
           />

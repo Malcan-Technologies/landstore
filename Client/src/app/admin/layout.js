@@ -2,11 +2,8 @@ import AdminRouteGate from "@/components/adminDashboard/layout/AdminRouteGate";
 import AdminShell from "@/components/adminDashboard/layout/AdminShell";
 
 export default function AdminLayout({ children }) {
-  const adminEmail = process.env.admin || "basit@buraktec.com";
-  const adminPassword = process.env.adminpassword || "admin";
-  console.log("Env: ", process.env)
   return (
-    <AdminRouteGate adminEmail={adminEmail} adminPassword={adminPassword}>
+    <AdminRouteGate>
       <AdminShell>{children}</AdminShell>
       {/* <div className="flex min-h-screen bg-background-primary pt-17">
       </div> */}

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import Plus from "@/components/svg/Plus";
 import Bell from "@/components/svg/Bell";
@@ -17,6 +18,7 @@ import { logoutUser } from "@/store/authSlice";
 
 const Header = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const { isAuth, user, hydrated } = useSelector((state) => state.auth);
 
@@ -27,6 +29,14 @@ const Header = () => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const notificationRef = useRef(null);
   const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    const tokenFromUrl = searchParams?.get("token") || "";
+    if (tokenFromUrl) {
+      setAuthTab("login");
+      setIsLoginOpen(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

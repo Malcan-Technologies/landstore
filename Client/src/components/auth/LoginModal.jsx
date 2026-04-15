@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
 import Register from "@/components/auth/Register";
@@ -18,6 +19,9 @@ import { validateForm, loginValidation } from "@/validators";
 
 const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const dispatch = useDispatch();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
@@ -25,6 +29,11 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const [setNewPasswordOpen, setSetNewPasswordOpen] = useState(false);
   const [resetPasswordSuccessOpen, setResetPasswordSuccessOpen] = useState(false);
   const [checkMailEmail, setCheckMailEmail] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState("");
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -47,23 +56,86 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
       setSetNewPasswordOpen(false);
       setResetPasswordSuccessOpen(false);
       setCheckMailEmail("");
+      setResetToken("");
+      setForgotPasswordLoading(false);
+      setForgotPasswordError("");
+      setResetPasswordLoading(false);
+      setResetPasswordError("");
     }
   }, [open, initialTab]);
 
-  const handleForgotPasswordSuccess = (submittedEmail) => {
-    setForgotPasswordOpen(false);
-    setCheckMailEmail(submittedEmail);
-    setCheckMailOpen(true);
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const tokenFromUrl = searchParams?.get("token") || "";
+    if (tokenFromUrl) {
+      setResetToken(tokenFromUrl);
+      setForgotPasswordOpen(false);
+      setCheckMailOpen(false);
+      setResetPasswordSuccessOpen(false);
+      setSetNewPasswordOpen(true);
+    }
+  }, [open, searchParams]);
+
+  const handleForgotPasswordSuccess = async (submittedEmail) => {
+    setForgotPasswordLoading(true);
+    setForgotPasswordError("");
+
+    try {
+      const result = await authService.forgotPassword(submittedEmail);
+
+      const tokenFromResponse =
+        (typeof result?.token === "string" && result.token) ||
+        (typeof result?.data?.token === "string" && result.data.token) ||
+        "";
+
+      setForgotPasswordOpen(false);
+      setCheckMailEmail(submittedEmail);
+
+      if (tokenFromResponse) {
+        setResetToken(tokenFromResponse);
+        setCheckMailOpen(false);
+        setResetPasswordSuccessOpen(false);
+        setSetNewPasswordOpen(true);
+      } else {
+        setCheckMailOpen(true);
+      }
+    } catch (error) {
+      setForgotPasswordError(error?.response?.data?.message || error?.message || "Failed to send reset email");
+    } finally {
+      setForgotPasswordLoading(false);
+    }
   };
 
   const handleCheckMailContinue = () => {
-    setCheckMailOpen(false);
-    setSetNewPasswordOpen(true);
+    if (typeof window !== "undefined") {
+      window.open("https://mail.google.com/mail/", "_blank", "noopener,noreferrer");
+    }
   };
 
-  const handleSetNewPasswordSuccess = () => {
-    setSetNewPasswordOpen(false);
-    setResetPasswordSuccessOpen(true);
+  const handleSetNewPasswordSuccess = async ({ password: newPassword, token }) => {
+    if (!token) {
+      setResetPasswordError("Missing reset token");
+      return;
+    }
+
+    setResetPasswordLoading(true);
+    setResetPasswordError("");
+
+    try {
+      await authService.resetPassword(token, newPassword);
+      if (pathname) {
+        router.replace(pathname);
+      }
+      setSetNewPasswordOpen(false);
+      setResetPasswordSuccessOpen(true);
+    } catch (error) {
+      setResetPasswordError(error?.response?.data?.message || error?.message || "Failed to reset password");
+    } finally {
+      setResetPasswordLoading(false);
+    }
   };
 
   const handleLoginSubmit = async (event) => {
@@ -174,6 +246,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
                   type={showPassword ? "text" : "password"}
                   placeholder="**********"
                   value={password}
+                  autoComplete="new-password"
                   onChange={(event) => setPassword(event.target.value)}
                   className={`h-11 w-full rounded-xl border px-4 pr-11 text-[15px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary ${errors.password ? 'border-red-500' : 'border-border-input'}`}
                 />
@@ -230,6 +303,8 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
         onClose={() => setForgotPasswordOpen(false)}
         onBackToLogin={() => setForgotPasswordOpen(false)}
         onSuccess={handleForgotPasswordSuccess}
+        isLoading={forgotPasswordLoading}
+        apiError={forgotPasswordError}
       />
 
       <CheckMailModal
@@ -247,6 +322,9 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
         open={setNewPasswordOpen}
         onClose={() => setSetNewPasswordOpen(false)}
         onSuccess={handleSetNewPasswordSuccess}
+        isLoading={resetPasswordLoading}
+        apiError={resetPasswordError}
+        token={resetToken}
         onBackToLogin={() => {
           setSetNewPasswordOpen(false);
           setForgotPasswordOpen(false);

@@ -27,7 +27,7 @@ export const authService = {
   // Login user
   login: async (credentials) => {
     try {
-      const response = await api.post('/auth/sign-in/email', credentials, withOriginAndNo401Redirect());
+      const response = await api.post('/users/login', credentials, withOriginAndNo401Redirect());
       return response.data;
     } catch (error) {
       throw error;
@@ -94,10 +94,10 @@ export const authService = {
     }
   },
 
-  // Request password reset (Better Auth)
+  // Request password reset
   forgotPassword: async (email) => {
     try {
-      const response = await api.post('/auth/reset-password', { email }, withOriginHeader());
+      const response = await api.post('/users/forgot-password', { email }, withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;
@@ -107,7 +107,7 @@ export const authService = {
   // Reset password
   resetPassword: async (token, newPassword) => {
     try {
-      const response = await api.post('/auth/reset-password', { token, newPassword }, withOriginHeader());
+      const response = await api.post('/users/reset-password', { token, newPassword }, withOriginHeader());
       return response.data;
     } catch (error) {
       throw error;
