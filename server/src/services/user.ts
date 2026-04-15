@@ -1,5 +1,6 @@
 import db from "../../config/prisma.js";
 import { auth } from "../../config/auth.js";
+import { generateSignedUrl } from "./s3Upload.js";
 import type { User, UserType } from "@prisma/client";
 
 type UpdateUserPayload = {
@@ -619,11 +620,13 @@ export const getUserCompleteProfile = async (userId: string) => {
       }
     : null;
 
-  // Build profile media
+  // Build profile media with signed URL
   const profilePicture = user.profileMedia
     ? {
         id: user.profileMedia.id,
-        fileUrl: user.profileMedia.fileUrl,
+        fileUrl: user.profileMedia.fileUrl
+          ? await generateSignedUrl(user.profileMedia.fileUrl)
+          : null,
         mediaType: user.profileMedia.mediaType,
         mediaCategory: user.profileMedia.mediaCategory,
         userId: user.profileMedia.userId,
