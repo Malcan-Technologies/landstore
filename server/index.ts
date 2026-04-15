@@ -86,8 +86,10 @@ app.use(cookieParser());
 // User routes (protected and unprotected)
 app.use("/api/users", userRoutes);
 
+// Public routes (list-lands has auth on individual routes)
+app.use("/api/list-lands", listLandRoutes);
+
 // Protected routes (require authentication)
-app.use("/api/list-lands", requireApiAuth, listLandRoutes);
 app.use("/api/folders", requireApiAuth, folderRoutes);
 app.use("/api/categories", requireApiAuth, categoryRoutes);
 app.use("/api/ownership-types", requireApiAuth, ownershipRoutes);

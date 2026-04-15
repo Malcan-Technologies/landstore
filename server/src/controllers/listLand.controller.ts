@@ -399,12 +399,7 @@ export const searchPropertiesByRadiusController = async (
 
 		const page = toNumberOrUndefined(req.query.page) || 1;
 		const limit = toNumberOrUndefined(req.query.limit) || 10;
-
-		// Import the search function
-		const { searchPropertiesByRadius } = await import(
-			"../services/listLand.js"
-		);
-
+		
 		const result = await searchPropertiesByRadius(
 			latitude,
 			longitude,

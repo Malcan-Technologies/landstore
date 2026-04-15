@@ -151,10 +151,18 @@ const transformPropertyWithSignedUrls = async (property: any) => {
 	}
 
 	const mediaWithUrls = await Promise.all(
-		property.media.map(async (media: any) => ({
-			...media,
-			fileUrl: media.fileUrl ? await generateSignedUrl(media.fileUrl) : null,
-		}))
+		property.media.map(async (media: any) => {
+			try {
+				return {
+					...media,
+					fileUrl: media.fileUrl ? await generateSignedUrl(media.fileUrl) : null,
+				};
+			} catch (error) {
+				console.error("Error generating signed URL for media:", media.id, error);
+				// Return media with original fileUrl if signing fails
+				return media;
+			}
+		})
 	);
 
 	return {
@@ -473,9 +481,16 @@ export const getListLands = async (
 	]);
 
 	// Transform items with signed URLs
-	const itemsWithSignedUrls = await Promise.all(
-		items.map((item) => transformPropertyWithSignedUrls(item))
-	);
+	let itemsWithSignedUrls;
+	try {
+		itemsWithSignedUrls = await Promise.all(
+			items.map((item) => transformPropertyWithSignedUrls(item))
+		);
+	} catch (signingError) {
+		console.error("Error transforming items with signed URLs in getListLands:", signingError);
+		// Fallback: return items without signed URLs
+		itemsWithSignedUrls = items;
+	}
 
 	return {
 		items: itemsWithSignedUrls,
@@ -519,9 +534,16 @@ export const getAllListings = async (query: GetLandsQuery) => {
 	]);
 
 	// Transform items with signed URLs
-	const itemsWithSignedUrls = await Promise.all(
-		items.map((item) => transformPropertyWithSignedUrls(item))
-	);
+	let itemsWithSignedUrls;
+	try {
+		itemsWithSignedUrls = await Promise.all(
+			items.map((item) => transformPropertyWithSignedUrls(item))
+		);
+	} catch (signingError) {
+		console.error("Error transforming items with signed URLs in getAllListings:", signingError);
+		// Fallback: return items without signed URLs
+		itemsWithSignedUrls = items;
+	}
 
 	return {
 		items: itemsWithSignedUrls,
@@ -556,7 +578,13 @@ export const getListLandById = async (
 	}
 
 	// Transform property with signed URLs
-	return await transformPropertyWithSignedUrls(property);
+	try {
+		return await transformPropertyWithSignedUrls(property);
+	} catch (signingError) {
+		console.error("Error transforming property with signed URLs in getListLandById:", signingError);
+		// Fallback: return property without signed URLs
+		return property;
+	}
 };
 
 /**
@@ -864,7 +892,6 @@ export const searchPropertiesByRadius = async (
 			skip,
 			take: limit,
 		});
-
 		// Step 3: Refine results using Pythagorean theorem
 		// Filter properties that are actually within the radius circle
 		const radiusSquared = radius * radius;
@@ -903,11 +930,18 @@ export const searchPropertiesByRadius = async (
 				},
 			},
 		});
-
-		// Transform results with signed URLs
-		const resultsWithSignedUrls = await Promise.all(
-			results.map((item) => transformPropertyWithSignedUrls(item))
-		);
+		
+		// Transform results with signed URLs with error handling
+		let resultsWithSignedUrls;
+		try {
+			resultsWithSignedUrls = await Promise.all(
+				results.map((item) => transformPropertyWithSignedUrls(item))
+			);
+		} catch (signingError) {
+			console.error("Error during batch URL signing, returning results without signed URLs:", signingError);
+			// Fallback: return results without signed URLs rather than failing the entire request
+			resultsWithSignedUrls = results;
+		}
 
 		return {
 			items: resultsWithSignedUrls,

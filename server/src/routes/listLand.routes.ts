@@ -26,7 +26,7 @@ listLandRouter.get("/all-listings", requireApiAuth, requireAdmin,getAllListingsC
 // Get all properties (user-specific or all for admin)
 listLandRouter.get("/", requireApiAuth, getListLandsController);
 
-// Get single property
+// Get single property (public - allows viewing property details)
 listLandRouter.get("/:id", getListLandByIdController);
 
 // Update property with optional image and document uploads

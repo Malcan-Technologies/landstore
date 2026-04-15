@@ -263,8 +263,6 @@ export const loginController = async (req: Request, res: Response) => {
 				res.setHeader("set-cookie", cookies);
 			}
 
-			console.log(betterAuthResponse)
-
 			// Parse the response body
 			let responseBody: any = null;
 			if (betterAuthResponse?.body) {
