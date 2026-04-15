@@ -13,7 +13,8 @@ import {
   resetPasswordController,
   verifyEmailCallbackController,
   verifyEmailController,
-  getMyProfileController
+  getMyProfileController,
+  loginController
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
@@ -27,6 +28,7 @@ const userRouter = Router();
  * Response: Full user profile with verification email sent
  */
 userRouter.post("/register", registerAndCompleteProfileController);
+userRouter.post("/login", loginController);
 
 /**
  * EMAIL VERIFICATION ENDPOINTS (No auth required):
