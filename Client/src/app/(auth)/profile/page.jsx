@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { authService } from "@/services/authService";
+import { userService } from "@/services/userService";
 
 import DualNote from "@/components/svg/DualNote";
 import Verify from "@/components/svg/Verify";
@@ -45,16 +46,23 @@ const inputClassName =
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profile, setProfile] = useState(null);
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("MY");
   const [phone, setPhone] = useState("");
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [appAlerts, setAppAlerts] = useState(false);
+  const [selectedProfileImage, setSelectedProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   const profileImageSrc =
+    profileImagePreview ||
     profile?.profilePicture?.url ||
     profile?.profilePicture ||
+    profile?.profileMedia?.fileUrl ||
+    profile?.profileImage ||
     profile?.image ||
     "/user.jpg";
   const isEmailVerified = Boolean(profile?.emailVerified);
@@ -93,6 +101,86 @@ const ProfilePage = () => {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (profileImagePreview) {
+        URL.revokeObjectURL(profileImagePreview);
+      }
+    };
+  }, [profileImagePreview]);
+
+  const handleProfileImageChange = (event) => {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!selectedFile.type.startsWith("image/")) {
+      setSaveError("Please select a valid image file.");
+      return;
+    }
+
+    setSaveError("");
+    setSelectedProfileImage(selectedFile);
+
+    const previewUrl = URL.createObjectURL(selectedFile);
+    setProfileImagePreview((previousPreview) => {
+      if (previousPreview) {
+        URL.revokeObjectURL(previousPreview);
+      }
+      return previewUrl;
+    });
+  };
+
+  const handleEditProfileClick = async () => {
+    if (!isEditing) {
+      setIsEditing(true);
+      setSaveError("");
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      setSaveError("");
+
+      const payload = new FormData();
+      payload.append("email", email);
+      payload.append("phone", phone);
+
+      if (selectedProfileImage) {
+        payload.append("image", selectedProfileImage);
+      }
+
+      const response = await userService.updateProfileMe(payload);
+      const updatedProfile =
+        response?.user || response?.result || response?.data || null;
+
+      if (updatedProfile) {
+        setProfile((previousProfile) => ({
+          ...(previousProfile || {}),
+          ...updatedProfile,
+        }));
+      }
+
+      setIsEditing(false);
+      setSelectedProfileImage(null);
+      setProfileImagePreview((previousPreview) => {
+        if (previousPreview) {
+          URL.revokeObjectURL(previousPreview);
+        }
+        return "";
+      });
+    } catch (error) {
+      setSaveError(
+        error?.response?.data?.message ||
+          "Failed to update profile. Please try again."
+      );
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   return (
     <main className="bg-background-primary pb-14 pt-10">
       <div className="lg:mx-16 md:mx-4 mx-2 w-auto px-4 py-7 sm:px-6 md:px-10 md:py-9">
@@ -118,6 +206,29 @@ const ProfilePage = () => {
                   sizes="143px"
                 />
               </div>
+              {isEditing && (
+                <>
+                  <input
+                    id="profile-image-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfileImageChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="profile-image-input"
+                    className="absolute inset-0 z-20 cursor-pointer rounded-full"
+                  >
+                    <span className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray2 shadow-md transition hover:bg-gray-50">
+                      <Edit
+                        size={14}
+                        stroke="currentColor"
+                        accentStroke="currentColor"
+                      />
+                    </span>
+                  </label>
+                </>
+              )}
               {isEmailVerified && (
                 <span className="absolute bottom-2 md:bottom-2 right-1 md:right-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full z-10">
                   <Verify width={28} height={28} />
@@ -162,12 +273,13 @@ const ProfilePage = () => {
           <div className="flex sm:items-center sm:justify-start justify-center">
             <button
               type="button"
-              onClick={() => setIsEditing((prev) => !prev)}
+              onClick={handleEditProfileClick}
+              disabled={isSavingProfile}
               className={`inline-flex h-11 items-center justify-center gap-2 self-start whitespace-nowrap rounded-lg px-3 text-[14px] font-medium transition md:px-4 ${
                 isEditing
                   ? "bg-green-primary text-white hover:bg-green-secondary"
                   : "border border-border-input  text-gray2 hover:bg-background-primary"
-              }`}
+              } ${isSavingProfile ? "cursor-not-allowed opacity-70" : ""}`}
             >
               {!isEditing ? (
                 <Edit
@@ -178,10 +290,18 @@ const ProfilePage = () => {
               ) : (
                 ""
               )}
-              {isEditing ? "Save profile" : "Edit profile"}
+              {isSavingProfile
+                ? "Saving..."
+                : isEditing
+                ? "Save profile"
+                : "Edit profile"}
             </button>
           </div>
         </section>
+
+        {saveError && (
+          <p className="mb-6 text-[13px] font-medium text-[#B42318]">{saveError}</p>
+        )}
 
         <section className="mb-10">
           <h3 className="text-[18px] font-semibold text-gray2 md:text-[22px]">
