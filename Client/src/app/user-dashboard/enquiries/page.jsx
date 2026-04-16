@@ -1,70 +1,117 @@
-import EnquiryCard from "@/components/userDashboard/enquiries/EnquiryCard";
+"use client";
 
-const enquiries = [
-  {
-    id: "enquiry-1",
-    code: "ENQ - 000128",
-    status: "Need More Info",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Financing"],
-    updatedAt: "05/20/2025",
-    unreadCount: 2,
-    highlighted: true,
-    image: "https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "enquiry-2",
-    code: "ENQ - 000128",
-    status: "Scheduled",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["JV"],
-    updatedAt: "05/20/2025",
-    unreadCount: 0,
-    image: "https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "enquiry-3",
-    code: "ENQ - 000128",
-    status: "Pending Matching",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy"],
-    updatedAt: "05/20/2025",
-    unreadCount: 0,
-    image: "https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "enquiry-4",
-    code: "ENQ - 000128",
-    status: "Under Review",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy", "Financing"],
-    updatedAt: "05/20/2025",
-    unreadCount: 0,
-    image: "https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "enquiry-5",
-    code: "ENQ - 000128",
-    status: "Matched (In Progress)",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy", "Financing"],
-    updatedAt: "05/20/2025",
-    unreadCount: 0,
-    image: "https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=1200&q=80",
-  },
-];
+import { useEffect, useState } from "react";
+import EnquiryCard from "@/components/userDashboard/enquiries/EnquiryCard";
+import { enquiryService } from "@/services/enquiryService";
+
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=1200&q=80";
+
+const normalizeEnquiries = (response) => {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (Array.isArray(response?.data)) {
+    return response.data;
+  }
+
+  if (Array.isArray(response?.result?.data)) {
+    return response.result.data;
+  }
+
+  if (Array.isArray(response?.items)) {
+    return response.items;
+  }
+
+  return [];
+};
+
+const formatEnquiryCode = (id) => {
+  if (!id || typeof id !== "string") {
+    return "ENQ - 000000";
+  }
+
+  return `ENQ - ${id.replace(/-/g, "").toUpperCase().slice(0, 6)}`;
+};
+
+const formatDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const toStatusLabel = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "pending") {
+    return "Pending Matching";
+  }
+  if (normalized === "under_review" || normalized === "under review") {
+    return "Under Review";
+  }
+  if (normalized === "need_more_info" || normalized === "need more info") {
+    return "Need More Info";
+  }
+  if (normalized === "in_progress" || normalized === "in progress") {
+    return "Matched (In Progress)";
+  }
+  if (normalized === "scheduled") {
+    return "Scheduled";
+  }
+
+  return "Pending Matching";
+};
 
 const EnquiriesPage = () => {
+  const [enquiries, setEnquiries] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadEnquiries = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await enquiryService.getAllEnquiries({ page: 1, limit: 50 });
+        const items = normalizeEnquiries(response);
+
+        const mappedEnquiries = items.map((item, index) => ({
+          id: item?.id || `enquiry-${index + 1}`,
+          code: formatEnquiryCode(item?.id),
+          status: toStatusLabel(item?.status),
+          title: item?.property?.title || "Property details pending",
+          category: item?.property?.category || "N/A",
+          area: item?.property?.size || "N/A",
+          dealTags: [item?.interestType?.name || "General"],
+          updatedAt: formatDate(item?.updatedAt || item?.createdAt),
+          unreadCount: Number(item?.messagesCount) || 0,
+          highlighted: index === 0,
+          image: item?.property?.images?.[0]?.url || item?.property?.image || FALLBACK_IMAGE,
+        }));
+
+        setEnquiries(mappedEnquiries);
+      } catch (apiError) {
+        setError(apiError?.message || "Failed to load enquiries.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEnquiries();
+  }, []);
+
   return (
     <main className="bg-background-primary py-10 md:py-12">
       <div className="mx-auto w-full  sm:px-8 px-3">
@@ -74,6 +121,18 @@ const EnquiriesPage = () => {
         </header>
 
         <section className="mt-6 space-y-4">
+          {isLoading ? (
+            <p className="text-[14px] text-gray5">Loading enquiries...</p>
+          ) : null}
+
+          {!isLoading && error ? (
+            <p className="text-[14px] text-red-500">{error}</p>
+          ) : null}
+
+          {!isLoading && !error && enquiries.length === 0 ? (
+            <p className="text-[14px] text-gray5">No enquiries found.</p>
+          ) : null}
+
           {enquiries.map((enquiry) => (
             <EnquiryCard key={enquiry.id} enquiry={enquiry} />
           ))}

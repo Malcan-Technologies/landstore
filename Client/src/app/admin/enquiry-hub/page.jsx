@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Table from "@/components/common/Table";
 import Search from "@/components/svg/Search";
@@ -7,97 +8,88 @@ import Person from "@/components/svg/Person";
 import EyeOpen from "@/components/svg/EyeOpen";
 import Delete from "@/components/svg/Delete";
 import Sheet from "@/components/svg/Sheet";
+import { enquiryService } from "@/services/enquiryService";
 
-const enquiries = [
-  {
-    id: "enquiry-1",
-    enquiryId: "ENQ - 000128",
-    listingId: "#L001",
-    inDate: "20/05/2024",
-    updatedDate: "20/05/2024",
-    requester: "Dato' Ridzuan",
-    requesterType: "Corporate Entity",
-    status: "Under review",
-    interestType: "Buy",
-  },
-  {
-    id: "enquiry-2",
-    enquiryId: "ENQ - 000128",
-    listingId: "#L001",
-    inDate: "20/05/2024",
-    updatedDate: "20/05/2024",
-    requester: "Dato' Ridzuan",
-    requesterType: "Corporate Entity",
-    status: "Need More Info",
-    interestType: "Financing",
-  },
-  {
-    id: "enquiry-3",
-    enquiryId: "ENQ - 000128",
-    listingId: "#L001",
-    inDate: "20/05/2024",
-    updatedDate: "20/05/2024",
-    requester: "Dato' Ridzuan",
-    requesterType: "Corporate Entity",
-    status: "In Progress",
-    interestType: "Buy",
-  },
-  {
-    id: "enquiry-4",
-    enquiryId: "ENQ - 000128",
-    listingId: "#L001",
-    inDate: "20/05/2024",
-    updatedDate: "20/05/2024",
-    requester: "Dato' Ridzuan",
-    requesterType: "Corporate Entity",
-    status: "Scheduled",
-    interestType: "JV",
-  },
-  {
-    id: "enquiry-5",
-    enquiryId: "ENQ - 000128",
-    listingId: "#L001",
-    inDate: "20/05/2024",
-    updatedDate: "20/05/2024",
-    requester: "Dato' Ridzuan",
-    requesterType: "Corporate Entity",
-    status: "In Progress",
-    interestType: "Buy",
-  },
-  {
-    id: "enquiry-6",
-    enquiryId: "ENQ - 000128",
-    listingId: "#L001",
-    inDate: "20/05/2024",
-    updatedDate: "20/05/2024",
-    requester: "Dato' Ridzuan",
-    requesterType: "Corporate Entity",
-    status: "Scheduled",
-    interestType: "Financing",
-  },
-  {
-    id: "enquiry-7",
-    enquiryId: "ENQ - 000128",
-    listingId: "#L001",
-    inDate: "20/05/2024",
-    updatedDate: "20/05/2024",
-    requester: "Dato' Ridzuan",
-    requesterType: "Corporate Entity",
-    status: "In Progress",
-    interestType: "Buy",
-  },
-  {
-    id: "enquiry-8",
-    enquiryId: "ENQ - 000128",
-    listingId: "#L001",
-    inDate: "20/05/2024",
-    updatedDate: "20/05/2024",
-    requester: "Dato' Ridzuan",
-    requesterType: "Corporate Entity",
-    status: "Scheduled",
-    interestType: "Financing",
-  },
-];
+const normalizeEnquiries = (response) => {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (Array.isArray(response?.data)) {
+    return response.data;
+  }
+
+  if (Array.isArray(response?.result?.data)) {
+    return response.result.data;
+  }
+
+  if (Array.isArray(response?.items)) {
+    return response.items;
+  }
+
+  return [];
+};
+
+const formatDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleDateString("en-GB");
+};
+
+const formatEnquiryCode = (id) => {
+  if (!id || typeof id !== "string") {
+    return "ENQ - 000000";
+  }
+
+  return `ENQ - ${id.replace(/-/g, "").toUpperCase().slice(0, 6)}`;
+};
+
+const toStatusLabel = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "pending") {
+    return "Under review";
+  }
+  if (normalized === "under_review" || normalized === "under review") {
+    return "Under review";
+  }
+  if (normalized === "need_more_info" || normalized === "need more info") {
+    return "Need More Info";
+  }
+  if (normalized === "in_progress" || normalized === "in progress") {
+    return "In Progress";
+  }
+  if (normalized === "scheduled") {
+    return "Scheduled";
+  }
+
+  return "Under review";
+};
+
+const getRequester = (user) => {
+  const individualName = user?.individuals?.fullName;
+  const companyName = user?.companies?.companyName;
+
+  if (individualName) {
+    return { name: individualName, type: "Individual" };
+  }
+
+  if (companyName) {
+    return { name: companyName, type: "Corporate Entity" };
+  }
+
+  return {
+    name: user?.email || "Unknown requester",
+    type: "User",
+  };
+};
 
 const statusStyles = {
   "Under review": "bg-[#FFF7ED] text-[#F59E0B]",
@@ -114,6 +106,60 @@ const iconButtonBase =
 
 export default function EnquiryHubPage() {
   const router = useRouter();
+  const [enquiries, setEnquiries] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const loadEnquiries = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await enquiryService.getAllEnquiries({ page: 1, limit: 100 });
+        const items = normalizeEnquiries(response);
+
+        const mappedItems = items.map((item, index) => {
+          const requester = getRequester(item?.user);
+
+          return {
+            id: item?.id || `enquiry-${index + 1}`,
+            enquiryId: formatEnquiryCode(item?.id),
+            listingId: item?.property?.listingCode || item?.propertyId || "-",
+            inDate: formatDate(item?.createdAt),
+            updatedDate: formatDate(item?.updatedAt),
+            requester: requester.name,
+            requesterType: requester.type,
+            status: toStatusLabel(item?.status),
+            interestType: item?.interestType?.name || "General",
+          };
+        });
+
+        setEnquiries(mappedItems);
+      } catch (apiError) {
+        setError(apiError?.message || "Failed to load enquiries.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEnquiries();
+  }, []);
+
+  const filteredEnquiries = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    if (!query) {
+      return enquiries;
+    }
+
+    return enquiries.filter((item) => {
+      return [item.enquiryId, item.listingId, item.requester, item.requesterType, item.status, item.interestType]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query));
+    });
+  }, [enquiries, searchTerm]);
 
   const handleOpenEnquiry = (enquiryId) => {
     router.push(`/admin/enquiry-hub/${enquiryId}`);
@@ -129,13 +175,13 @@ export default function EnquiryHubPage() {
     { label: "Actions", className: "text-right", contentClassName: "text-right" },
   ];
 
-  const rows = enquiries.map((enquiry) => ({
+  const rows = filteredEnquiries.map((enquiry) => ({
     key: enquiry.id,
     cells: [
       {
         key: "enquiry-id",
         content: (
-          <span className="inline-flex items-center rounded-[4px] bg-[#F4F4F5] px-2 py-1 text-[10px] font-medium leading-none text-[#71717A] sm:text-[11px]">
+          <span className="inline-flex items-center rounded-sm bg-[#F4F4F5] px-2 py-1 text-[10px] font-medium leading-none text-[#71717A] sm:text-[11px]">
             {enquiry.enquiryId}
           </span>
         ),
@@ -150,11 +196,11 @@ export default function EnquiryHubPage() {
           <div className="space-y-0.5 text-[11px] leading-4 sm:text-[12px]">
             <div className="text-[#52525B]">
               <span className="font-medium text-[#71717A]">IN:</span>{" "}
-              <span className="font-medium text-[#15803D]">{enquiry.inDate}</span>
+              <span className="font-medium text-active">{enquiry.inDate}</span>
             </div>
             <div className="text-[#52525B]">
               <span className="font-medium text-[#71717A]">UP:</span>{" "}
-              <span className="font-medium text-[#15803D]">{enquiry.updatedDate}</span>
+              <span className="font-medium text-active">{enquiry.updatedDate}</span>
             </div>
           </div>
         ),
@@ -230,21 +276,27 @@ export default function EnquiryHubPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-[18px] font-semibold text-[#111827] sm:text-[22px]">Enquiry Hub</h1>
             <span className="inline-flex h-4 min-w-7 items-center justify-center rounded-full bg-[#EEF2FF] px-2 text-[12px] font-medium leading-none text-[#4338CA]">
-              23
+              {enquiries.length}
             </span>
           </div>
 
-          <label className="flex h-8 w-full max-w-[220px] items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[#9CA3AF] sm:max-w-[200px]">
+          <label className="flex h-8 w-full max-w-55 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[#9CA3AF] sm:max-w-50">
             <Search size={16} color="#111827" />
             <input
               type="text"
               placeholder="Search..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
               className="w-full border-0 bg-transparent text-[14px] text-[#111827] outline-none placeholder:text-[#9CA3AF]"
             />
           </label>
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-hidden sm:max-h-[calc(100vh-210px)] sm:overflow-y-auto no-scrollbar">
+          {isLoading ? <p className="text-[14px] text-gray5">Loading enquiries...</p> : null}
+          {!isLoading && error ? <p className="text-[14px] text-red-500">{error}</p> : null}
+          {!isLoading && !error && rows.length === 0 ? <p className="text-[14px] text-gray5">No enquiries found.</p> : null}
+
           <Table
             headers={headers}
             rows={rows}
