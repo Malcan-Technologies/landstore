@@ -438,7 +438,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
+                  "value": "coP4p6LVw82DR1Ds3Df0SuwzyCqfabph"
                 }
               ]
             }
@@ -451,28 +451,55 @@
             "method": "PATCH",
             "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Basit Sheikh\",\r\n    \"identityNo\": \"123456-12-1234\",\r\n    \"firstName\": \"Basit\",\r\n    \"lastName\": \"Sheikh\",\r\n    \"name\": \"Basit Sheikh\",\r\n    \"companyName\": null,\r\n    \"koperasiName\": null,\r\n    \"registrationNo\": null\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "dawartoor30@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+60123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "profileType",
+                  "value": "individual",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Basit Sheikh",
+                  "type": "text"
+                },
+                {
+                  "key": "identityNo",
+                  "value": "123456-12-1234",
+                  "type": "text"
+                },
+                {
+                  "key": "firstName",
+                  "value": "Basit",
+                  "type": "text"
+                },
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "uuid": "29738c2f-b594-4ea3-a73f-600cda2e19cf",
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/author.jpeg",
+                  "disabled": true
                 }
-              }
+              ]
             },
             "url": {
-              "raw": "{{baseUrl}}/users/::id",
+              "raw": "{{baseUrl}}/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
-                "::id"
-              ],
-              "variable": [
-                {
-                  "key": ":id",
-                  "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
-                }
+                "me"
               ]
             }
           },
@@ -523,7 +550,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\" : \"New Folder\"\r\n}",
+              "raw": "{\r\n    \"name\" : \"My shortlist\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -538,40 +565,6 @@
               "path": [
                 "folders",
                 ""
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Sub Folder",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"name\" : \"New Folder\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/folders/:id/subfolders",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "folders",
-                ":id",
-                "subfolders"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "86235d68-e933-4c50-b8b3-ea72e2f178fc"
-                }
               ]
             }
           },
@@ -604,7 +597,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "345c94ea-b0b6-4e82-af69-839adb310f94"
+                  "value": "d885da82-bb7c-403e-94d6-f42d89360582"
                 }
               ]
             }
@@ -639,11 +632,11 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": ""
+                  "value": "d885da82-bb7c-403e-94d6-f42d89360582"
                 },
                 {
                   "key": "propertyId",
-                  "value": ""
+                  "value": "aa9a1a73-0909-4aed-be85-0149577d0e78"
                 }
               ]
             }
@@ -837,7 +830,7 @@
                 },
                 {
                   "key": "listingCode",
-                  "value": "LAND-2026-006",
+                  "value": "LAND-2026-004",
                   "type": "text",
                   "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
                 },
@@ -864,15 +857,15 @@
                   "type": "file",
                   "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
                   "src": [
-                    "/C:/Users/Lenovo/OneDrive/Desktop/author.jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/F50.avif"
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
                   ]
                 },
                 {
                   "key": "documents",
                   "type": "file",
                   "uuid": "625f394d-38e2-459a-9dca-278290853ba4",
-                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Dockerization Docs.pdf"
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Database Students.pdf"
                 },
                 {
                   "key": "tanahRizabMelayu",
@@ -916,7 +909,7 @@
                 },
                 {
                   "key": "status",
-                  "value": "draft",
+                  "value": "active",
                   "type": "text",
                   "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024"
                 }
@@ -1206,7 +1199,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": ""
+                  "value": "6ce15cec-a3ac-4cd5-bc05-6d5a269278a3"
                 }
               ]
             }
@@ -2393,7 +2386,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2505,6 +2498,24 @@
                   "value": "5",
                   "type": "text"
                 }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Enquiries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/my-enquiries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                "my-enquiries"
               ]
             }
           },

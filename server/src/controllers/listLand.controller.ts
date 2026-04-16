@@ -55,6 +55,14 @@ const toNumberOrUndefined = (value: unknown): number | undefined => {
 	return Number.isFinite(parsed) ? parsed : undefined;
 };
 
+const getOptionalAuthenticatedUser = (req: Request) => {
+	try {
+		return getRequesterUserOrThrow(req);
+	} catch {
+		return null;
+	}
+};
+
 const buildNestedMultipartPayload = (body: Record<string, unknown>) => {
 	const payload: Record<string, unknown> = { ...body };
 
@@ -323,7 +331,9 @@ export const deleteListLandController = async (req: Request, res: Response) => {
 		const propertyId = getPropertyIdParamOrThrow(req);
 
 		const result = await deleteListLandById(
-			propertyId
+			propertyId,
+			requester.id,
+			requester.userType
 		);
 
 		return res.status(200).json(result);
@@ -403,14 +413,9 @@ export const searchPropertiesByRadiusController = async (
 		const page = toNumberOrUndefined(req.query.page) || 1;
 		const limit = toNumberOrUndefined(req.query.limit) || 10;
 		
-		// Get user ID if authenticated (optional)
-		let userId: string | undefined;
-		try {
-			const user = getRequesterUserOrThrow(req);
-			userId = user.id;
-		} catch {
-			// User not authenticated, proceed without userId
-		}
+		// Get user ID if authenticated (optional for public endpoint)
+		const user = getOptionalAuthenticatedUser(req);
+		const userId = user?.id;
 		
 		const result = await searchPropertiesByRadius(
 			latitude,

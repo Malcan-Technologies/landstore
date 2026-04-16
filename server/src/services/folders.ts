@@ -246,7 +246,7 @@ export const addPropertyToFolder = async (
 	folderId: string,
 	propertyId: string,
 	userId: string
-): Promise<{ id: string; folderId: string; propertyId: string }> => {
+) => {
 	try {
 		// Check folder ownership
 		const folder = await db.shortlistFolder.findUnique({
@@ -266,7 +266,7 @@ export const addPropertyToFolder = async (
 			);
 		}
 
-		// Check if property exists
+		// Check if property exists and is active
 		const property = await db.property.findUnique({
 			where: {
 				id: propertyId,
@@ -275,6 +275,10 @@ export const addPropertyToFolder = async (
 
 		if (!property) {
 			throw createHttpError("Property not found", 404);
+		}
+
+		if (property.status !== "active") {
+			throw createHttpError("Can only shortlist active properties", 400);
 		}
 
 		// Check if already shortlisted in this folder
@@ -295,17 +299,40 @@ export const addPropertyToFolder = async (
 		}
 
 		// Add to shortlist
-		const shortlist = await db.shortlistProperty.create({
+		await db.shortlistProperty.create({
 			data: {
 				folderId,
 				propertyId,
 			},
 		});
 
+		// Fetch the full property with relations
+		const includePropertyRelations = {
+			category: true,
+			ownershipType: true,
+			utilization: true,
+			titleType: true,
+			location: true,
+			leaseholdDetails: true,
+			media: true,
+		} as const;
+
+		const fullProperty = await db.property.findUnique({
+			where: { id: propertyId },
+			include: includePropertyRelations,
+		});
+
+		if (!fullProperty) {
+			throw createHttpError("Property not found", 404);
+		}
+
+		// Transform property with signed URLs
+		const transformed = await transformPropertyWithSignedUrls(fullProperty);
+
+		// Return property with isShortListed set to true
 		return {
-			id: shortlist.id,
-			folderId: shortlist.folderId,
-			propertyId: shortlist.propertyId,
+			...transformed,
+			isShortListed: true,
 		};
 	} catch (error: unknown) {
 		throw error;
