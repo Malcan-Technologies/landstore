@@ -451,19 +451,40 @@ export const getListLands = async (
 		db.property.count({ where }),
 	]);
 
-	// Transform items with signed URLs using concurrency control
+	// Transform items with signed URLs using concurrency control and add isShortListed
 	let itemsWithSignedUrls;
 	try {
 		console.log(`📦 Transforming ${items.length} properties with concurrency limit`);
-		itemsWithSignedUrls = await processConcurrently(
+		const transformed = await processConcurrently(
 			items,
 			(item) => transformPropertyWithSignedUrls(item),
 			5 // Max concurrent property transformations
 		);
+		
+		// Add isShortListed status for each property
+		itemsWithSignedUrls = await Promise.all(
+			transformed.map(async (item) => {
+				const shortlistedProperty = await db.shortlistProperty.findFirst({
+					where: {
+						propertyId: item.id,
+						folder: {
+							userId: userId
+						}
+					},
+				});
+				return {
+					...item,
+					isShortListed: !!shortlistedProperty
+				};
+			})
+		);
 	} catch (signingError) {
 		console.error("Error transforming items with signed URLs in getListLands:", signingError);
 		// Fallback: return items without signed URLs
-		itemsWithSignedUrls = items;
+		itemsWithSignedUrls = items.map(item => ({
+			...item,
+			isShortListed: false
+		}));
 	}
 
 	return {
@@ -481,7 +502,7 @@ export const getListLands = async (
  * Get all public listings accessible to any authenticated user
  * Returns all properties with approved status
  */
-export const getAllListings = async (query: GetLandsQuery) => {
+export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 	const page =
 		Number.isFinite(query.page) && query.page && query.page > 0
 			? query.page
@@ -507,16 +528,40 @@ export const getAllListings = async (query: GetLandsQuery) => {
 		db.property.count({ where }),
 	]);
 
-	// Transform items with signed URLs
+	// Transform items with signed URLs and add isShortListed
 	let itemsWithSignedUrls;
 	try {
 		itemsWithSignedUrls = await Promise.all(
-			items.map((item) => transformPropertyWithSignedUrls(item))
+			items.map(async (item) => {
+				const transformed = await transformPropertyWithSignedUrls(item);
+				
+				// Check if property is shortlisted by user
+				let isShortListed = false;
+				if (userId) {
+					const shortlistedProperty = await db.shortlistProperty.findFirst({
+						where: {
+							propertyId: item.id,
+							folder: {
+								userId: userId
+							}
+						},
+					});
+					isShortListed = !!shortlistedProperty;
+				}
+				
+				return {
+					...transformed,
+					isShortListed
+				};
+			})
 		);
 	} catch (signingError) {
 		console.error("Error transforming items with signed URLs in getAllListings:", signingError);
-		// Fallback: return items without signed URLs
-		itemsWithSignedUrls = items;
+		// Fallback: return items without signed URLs but with isShortListed
+		itemsWithSignedUrls = items.map(item => ({
+			...item,
+			isShortListed: false
+		}));
 	}
 
 	return {
@@ -534,7 +579,8 @@ export const getAllListings = async (query: GetLandsQuery) => {
  * Get single property by ID
  */
 export const getListLandById = async (
-	propertyId: string
+	propertyId: string,
+	userId?: string
 ) => {
 	const property = await db.property.findUnique({
 		where: { id: propertyId },
@@ -545,13 +591,34 @@ export const getListLandById = async (
 		throw createHttpError("Property not found", 404);
 	}
 
+	// Check if property is shortlisted by user
+	let isShortListed = false;
+	if (userId) {
+		const shortlistedProperty = await db.shortlistProperty.findFirst({
+			where: {
+				propertyId: propertyId,
+				folder: {
+					userId: userId
+				}
+			},
+		});
+		isShortListed = !!shortlistedProperty;
+	}
+
 	// Transform property with signed URLs
 	try {
-		return await transformPropertyWithSignedUrls(property);
+		const transformed = await transformPropertyWithSignedUrls(property);
+		return {
+			...transformed,
+			isShortListed
+		};
 	} catch (signingError) {
 		console.error("Error transforming property with signed URLs in getListLandById:", signingError);
 		// Fallback: return property without signed URLs
-		return property;
+		return {
+			...property,
+			isShortListed
+		};
 	}
 };
 
@@ -796,7 +863,8 @@ export const searchPropertiesByRadius = async (
 	longitude: number | string,
 	radiusKm: number | string,
 	page: number = 1,
-	limit: number = 10
+	limit: number = 10,
+	userId?: string
 ) => {
 	try {
 		// Parse and validate inputs
@@ -889,16 +957,41 @@ export const searchPropertiesByRadius = async (
 			},
 		});
 		
-		// Transform results with signed URLs with error handling
+		// Transform results with signed URLs and add isShortListed with error handling
 		let resultsWithSignedUrls;
 		try {
-			resultsWithSignedUrls = await Promise.all(
+			const transformed = await Promise.all(
 				results.map((item) => transformPropertyWithSignedUrls(item))
+			);
+			
+			// Add isShortListed status for each property
+			resultsWithSignedUrls = await Promise.all(
+				transformed.map(async (item) => {
+					let isShortListed = false;
+					if (userId) {
+						const shortlistedProperty = await db.shortlistProperty.findFirst({
+							where: {
+								propertyId: item.id,
+								folder: {
+									userId: userId
+								}
+							},
+						});
+						isShortListed = !!shortlistedProperty;
+					}
+					return {
+						...item,
+						isShortListed
+					};
+				})
 			);
 		} catch (signingError) {
 			console.error("Error during batch URL signing, returning results without signed URLs:", signingError);
-			// Fallback: return results without signed URLs rather than failing the entire request
-			resultsWithSignedUrls = results;
+			// Fallback: return results without signed URLs but with isShortListed
+			resultsWithSignedUrls = results.map(item => ({
+				...item,
+				isShortListed: false
+			}));
 		}
 
 		return {

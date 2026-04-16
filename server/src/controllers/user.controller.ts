@@ -417,16 +417,6 @@ export const getMyProfileController = async (req: Request, res: Response) => {
 	}
 };
 
-
-
-const assertAdminOrThrow = (userType: string) => {
-	if (userType !== "admin") {
-		const forbiddenError = new Error("Forbidden");
-		(forbiddenError as Error & { statusCode?: number }).statusCode = 403;
-		throw forbiddenError;
-	}
-};
-
 const getUserIdParamOrThrow = (req: Request): string => {
 	const param = req.params.id;
 	if (typeof param !== "string" || !param.trim()) {
