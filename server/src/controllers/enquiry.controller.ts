@@ -54,15 +54,16 @@ export const createEnquiryController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		// Verify user is authenticated
-		getRequesterUserOrThrow(req);
+		// Verify user is authenticated and get userId
+		const user = getRequesterUserOrThrow(req);
+		const userId = user.id;
 
-		const { propertyId, userId, interestTypeId, message, budget, timeline, status } =
+		const { propertyId, interestTypeId, message, budget, timeline, status } =
 			req.body;
 
-		if (!propertyId || !userId || !interestTypeId) {
+		if (!propertyId || !interestTypeId) {
 			const badRequestError = new Error(
-				"propertyId, userId, and interestTypeId are required"
+				"propertyId and interestTypeId are required"
 			);
 			(badRequestError as Error & { statusCode?: number }).statusCode = 400;
 			throw badRequestError;
@@ -181,6 +182,38 @@ export const getEnquiriesByPropertyIdController = async (
 		const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
 		const result = await getEnquiriesByPropertyId(propertyId, page, limit);
+
+		res.status(200).json({
+			success: true,
+			data: result.data,
+			pagination: result.pagination,
+		});
+	} catch (error: unknown) {
+		const errorPayload = getErrorPayload(error);
+		res.status(errorPayload.statusCode).json({
+			success: false,
+			message: errorPayload.message,
+		});
+	}
+};
+
+/**
+ * Get all enquiries for the authenticated user
+ * GET /api/enquiries/my-enquiries?page=1&limit=10
+ */
+export const getAllMyEnquiriesController = async (
+	req: Request,
+	res: Response
+): Promise<void> => {
+	try {
+		// Verify user is authenticated and get their ID
+		const user = getRequesterUserOrThrow(req);
+		const userId = user.id;
+
+		const page = req.query.page ? Number(req.query.page) : undefined;
+		const limit = req.query.limit ? Number(req.query.limit) : undefined;
+
+		const result = await getEnquiriesByUserId(userId, page, limit);
 
 		res.status(200).json({
 			success: true,

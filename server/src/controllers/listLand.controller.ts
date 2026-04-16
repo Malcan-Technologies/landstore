@@ -227,11 +227,20 @@ export const getListLandsController = async (req: Request, res: Response) => {
  */
 export const getListLandByIdController = async (req: Request, res: Response) => {
 	try {
-		// This endpoint is public - no authentication required
 		const propertyId = getPropertyIdParamOrThrow(req);
+		
+		// Get user ID if authenticated (optional)
+		let userId: string | undefined;
+		try {
+			const user = getRequesterUserOrThrow(req);
+			userId = user.id;
+		} catch {
+			// User not authenticated, proceed without userId
+		}
 
 		const property = await getListLandById(
-			propertyId
+			propertyId,
+			userId
 		);
 
 		return res.status(200).json({ property });
@@ -331,7 +340,7 @@ export const deleteListLandController = async (req: Request, res: Response) => {
  */
 export const getAllListingsController = async (req: Request, res: Response) => {
 	try {
-		getRequesterUserOrThrow(req); // Verify user is authenticated
+		const user = getRequesterUserOrThrow(req); // Verify user is authenticated
 
 		const page = parseInt(req.query.page as string) || 1;
 		const limit = parseInt(req.query.limit as string) || 10;
@@ -341,7 +350,7 @@ export const getAllListingsController = async (req: Request, res: Response) => {
 			limit,
 		};
 
-		const result = await getAllListings(query);
+		const result = await getAllListings(query, user.id);
 
 		return res.status(200).json(result);
 	} catch (error: unknown) {
@@ -394,12 +403,22 @@ export const searchPropertiesByRadiusController = async (
 		const page = toNumberOrUndefined(req.query.page) || 1;
 		const limit = toNumberOrUndefined(req.query.limit) || 10;
 		
+		// Get user ID if authenticated (optional)
+		let userId: string | undefined;
+		try {
+			const user = getRequesterUserOrThrow(req);
+			userId = user.id;
+		} catch {
+			// User not authenticated, proceed without userId
+		}
+		
 		const result = await searchPropertiesByRadius(
 			latitude,
 			longitude,
 			radiusKm,
 			page,
-			limit
+			limit,
+			userId
 		);
 
 		return res.status(200).json({
