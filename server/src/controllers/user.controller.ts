@@ -41,6 +41,7 @@ import {
 	getUserByEmail
 } from "../services/user.js";
 import { emailService } from "../services/email.js";
+import { uploadFileToS3 } from "../services/s3Upload.js";
 import { auth } from "../../config/auth.js";
 import db from "../../config/prisma.js";
 
@@ -467,8 +468,6 @@ export const getUserByIdController = async (req: Request, res: Response) => {
 				message: "Authentication required. Please log in to access this resource." 
 			});
 		}
-
-		assertAdminOrThrow(requester.userType);
 		const userId = getUserIdParamOrThrow(req);
 
 		const user = await getUserById(userId);
@@ -489,27 +488,66 @@ export const updateUserController = async (req: Request, res: Response) => {
 			});
 		}
 
-		const targetUserId = getUserIdParamOrThrow(req);
+		// Get user ID from authenticated user (req.user.id)
+		const targetUserId = requester.id;
+		console.log(`🔄 Updating user profile for: ${targetUserId}`);
 
-		if (requester.userType !== "admin" && requester.id !== targetUserId) {
+		// Users cannot modify their own role or allow role changes
+		if (req.body.userType !== undefined) {
 			return res.status(403).json({ 
 				error: "Forbidden",
-				message: "You do not have permission to modify this user account." 
+				message: "You cannot modify your own role. Contact support if you need role changes." 
 			});
 		}
 
-		if (requester.userType !== "admin" && req.body.userType !== undefined) {
-			return res.status(403).json({ 
-				error: "Forbidden",
-				message: "Only administrators can modify user roles. Contact support if you need role changes." 
-			});
+		let profileMediaId = undefined;
+
+		// Handle profile image upload
+		if (req.file) {
+			console.log(`📁 File received - Name: ${req.file.originalname}, Size: ${req.file.size} bytes, Type: ${req.file.mimetype}`);
+			console.log(`🪣 AWS Bucket: ${process.env.AWS_BUCKET_NAME || "NOT DEFINED"}`);
+			
+			try {
+				// Upload file to S3
+				console.log(`⏳ Starting S3 upload...`);
+				const fileKey = await uploadFileToS3(req.file);
+				console.log(`✅ Profile image uploaded successfully with fileKey: ${fileKey}`);
+
+				// Create or update Media record for profile image
+				const media = await db.media.create({
+					data: {
+						userId: targetUserId,
+						fileUrl: fileKey,
+						mediaType: req.file.mimetype,
+						mediaCategory: "profileImage",
+					},
+				});
+
+				profileMediaId = media.id;
+				console.log(`💾 Profile media record created: ${media.id}`);
+			} catch (uploadError) {
+				console.error(`❌ Failed to upload profile image:`, uploadError);
+				return res.status(500).json({
+					error: "Upload failed",
+					message: "Failed to upload profile image. Please try again.",
+				});
+			}
+		} else {
+			console.log(`⚠️ No file received in request`);
 		}
 
-		const user = await updateUserById(targetUserId, {
+		// Build update payload
+		const updatePayload: any = {
 			email: req.body.email,
 			phone: req.body.phone,
-			userType: req.body.userType,
-		});
+		};
+
+		// Only add profileMediaId if a file was uploaded
+		if (profileMediaId) {
+			updatePayload.profileMediaId = profileMediaId;
+		}
+
+		const user = await updateUserById(targetUserId, updatePayload);
 
 		return res.status(200).json({ message: "User updated successfully", user });
 	} catch (error: unknown) {
@@ -525,8 +563,15 @@ export const deleteUserController = async (req: Request, res: Response) => {
 			return res.status(401).json({ message: "Unauthorized" });
 		}
 
-		assertAdminOrThrow(requester.userType);
 		const userId = getUserIdParamOrThrow(req);
+
+		// Users can only delete their own account
+		if (requester.id !== userId) {
+			return res.status(403).json({ 
+				error: "Forbidden",
+				message: "You can only delete your own account." 
+			});
+		}
 
 		const result = await deleteUserById(userId);
 		return res.status(200).json(result);

@@ -18,8 +18,10 @@ import {
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
+import multer from "multer";
 
 const userRouter = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 /**
  * REGISTRATION:
@@ -58,7 +60,7 @@ userRouter.get("/profile", requireApiAuth, getUserCompleteProfileController);
 // User management (admin only)
 userRouter.get("/", requireApiAuth, requireAdmin,getAllUsersController);
 userRouter.get("/:id", requireApiAuth, getUserByIdController);
-userRouter.patch("/:id", requireApiAuth, updateUserController);
+userRouter.patch("/me", requireApiAuth, upload.single("profileImage"), updateUserController);
 userRouter.delete("/:id", requireApiAuth, deleteUserController);
 
 export default userRouter;

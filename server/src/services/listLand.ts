@@ -1,7 +1,7 @@
 import { DealType, FeatureTag, Prisma, TerrainType } from "@prisma/client";
 import db from "../../config/prisma.js";
-import { uploadFileToS3, deleteFileFromS3, generateSignedUrl } from "./s3Upload.js";
-import { transformPropertyWithSignedUrls } from "./signedUrlTransformer.js";
+import { uploadFileToS3, deleteFileFromS3 } from "./s3Upload.js";
+import { transformPropertyWithSignedUrls, generateMediaSignedUrl, processConcurrently } from "./signedUrlTransformer.js";
 
 type MulterFile = Express.Multer.File;
 
@@ -182,7 +182,7 @@ export const getUploadedMediaAndDocuments = async (
 	const imagesWithSignedUrls = await Promise.all(
 		uploadedImages.map(async (image) => ({
 			...image,
-			fileUrl: image.fileUrl ? await generateSignedUrl(image.fileUrl) : null,
+			fileUrl: await generateMediaSignedUrl(image.fileUrl),
 		}))
 	);
 
@@ -190,7 +190,7 @@ export const getUploadedMediaAndDocuments = async (
 	const documentsWithSignedUrls = await Promise.all(
 		uploadedDocuments.map(async (doc) => ({
 			id: doc.id,
-			fileUrl: doc.media?.fileUrl ? await generateSignedUrl(doc.media.fileUrl) : null,
+			fileUrl: await generateMediaSignedUrl(doc.media?.fileUrl),
 			verificationStatus: doc.verificationStatus,
 			createdAt: doc.createdAt,
 		}))
@@ -451,11 +451,14 @@ export const getListLands = async (
 		db.property.count({ where }),
 	]);
 
-	// Transform items with signed URLs
+	// Transform items with signed URLs using concurrency control
 	let itemsWithSignedUrls;
 	try {
-		itemsWithSignedUrls = await Promise.all(
-			items.map((item) => transformPropertyWithSignedUrls(item))
+		console.log(`📦 Transforming ${items.length} properties with concurrency limit`);
+		itemsWithSignedUrls = await processConcurrently(
+			items,
+			(item) => transformPropertyWithSignedUrls(item),
+			5 // Max concurrent property transformations
 		);
 	} catch (signingError) {
 		console.error("Error transforming items with signed URLs in getListLands:", signingError);

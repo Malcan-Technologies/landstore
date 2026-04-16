@@ -148,7 +148,7 @@ model Individual {
   fullName   String
   identityNo String?
 
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -160,7 +160,7 @@ model Company {
   companyName    String
   registrationNo String?
 
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -172,7 +172,7 @@ model Koperasi {
   koperasiName   String
   registrationNo String?
 
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -197,8 +197,8 @@ model UserEntityType {
   userId       String     // Changed to String
   entityTypeId String     // Changed to String
 
-  user         User       @relation(fields: [userId], references: [id])
-  entityType   EntityType @relation(fields: [entityTypeId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityType   EntityType @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
 
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -217,10 +217,10 @@ model Media {
   mediaType     String
   mediaCategory String
 
-  user          User       @relation("UserMedia", fields: [userId], references: [id])
+  user          User       @relation("UserMedia", fields: [userId], references: [id], onDelete: Cascade)
   profileUsers  User[]     @relation("UserProfileMedia")
 
-  properties    Property[] 
+  properties    Property[]
   documents     Document[]
 
   createdAt     DateTime   @default(now())
@@ -236,7 +236,7 @@ model Document {
   verifiedBy         String?   // Changed to String
   verifiedAt         DateTime?
 
-  media              Media     @relation(fields: [mediaId], references: [id])
+  media              Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -252,7 +252,7 @@ model NotificationPreference {
   emailEnabled Boolean  @default(true)
   pushEnabled  Boolean  @default(true)
 
-  user         User     @relation(fields: [userId], references: [id])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -265,7 +265,7 @@ model Notification {
   content   String
   isRead    Boolean          @default(false)
 
-  user      User             @relation(fields: [userId], references: [id])
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -312,13 +312,13 @@ model Property {
   agreementAccepted    Boolean           @default(false)
   agreementAcceptedAt  DateTime?
 
-  user                 User              @relation(fields: [userId], references: [id])
-  media                Media?            @relation(fields: [landMediaId], references: [id])
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media                Media?            @relation(fields: [landMediaId], references: [id], onDelete: SetNull)
 
-  category             PropertyCategory  @relation(fields: [categoryId], references: [id])
-  ownershipType        PropertyOwnershipType @relation(fields: [ownershipTypeId], references: [id])
-  utilization          Utilization       @relation(fields: [utilizationId], references: [id])
-  titleType            LandTitleType     @relation(fields: [titleTypeId], references: [id])
+  category             PropertyCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  ownershipType        PropertyOwnershipType @relation(fields: [ownershipTypeId], references: [id], onDelete: Restrict)
+  utilization          Utilization       @relation(fields: [utilizationId], references: [id], onDelete: Restrict)
+  titleType            LandTitleType     @relation(fields: [titleTypeId], references: [id], onDelete: Restrict)
 
   leaseholdDetails     LeaseholdDetail?
   location             Location?
@@ -342,7 +342,7 @@ model LeaseholdDetail {
   startYear        Int
   leasePeriodYears Int
 
-  property         Property @relation(fields: [propertyId], references: [id])
+  property         Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -361,7 +361,7 @@ model Location {
 
   isApproximate Boolean  @default(false)
 
-  property      Property @relation(fields: [propertyId], references: [id])
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -436,9 +436,9 @@ model PropertyEnquiry {
   timeline       String?
   status         String?
 
-  property       Property      @relation(fields: [propertyId], references: [id])
-  user           User          @relation(fields: [userId], references: [id])
-  interestType   InterestType  @relation(fields: [interestTypeId], references: [id])
+  property       Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interestType   InterestType  @relation(fields: [interestTypeId], references: [id], onDelete: Restrict)
 
   roles          EnquiryRole[]
   messages       Message[]
@@ -465,8 +465,8 @@ model EnquiryRole {
   enquiryId String          // Changed to String
   roleId    String          // Changed to String
 
-  enquiry   PropertyEnquiry @relation(fields: [enquiryId], references: [id])
-  role      Role            @relation(fields: [roleId], references: [id])
+  enquiry   PropertyEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  role      Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
@@ -482,9 +482,9 @@ model Message {
 
   content    String
 
-  sender     User            @relation("Sender", fields: [senderId], references: [id])
-  receiver   User            @relation("Receiver", fields: [receiverId], references: [id])
-  enquiry    PropertyEnquiry @relation(fields: [enquiryId], references: [id])
+  sender     User            @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User            @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  enquiry    PropertyEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
 
   createdAt  DateTime        @default(now())
 
@@ -502,7 +502,7 @@ model ShortlistFolder {
   name            String
   parentFolderId  String?             // Parent folder for nested structure
   
-  user            User                @relation(fields: [userId], references: [id])
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   parentFolder    ShortlistFolder?    @relation("SubFolders", fields: [parentFolderId], references: [id], onDelete: Cascade)
   subFolders      ShortlistFolder[]   @relation("SubFolders")
   properties      ShortlistProperty[]
@@ -519,8 +519,8 @@ model ShortlistProperty {
   folderId   String          // Changed to String
   propertyId String          // Changed to String
 
-  folder     ShortlistFolder @relation(fields: [folderId], references: [id])
-  property   Property        @relation(fields: [propertyId], references: [id])
+  folder     ShortlistFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  property   Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt

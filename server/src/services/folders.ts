@@ -1,5 +1,4 @@
 import db from "../../config/prisma.js";
-import { generateSignedUrl } from "./s3Upload.js";
 import { transformPropertyWithSignedUrls } from "./signedUrlTransformer.js";
 
 const createHttpError = (message: string, statusCode: number) => {

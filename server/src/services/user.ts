@@ -1,7 +1,6 @@
 import db from "../../config/prisma.js";
 import { auth } from "../../config/auth.js";
-import { generateSignedUrl } from "./s3Upload.js";
-import { transformMediaWithSignedUrl, generateMediaSignedUrl } from "./signedUrlTransformer.js";
+import { transformMediaWithSignedUrl } from "./signedUrlTransformer.js";
 import type { User, UserType } from "@prisma/client";
 
 type UpdateUserPayload = {
