@@ -4,10 +4,13 @@ import {
 	deleteListLandById,
 	getListLandById,
 	getListLands,
+	getAllListings,
 	updateListLandById,
 	uploadPropertyImages,
 	uploadPropertyDocuments,
 	getUploadedMediaAndDocuments,
+	searchPropertiesByRadius,
+	type CreateListLandPayload,
 } from "../services/listLand.js";
 import type { GetLandsQuery } from "../../types/express/land.types.js";
 
@@ -50,6 +53,14 @@ const toNumberOrUndefined = (value: unknown): number | undefined => {
 
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const getOptionalAuthenticatedUser = (req: Request) => {
+	try {
+		return getRequesterUserOrThrow(req);
+	} catch {
+		return null;
+	}
 };
 
 const buildNestedMultipartPayload = (body: Record<string, unknown>) => {
@@ -174,7 +185,7 @@ export const createListLandController = async (req: Request, res: Response) => {
 			...normalizedBody,
 			landMediaIds: mediaIds.length > 0 ? mediaIds : req.body.landMediaIds,
 			documentIds: documentIds.length > 0 ? documentIds : req.body.documentIds,
-		};
+		} as CreateListLandPayload;
 
 		// Create property with images, documents and all other details
 		const property = await createListLand(requester.id, payload);
@@ -224,13 +235,20 @@ export const getListLandsController = async (req: Request, res: Response) => {
  */
 export const getListLandByIdController = async (req: Request, res: Response) => {
 	try {
-		const requester = getRequesterUserOrThrow(req);
 		const propertyId = getPropertyIdParamOrThrow(req);
+		
+		// Get user ID if authenticated (optional)
+		let userId: string | undefined;
+		try {
+			const user = getRequesterUserOrThrow(req);
+			userId = user.id;
+		} catch {
+			// User not authenticated, proceed without userId
+		}
 
 		const property = await getListLandById(
 			propertyId,
-			requester.id,
-			requester.userType
+			userId
 		);
 
 		return res.status(200).json({ property });
@@ -288,8 +306,6 @@ export const updateListLandController = async (req: Request, res: Response) => {
 
 		const property = await updateListLandById(
 			propertyId,
-			requester.id,
-			requester.userType,
 			payload
 		);
 
@@ -324,5 +340,102 @@ export const deleteListLandController = async (req: Request, res: Response) => {
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
 		return res.status(statusCode).json({ message });
+	}
+};
+
+/**
+ * Get all public listings endpoint
+ * Accessible by any authenticated user
+ * Returns all approved listings with pagination
+ */
+export const getAllListingsController = async (req: Request, res: Response) => {
+	try {
+		const user = getRequesterUserOrThrow(req); // Verify user is authenticated
+
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const query: GetLandsQuery = {
+			page,
+			limit,
+		};
+
+		const result = await getAllListings(query, user.id);
+
+		return res.status(200).json(result);
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ message });
+	}
+};
+
+/**
+ * SEARCH PROPERTIES BY RADIUS
+ * POST /api/list-lands/search/by-radius
+ * Body: { latitude, longitude, radiusKm }
+ * Query: { page?, limit? }
+ *
+ * Searches for active properties within a geographic radius using:
+ * 1. Bounding box calculation for initial filtering
+ * 2. Pythagorean theorem for precise distance verification
+ *
+ * Returns: { items, pagination, searchParams }
+ */
+export const searchPropertiesByRadiusController = async (
+	req: Request,
+	res: Response
+) => {
+	try {
+		const { latitude, longitude, radiusKm } = req.body;
+
+		// Validate required fields
+		if (latitude === undefined || latitude === null) {
+			return res.status(400).json({
+				success: false,
+				message: "Latitude is required",
+			});
+		}
+
+		if (longitude === undefined || longitude === null) {
+			return res.status(400).json({
+				success: false,
+				message: "Longitude is required",
+			});
+		}
+
+		if (radiusKm === undefined || radiusKm === null) {
+			return res.status(400).json({
+				success: false,
+				message: "Radius (radiusKm) is required",
+			});
+		}
+
+		const page = toNumberOrUndefined(req.query.page) || 1;
+		const limit = toNumberOrUndefined(req.query.limit) || 10;
+		
+		// Get user ID if authenticated (optional for public endpoint)
+		const user = getOptionalAuthenticatedUser(req);
+		const userId = user?.id;
+		
+		const result = await searchPropertiesByRadius(
+			latitude,
+			longitude,
+			radiusKm,
+			page,
+			limit,
+			userId
+		);
+
+		return res.status(200).json({
+			success: true,
+			message: "Properties found within radius",
+			data: result,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
 	}
 };

@@ -1,6 +1,7 @@
 import { DealType, FeatureTag, Prisma, TerrainType } from "@prisma/client";
 import db from "../../config/prisma.js";
 import { uploadFileToS3, deleteFileFromS3 } from "./s3Upload.js";
+import { transformPropertyWithSignedUrls, generateMediaSignedUrl, processConcurrently } from "./signedUrlTransformer.js";
 
 type MulterFile = Express.Multer.File;
 
@@ -177,14 +178,27 @@ export const getUploadedMediaAndDocuments = async (
 			})
 		: [];
 
-	return {
-		images: uploadedImages,
-		documents: uploadedDocuments.map((doc) => ({
+	// Generate signed URLs for all images
+	const imagesWithSignedUrls = await Promise.all(
+		uploadedImages.map(async (image) => ({
+			...image,
+			fileUrl: await generateMediaSignedUrl(image.fileUrl),
+		}))
+	);
+
+	// Generate signed URLs for all documents
+	const documentsWithSignedUrls = await Promise.all(
+		uploadedDocuments.map(async (doc) => ({
 			id: doc.id,
-			fileUrl: doc.media?.fileUrl,
+			fileUrl: await generateMediaSignedUrl(doc.media?.fileUrl),
 			verificationStatus: doc.verificationStatus,
 			createdAt: doc.createdAt,
-		})),
+		}))
+	);
+
+	return {
+		images: imagesWithSignedUrls,
+		documents: documentsWithSignedUrls,
 	};
 };
 
@@ -437,8 +451,121 @@ export const getListLands = async (
 		db.property.count({ where }),
 	]);
 
+	// Transform items with signed URLs using concurrency control and add isShortListed
+	let itemsWithSignedUrls;
+	try {
+		console.log(`📦 Transforming ${items.length} properties with concurrency limit`);
+		const transformed = await processConcurrently(
+			items,
+			(item) => transformPropertyWithSignedUrls(item),
+			5 // Max concurrent property transformations
+		);
+		
+		// Add isShortListed status for each property
+		itemsWithSignedUrls = await Promise.all(
+			transformed.map(async (item) => {
+				const shortlistedProperty = await db.shortlistProperty.findFirst({
+					where: {
+						propertyId: item.id,
+						folder: {
+							userId: userId
+						}
+					},
+				});
+				return {
+					...item,
+					isShortListed: !!shortlistedProperty
+				};
+			})
+		);
+	} catch (signingError) {
+		console.error("Error transforming items with signed URLs in getListLands:", signingError);
+		// Fallback: return items without signed URLs
+		itemsWithSignedUrls = items.map(item => ({
+			...item,
+			isShortListed: false
+		}));
+	}
+
 	return {
-		items,
+		items: itemsWithSignedUrls,
+		pagination: {
+			page,
+			limit,
+			total,
+			totalPages: Math.ceil(total / limit) || 1,
+		},
+	};
+};
+
+/**
+ * Get all public listings accessible to any authenticated user
+ * Returns all properties with approved status
+ */
+export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
+	const page =
+		Number.isFinite(query.page) && query.page && query.page > 0
+			? query.page
+			: 1;
+	const limit =
+		Number.isFinite(query.limit) && query.limit && query.limit > 0
+			? Math.min(query.limit, 100)
+			: 10;
+	const skip = (page - 1) * limit;
+
+	const where: Prisma.PropertyWhereInput = {
+		status: { not: null }, // Only show properties with a status set
+	};
+
+	const [items, total] = await Promise.all([
+		db.property.findMany({
+			where,
+			include: includePropertyRelations,
+			orderBy: { createdAt: "desc" },
+			skip,
+			take: limit,
+		}),
+		db.property.count({ where }),
+	]);
+
+	// Transform items with signed URLs and add isShortListed
+	let itemsWithSignedUrls;
+	try {
+		itemsWithSignedUrls = await Promise.all(
+			items.map(async (item) => {
+				const transformed = await transformPropertyWithSignedUrls(item);
+				
+				// Check if property is shortlisted by user
+				let isShortListed = false;
+				if (userId) {
+					const shortlistedProperty = await db.shortlistProperty.findFirst({
+						where: {
+							propertyId: item.id,
+							folder: {
+								userId: userId
+							}
+						},
+					});
+					isShortListed = !!shortlistedProperty;
+				}
+				
+				return {
+					...transformed,
+					isShortListed
+				};
+			})
+		);
+	} catch (signingError) {
+		console.error("Error transforming items with signed URLs in getAllListings:", signingError);
+		// Fallback: return items without signed URLs but with isShortListed
+		itemsWithSignedUrls = items.map(item => ({
+			...item,
+			isShortListed: false
+		}));
+	}
+
+	return {
+		items: itemsWithSignedUrls,
 		pagination: {
 			page,
 			limit,
@@ -453,8 +580,7 @@ export const getListLands = async (
  */
 export const getListLandById = async (
 	propertyId: string,
-	userId: string,
-	userType: string
+	userId?: string
 ) => {
 	const property = await db.property.findUnique({
 		where: { id: propertyId },
@@ -465,11 +591,35 @@ export const getListLandById = async (
 		throw createHttpError("Property not found", 404);
 	}
 
-	if (userType !== "admin" && property.userId !== userId) {
-		throw createHttpError("Forbidden", 403);
+	// Check if property is shortlisted by user
+	let isShortListed = false;
+	if (userId) {
+		const shortlistedProperty = await db.shortlistProperty.findFirst({
+			where: {
+				propertyId: propertyId,
+				folder: {
+					userId: userId
+				}
+			},
+		});
+		isShortListed = !!shortlistedProperty;
 	}
 
-	return property;
+	// Transform property with signed URLs
+	try {
+		const transformed = await transformPropertyWithSignedUrls(property);
+		return {
+			...transformed,
+			isShortListed
+		};
+	} catch (signingError) {
+		console.error("Error transforming property with signed URLs in getListLandById:", signingError);
+		// Fallback: return property without signed URLs
+		return {
+			...property,
+			isShortListed
+		};
+	}
 };
 
 /**
@@ -477,8 +627,6 @@ export const getListLandById = async (
  */
 export const updateListLandById = async (
 	propertyId: string,
-	userId: string,
-	userType: string,
 	payload: UpdateListLandPayload
 ) => {
 	const existingProperty = await db.property.findUnique({
@@ -487,10 +635,6 @@ export const updateListLandById = async (
 
 	if (!existingProperty) {
 		throw createHttpError("Property not found", 404);
-	}
-
-	if (userType !== "admin" && existingProperty.userId !== userId) {
-		throw createHttpError("Forbidden", 403);
 	}
 
 	try {
@@ -677,8 +821,12 @@ export const deleteListLandById = async (
 		throw createHttpError("Property not found", 404);
 	}
 
+	// Check authorization: only admin or property owner can delete
 	if (userType !== "admin" && existingProperty.userId !== userId) {
-		throw createHttpError("Forbidden", 403);
+		throw createHttpError(
+			"You do not have permission to delete this property",
+			403
+		);
 	}
 
 	try {
@@ -698,5 +846,189 @@ export const deleteListLandById = async (
 		}
 
 		throw error;
+	}
+};
+
+/**
+ * Search properties within a geographic radius
+ *
+ * Algorithm:
+ * 1. Calculate bounding box from center point and radius
+ * 2. Query all active properties within the bounding box
+ * 3. Refine results using Pythagorean theorem to check if within actual circle
+ *
+ * Formula for geographic coordinates:
+ * - dY = radius (km) / 111.11
+ * - dX = dY / cos(latitude in radians)
+ * - Bounding Box: (lat - dY, lat + dY, lon - dX, lon + dX)
+ *
+ * Distance calculation:
+ * - distance² = (lat1 - lat2)² + (lon1 - lon2)²
+ * - if distance² < radius², point is within radius
+ */
+export const searchPropertiesByRadius = async (
+	latitude: number | string,
+	longitude: number | string,
+	radiusKm: number | string,
+	page: number = 1,
+	limit: number = 10,
+	userId?: string
+) => {
+	try {
+		// Parse and validate inputs
+		const lat = Number(latitude);
+		const lon = Number(longitude);
+		const radius = Number(radiusKm);
+
+		if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+			throw createHttpError("Invalid latitude. Must be between -90 and 90", 400);
+		}
+
+		if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+			throw createHttpError("Invalid longitude. Must be between -180 and 180", 400);
+		}
+
+		if (!Number.isFinite(radius) || radius <= 0) {
+			throw createHttpError("Invalid radius. Must be a positive number", 400);
+		}
+
+		// Step 1: Calculate bounding box
+		// dY = radius (km) / 111.11 km per degree of latitude
+		const dY = radius / 111.11;
+
+		// dX = dY / cos(latitude in radians)
+		const latRadians = (lat * Math.PI) / 180;
+		const dX = dY / Math.cos(latRadians);
+
+		const minLat = lat - dY;
+		const maxLat = lat + dY;
+		const minLon = lon - dX;
+		const maxLon = lon + dX;
+
+		// Step 2: Query properties within the bounding box with status = "active"
+		const skip = (page - 1) * limit;
+
+		const boxResults = await db.property.findMany({
+			where: {
+				status: "active",
+				location: {
+					latitude: {
+						gte: new Prisma.Decimal(minLat),
+						lte: new Prisma.Decimal(maxLat),
+					},
+					longitude: {
+						gte: new Prisma.Decimal(minLon),
+						lte: new Prisma.Decimal(maxLon),
+					},
+				},
+			},
+			include: includePropertyRelations,
+			skip,
+			take: limit,
+		});
+		// Step 3: Refine results using Pythagorean theorem
+		// Filter properties that are actually within the radius circle
+		const radiusSquared = radius * radius;
+
+		const results = boxResults.filter((property) => {
+			if (!property.location) return false;
+
+			const propLat = Number(property.location.latitude);
+			const propLon = Number(property.location.longitude);
+
+			// Calculate distance² = (lat1 - lat2)² + (lon1 - lon2)²
+			const latDiff = lat - propLat;
+			const lonDiff = lon - propLon;
+
+			// Note: This is an approximation since we're treating lat/lon as Cartesian coordinates
+			// For more accuracy, use Haversine formula, but Pythagorean is good for small radii
+			const distanceSquared = Math.pow(latDiff, 2) + Math.pow(lonDiff, 2);
+
+			// Only include if within the radius
+			return distanceSquared <= Math.pow(dY, 2);
+		});
+
+		// Get total count for pagination (approximate based on bounding box)
+		const totalCount = await db.property.count({
+			where: {
+				status: "active",
+				location: {
+					latitude: {
+						gte: new Prisma.Decimal(minLat),
+						lte: new Prisma.Decimal(maxLat),
+					},
+					longitude: {
+						gte: new Prisma.Decimal(minLon),
+						lte: new Prisma.Decimal(maxLon),
+					},
+				},
+			},
+		});
+		
+		// Transform results with signed URLs and add isShortListed with error handling
+		let resultsWithSignedUrls;
+		try {
+			const transformed = await Promise.all(
+				results.map((item) => transformPropertyWithSignedUrls(item))
+			);
+			
+			// Add isShortListed status for each property
+			resultsWithSignedUrls = await Promise.all(
+				transformed.map(async (item) => {
+					let isShortListed = false;
+					if (userId) {
+						const shortlistedProperty = await db.shortlistProperty.findFirst({
+							where: {
+								propertyId: item.id,
+								folder: {
+									userId: userId
+								}
+							},
+						});
+						isShortListed = !!shortlistedProperty;
+					}
+					return {
+						...item,
+						isShortListed
+					};
+				})
+			);
+		} catch (signingError) {
+			console.error("Error during batch URL signing, returning results without signed URLs:", signingError);
+			// Fallback: return results without signed URLs but with isShortListed
+			resultsWithSignedUrls = results.map(item => ({
+				...item,
+				isShortListed: false
+			}));
+		}
+
+		return {
+			items: resultsWithSignedUrls,
+			pagination: {
+				page,
+				limit,
+				total: results.length,
+				totalInBoundingBox: totalCount,
+				totalPages: Math.ceil(results.length / limit),
+			},
+			searchParams: {
+				centerLat: lat,
+				centerLon: lon,
+				radiusKm: radius,
+				boundingBox: {
+					minLat,
+					maxLat,
+					minLon,
+					maxLon,
+				},
+			},
+		};
+	} catch (error: unknown) {
+		const err = error as Error & { statusCode?: number };
+		if (err.statusCode) {
+			throw error;
+		}
+
+		throw createHttpError("Failed to search properties by radius", 500);
 	}
 };

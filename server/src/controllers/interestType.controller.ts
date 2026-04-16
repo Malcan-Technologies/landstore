@@ -86,12 +86,15 @@ export const getAllInterestTypesController = async (
 	res: Response
 ): Promise<void> => {
 	try {
-		const interestTypes = await getAllInterestTypes();
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const result = await getAllInterestTypes(page, limit);
 
 		res.status(200).json({
 			success: true,
-			data: interestTypes,
-			count: interestTypes.length,
+			data: result.items,
+			pagination: result.pagination,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);

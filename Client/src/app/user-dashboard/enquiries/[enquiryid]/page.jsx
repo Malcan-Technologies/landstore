@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Bag from "@/components/svg/Bag";
@@ -16,27 +17,194 @@ import Sheild from "@/components/svg/Sheild";
 import StepperTick from "@/components/svg/StepperTick";
 import UpRight from "@/components/svg/UpRight";
 import Exclamation from "@/components/svg/Exclamation";
+import { enquiryService } from "@/services/enquiryService";
 
-const enquiryDetails = {
-  "enquiry-1": {
-    id: "enquiry-1",
-    code: "ENQ - 000128",
-    status: "Pending Matching",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy"],
-    submittedAt: "05/20/2025",
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80",
-  },
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
+const progressSteps = ["Submitted", "Verification", "Under negotiation", "Matched", "Completed"];
+
+const normalizeEnquiryPayload = (payload) => {
+  const resolved = payload?.data ?? payload?.result?.data ?? payload ?? null;
+
+  if (Array.isArray(resolved)) {
+    return resolved[0] ?? null;
+  }
+
+  return resolved;
 };
 
-const progressSteps = ["Submitted", "Verification", "Under negotiation", "Matched", "Completed"];
+const formatEnquiryCode = (id) => {
+  if (!id || typeof id !== "string") {
+    return "ENQ - 000000";
+  }
+
+  return `ENQ - ${id.replace(/-/g, "").toUpperCase().slice(0, 6)}`;
+};
+
+const formatDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatArea = (landArea, landAreaUnit) => {
+  const numericValue = Number(landArea);
+
+  if (Number.isFinite(numericValue)) {
+    return `${numericValue.toLocaleString("en-US")}${landAreaUnit ? ` ${landAreaUnit}` : ""}`;
+  }
+
+  return landArea ? String(landArea) : "N/A";
+};
+
+const toStatusLabel = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "pending") {
+    return "Pending Matching";
+  }
+  if (normalized === "under_review" || normalized === "under review") {
+    return "Under Review";
+  }
+  if (normalized === "need_more_info" || normalized === "need more info") {
+    return "Need More Info";
+  }
+  if (normalized === "in_progress" || normalized === "in progress") {
+    return "Under negotiation";
+  }
+  if (normalized === "matched") {
+    return "Matched";
+  }
+  if (normalized === "completed" || normalized === "closed") {
+    return "Completed";
+  }
+
+  return "Pending Matching";
+};
+
+const getProgressStep = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "completed" || normalized === "closed") {
+    return 5;
+  }
+  if (normalized === "matched") {
+    return 4;
+  }
+  if (normalized === "in_progress" || normalized === "in progress") {
+    return 3;
+  }
+  if (normalized === "under_review" || normalized === "under review" || normalized === "need_more_info" || normalized === "need more info") {
+    return 2;
+  }
+
+  return 1;
+};
+
+const buildEnquiryViewModel = (item) => {
+  const messages = Array.isArray(item?.messages) ? item.messages : [];
+  const latestMessage = messages[messages.length - 1];
+  const companyProfiles = item?.user?.companies;
+  const hasCompanyProfile =
+    Boolean(companyProfiles?.companyName)
+    || (Array.isArray(companyProfiles) && companyProfiles.length > 0);
+
+  return {
+    id: item?.id ?? item?.enquiryId ?? item?._id ?? "",
+    code: formatEnquiryCode(item?.id ?? item?.enquiryId ?? item?._id),
+    status: toStatusLabel(item?.status),
+    statusValue: item?.status || "pending",
+    title: item?.property?.title || "Property details pending",
+    category: item?.property?.category?.name || item?.property?.category || "N/A",
+    area: formatArea(item?.property?.landArea ?? item?.property?.size, item?.property?.landAreaUnit),
+    dealTags: [item?.interestType?.name || "General"],
+    submittedAt: formatDate(item?.createdAt),
+    image: item?.property?.images?.[0]?.url || item?.property?.image || FALLBACK_IMAGE,
+    originalMessage: item?.message?.trim() || "No message provided.",
+    entityLabel: hasCompanyProfile ? "Company" : "Individual",
+    adminDate: formatDate(item?.updatedAt || item?.createdAt),
+    adminMessage: latestMessage?.content || "Our team is reviewing your enquiry.",
+  };
+};
 
 const EnquiryDetailPage = ({ params }) => {
   const router = useRouter();
-  const { enquiryid } = params;
-  const enquiry = enquiryDetails[enquiryid] ?? enquiryDetails["enquiry-1"];
+  const resolvedParams = use(params);
+  const enquiryid = Array.isArray(resolvedParams?.enquiryid) ? resolvedParams.enquiryid[0] : resolvedParams?.enquiryid;
+  const [enquiryData, setEnquiryData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!enquiryid) {
+      setIsLoading(false);
+      setError("Enquiry ID is missing.");
+      return;
+    }
+
+    let mounted = true;
+
+    const loadEnquiry = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await enquiryService.getEnquiryById(enquiryid);
+        const normalized = normalizeEnquiryPayload(response);
+
+        if (mounted) {
+          setEnquiryData(buildEnquiryViewModel(normalized));
+        }
+      } catch (apiError) {
+        if (mounted) {
+          setError(apiError?.message || "Failed to load enquiry details.");
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadEnquiry();
+
+    return () => {
+      mounted = false;
+    };
+  }, [enquiryid]);
+
+  const enquiry = useMemo(
+    () =>
+      enquiryData || {
+        id: enquiryid || "",
+        code: "ENQ - 000000",
+        status: "Pending Matching",
+        statusValue: "pending",
+        title: "Property details pending",
+        category: "N/A",
+        area: "N/A",
+        dealTags: ["General"],
+        submittedAt: "-",
+        image: FALLBACK_IMAGE,
+        originalMessage: "No message provided.",
+        entityLabel: "Individual",
+        adminDate: "-",
+        adminMessage: "Our team is reviewing your enquiry.",
+      },
+    [enquiryData, enquiryid]
+  );
+
+  const currentStep = useMemo(() => getProgressStep(enquiry.statusValue), [enquiry.statusValue]);
 
   return (
     <main className="bg-background-primary py-12 md:py-14">
@@ -45,6 +213,9 @@ const EnquiryDetailPage = ({ params }) => {
           <ArrowLeftIcon />
           Back to marketplace
         </button>
+
+        {isLoading ? <p className="mb-4 text-[14px] text-gray5">Loading enquiry details...</p> : null}
+        {!isLoading && error ? <p className="mb-4 text-[14px] text-red-500">{error}</p> : null}
 
         <section className="rounded-lg border border-border-card bg-white p-3 shadow-[0px_6px_24px_rgba(15,61,46,0.04)] md:px-4 md:py-4">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -101,7 +272,6 @@ const EnquiryDetailPage = ({ params }) => {
           <div className="mt-6 border-t border-border-card pt-12">
             <div className="mx-auto flex max-w-190 items-start justify-between gap-0.5 px-0 sm:gap-2 sm:px-2 lg:gap-20">
               {progressSteps.map((step, index) => {
-                const currentStep = 1;
                 const stepNumber = index + 1;
                 const isCurrent = currentStep === stepNumber;
                 const isCompleted = currentStep > stepNumber;
@@ -164,20 +334,20 @@ const EnquiryDetailPage = ({ params }) => {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-nowrap items-center justify-between gap-2">
                         <h2 className="text-[10px] font-semibold text-gray2 sm:text-[12px] md:text-[16px]">Original Submission</h2>
-                        <span className="text-[10px] text-gray5 sm:text-[12px] md:text-[14px]">05/20/2025</span>
+                        <span className="text-[10px] text-gray5 sm:text-[12px] md:text-[14px]">{enquiry.submittedAt}</span>
                       </div>
                       <div className="mt-3">
                         <p className="max-w-full text-[10px] italic leading-5 text-gray5 sm:text-[12px] sm:leading-6 md:text-[14px]">
-                        “Interested in purchasing the full lot for agricultural development. Please provide matching details.”
+                        “{enquiry.originalMessage}”
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-4 border-t border-border-card pt-3 text-[10px] text-gray5 sm:text-[12px] md:text-[14px]">
-                    Interest: <span className="font-medium text-gray2">Buy</span>
+                    Interest: <span className="font-medium text-gray2">{enquiry.dealTags[0] || "General"}</span>
                     <span className="mx-3 text-[#CACACA]">|</span>
-                    Entity: <span className="font-medium text-gray2">Individual</span>
+                    Entity: <span className="font-medium text-gray2">{enquiry.entityLabel}</span>
                   </div>
                 </article>
 
@@ -186,11 +356,11 @@ const EnquiryDetailPage = ({ params }) => {
                 <div className="flex min-w-0 items-start justify-end gap-3">
                   <article className="w-full min-w-0 max-w-[calc(100%-2.75rem)] rounded-2xl border border-[#BFEBDD] bg-[#EDFCF6] px-4 py-4 text-right shadow-[0px_4px_12px_rgba(15,61,46,0.02)] sm:max-w-157.5 md:px-5">
                     <div className="flex items-center justify-between gap-3 text-[10px] text-[#74A79A] sm:text-[12px] md:text-[14px]">
-                      <span>05/20/2025</span>
+                      <span>{enquiry.adminDate}</span>
                       <span className="font-semibold text-green-secondary">Admin notification</span>
                     </div>
                     <p className="mt-3 text-[10px] italic leading-5 text-[#517A6E] sm:text-[12px] sm:leading-6 md:text-[14px]">
-                      “Interested in purchasing the full lot for agricultural development. Please provide matching details.”
+                      “{enquiry.adminMessage}”
                     </p>
                   </article>
                   <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-secondary text-white">

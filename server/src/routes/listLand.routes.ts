@@ -1,12 +1,16 @@
 import { Router } from "express";
 import requireApiAuth from "../middleware/requireApiAuth.js";
+import optionalApiAuth from "../middleware/optionalApiAuth.js";
+import { requireAdmin } from "../middleware/authorization.js";
 import upload from "../middleware/multer.js";
 import {
 	createListLandController,
 	deleteListLandController,
 	getListLandByIdController,
 	getListLandsController,
+	getAllListingsController,
 	updateListLandController,
+	searchPropertiesByRadiusController,
 } from "../controllers/listLand.controller.js";
 
 const listLandRouter = Router();
@@ -14,11 +18,17 @@ const listLandRouter = Router();
 // Create property with images and documents: Images + Documents uploaded to S3 -> Media/Document records created -> Property created
 listLandRouter.post("/", requireApiAuth, upload.any(), createListLandController);
 
-// Get all properties
+// Search properties by geographic radius (public with optional authentication)
+listLandRouter.post("/search/by-radius", optionalApiAuth, searchPropertiesByRadiusController);
+
+// Get all public listings (accessible to any authenticated user)
+listLandRouter.get("/all-listings", requireApiAuth, requireAdmin,getAllListingsController);
+
+// Get all properties (user-specific or all for admin)
 listLandRouter.get("/", requireApiAuth, getListLandsController);
 
-// Get single property
-listLandRouter.get("/:id", requireApiAuth, getListLandByIdController);
+// Get single property (public - allows viewing property details)
+listLandRouter.get("/:id", getListLandByIdController);
 
 // Update property with optional image and document uploads
 listLandRouter.patch("/:id", requireApiAuth, upload.any(), updateListLandController);

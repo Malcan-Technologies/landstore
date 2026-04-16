@@ -28,6 +28,8 @@
  */
 
 import type { Request, Response } from "express";
+import { randomBytes } from "crypto";
+import { hashPassword } from "better-auth/crypto";
 import {
 	completeUserProfile,
 	deleteUserById,
@@ -36,7 +38,12 @@ import {
 	updateUserById,
 	getUserCompleteProfile,
 	signUpAndCompleteProfile,
+	getUserByEmail
 } from "../services/user.js";
+import { emailService } from "../services/email.js";
+import { uploadFileToS3 } from "../services/s3Upload.js";
+import { auth } from "../../config/auth.js";
+import db from "../../config/prisma.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -123,12 +130,35 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			name
 		});
 
+		// Generate email verification token
+		const verificationToken = randomBytes(32).toString("hex");
+		
+		// Create verification URL
+		const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
+		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
+		const verificationURL = `${baseURL}/api/users/verify-email-callback?token=${verificationToken}&redirectTo=${encodeURIComponent(frontendURL)}`;
+
+		// Store verification token in database with 24 hour expiration
+		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+		await db.verification.create({
+			data: {
+				identifier: `email_verification_${email.toLowerCase()}`,
+				value: verificationToken,
+				token: verificationToken,
+				expiresAt: expiresAt,
+			},
+		});
+
+		// Send verification email
+		await emailService.sendVerificationEmail(email.toLowerCase(), verificationToken, verificationURL);
+
 		// Fetch complete profile with all details
 		const completeProfile = await getUserCompleteProfile(result.userId);
 
 		return res.status(201).json({
 			success: true,
-			message: "User registered successfully with hashed password",
+			message: "User registered successfully. Please check your email to verify your account.",
 			profile: completeProfile,
 		});
 	} catch (error: unknown) {
@@ -180,6 +210,132 @@ export const completeProfileController = async (req: Request, res: Response) => 
 	}
 };
 
+/**
+ * LOGIN
+ * POST /api/users/login
+ * Body: { email, password }
+ * 
+ * Uses Better Auth's sign-in which handles:
+ * - Password verification
+ * - Session creation  
+ * - Cookie management (httpOnly, secure, sameSite)
+ * 
+ * Then enriches response with userType and sends welcome email
+ */
+export const loginController = async (req: Request, res: Response) => {
+	try {
+		const { email, password } = req.body;
+
+		if (!email || typeof email !== "string" || !email.trim()) {
+			return res.status(400).json({
+				success: false,
+				message: "Valid email is required",
+			});
+		}
+
+		if (!password || typeof password !== "string" || password.length < 1) {
+			return res.status(400).json({
+				success: false,
+				message: "Password is required",
+			});
+		}
+
+		try {
+			// Call Better Auth with proper request context - convert headers to array format
+			const headerArray = Object.entries(req.headers).map(([key, value]) => 
+				[key, String(value)] as [string, string]
+			);
+
+			const betterAuthResponse = await auth.api.signInEmail({
+				body: {
+					email: email.toLowerCase(),
+					password,
+				},
+				headers: new Headers(headerArray), // ✅ Pass headers in proper format
+				asResponse: true,
+			});
+
+			// Get Set-Cookie header from Better Auth response
+			// Better Auth returns multiple cookies separated by commas
+			const setCookieHeader = betterAuthResponse.headers.get("set-cookie");
+			if (setCookieHeader) {
+				// Split multiple cookies and set them as an array
+				const cookies = setCookieHeader.split(", ");
+				res.setHeader("set-cookie", cookies);
+			}
+
+			// Parse the response body
+			let responseBody: any = null;
+			if (betterAuthResponse?.body) {
+				try {
+					const bodyText = await betterAuthResponse.text();
+					responseBody = JSON.parse(bodyText);
+				} catch (parseError) {
+					console.error("Failed to parse Better Auth response body:", parseError);
+					return res.status(500).json({
+						success: false,
+						message: "Failed to process login response",
+					});
+				}
+			}
+
+			// Check if sign-in was successful
+			if (!responseBody?.user?.id || !responseBody?.user?.email) {
+				return res.status(401).json({
+					success: false,
+					message: "Invalid email or password",
+				});
+			}
+
+			// Fetch user with userType from database
+			const user = await getUserByEmail(responseBody.user.email);
+
+			// Prepare userName for welcome email
+			const emailPrefix = responseBody.user.email.split('@')[0];
+			const userName = responseBody.user.name || emailPrefix || 'User';
+
+			// Send welcome email asynchronously (don't wait for it)
+			emailService.sendWelcomeEmail(
+				responseBody.user.email,
+				userName
+			).catch((error) => {
+				console.error("Failed to send welcome email:", error);
+				// Continue with login response even if email fails
+			});
+
+			// Return enhanced response with userType
+			// Session cookie is managed by Better Auth with all session config applied
+			return res.status(200).json({
+				success: true,
+				redirect: false,
+				token: responseBody.session?.token || "",
+				user: {
+					id: responseBody.user.id,
+					name: responseBody.user.name,
+					email: responseBody.user.email,
+					emailVerified: responseBody.user.emailVerified,
+					image: responseBody.user.image,
+					userType: user.userType, // Include userType from database
+					createdAt: responseBody.user.createdAt,
+					updatedAt: responseBody.user.updatedAt,
+				},
+			});
+		} catch (authError: unknown) {
+			const err = authError as any;
+			return res.status(401).json({
+				success: false,
+				message: err?.message || "Invalid email or password",
+			});
+		}
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
 export const getCurrentUserController = async (req: Request, res: Response) => {
 	try {
 		// Better Auth provides user in request via middleware
@@ -225,13 +381,39 @@ export const getUserCompleteProfileController = async (req: Request, res: Respon
 	}
 };
 
+/**
+ * GET MY PROFILE
+ * GET /api/users/my-profile
+ * 
+ * Get authenticated user's complete profile using req.user.id from middleware
+ * Requires authentication
+ */
+export const getMyProfileController = async (req: Request, res: Response) => {
+	try {
+		// Get user ID from authenticated request (via requireApiAuth middleware)
+		const user = (req as any).user;
+		if (!user || !user.id) {
+			return res.status(401).json({ 
+				success: false,
+				error: "Unauthorized",
+				message: "Authentication required. Please log in to access your profile." 
+			});
+		}
 
+		// Fetch complete profile using authenticated user ID
+		const completeProfile = await getUserCompleteProfile(user.id);
 
-const assertAdminOrThrow = (userType: string) => {
-	if (userType !== "admin") {
-		const forbiddenError = new Error("Forbidden");
-		(forbiddenError as Error & { statusCode?: number }).statusCode = 403;
-		throw forbiddenError;
+		return res.status(200).json({ 
+			success: true,
+			message: "My profile retrieved successfully", 
+			result: completeProfile 
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ 
+			success: false,
+			message 
+		});
 	}
 };
 
@@ -256,8 +438,11 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 			});
 		}
 
-		const users = await getAllUsers();
-		return res.status(200).json({ users });
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const result = await getAllUsers(page, limit);
+		return res.status(200).json({ data: result.items, pagination: result.pagination });
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
 		return res.status(statusCode).json({ message });
@@ -273,8 +458,6 @@ export const getUserByIdController = async (req: Request, res: Response) => {
 				message: "Authentication required. Please log in to access this resource." 
 			});
 		}
-
-		assertAdminOrThrow(requester.userType);
 		const userId = getUserIdParamOrThrow(req);
 
 		const user = await getUserById(userId);
@@ -295,27 +478,66 @@ export const updateUserController = async (req: Request, res: Response) => {
 			});
 		}
 
-		const targetUserId = getUserIdParamOrThrow(req);
+		// Get user ID from authenticated user (req.user.id)
+		const targetUserId = requester.id;
+		console.log(`🔄 Updating user profile for: ${targetUserId}`);
 
-		if (requester.userType !== "admin" && requester.id !== targetUserId) {
+		// Users cannot modify their own role or allow role changes
+		if (req.body.userType !== undefined) {
 			return res.status(403).json({ 
 				error: "Forbidden",
-				message: "You do not have permission to modify this user account." 
+				message: "You cannot modify your own role. Contact support if you need role changes." 
 			});
 		}
 
-		if (requester.userType !== "admin" && req.body.userType !== undefined) {
-			return res.status(403).json({ 
-				error: "Forbidden",
-				message: "Only administrators can modify user roles. Contact support if you need role changes." 
-			});
+		let profileMediaId = undefined;
+
+		// Handle profile image upload
+		if (req.file) {
+			console.log(`📁 File received - Name: ${req.file.originalname}, Size: ${req.file.size} bytes, Type: ${req.file.mimetype}`);
+			console.log(`🪣 AWS Bucket: ${process.env.AWS_BUCKET_NAME || "NOT DEFINED"}`);
+			
+			try {
+				// Upload file to S3
+				console.log(`⏳ Starting S3 upload...`);
+				const fileKey = await uploadFileToS3(req.file);
+				console.log(`✅ Profile image uploaded successfully with fileKey: ${fileKey}`);
+
+				// Create or update Media record for profile image
+				const media = await db.media.create({
+					data: {
+						userId: targetUserId,
+						fileUrl: fileKey,
+						mediaType: req.file.mimetype,
+						mediaCategory: "profileImage",
+					},
+				});
+
+				profileMediaId = media.id;
+				console.log(`💾 Profile media record created: ${media.id}`);
+			} catch (uploadError) {
+				console.error(`❌ Failed to upload profile image:`, uploadError);
+				return res.status(500).json({
+					error: "Upload failed",
+					message: "Failed to upload profile image. Please try again.",
+				});
+			}
+		} else {
+			console.log(`⚠️ No file received in request`);
 		}
 
-		const user = await updateUserById(targetUserId, {
+		// Build update payload
+		const updatePayload: any = {
 			email: req.body.email,
 			phone: req.body.phone,
-			userType: req.body.userType,
-		});
+		};
+
+		// Only add profileMediaId if a file was uploaded
+		if (profileMediaId) {
+			updatePayload.profileMediaId = profileMediaId;
+		}
+
+		const user = await updateUserById(targetUserId, updatePayload);
 
 		return res.status(200).json({ message: "User updated successfully", user });
 	} catch (error: unknown) {
@@ -331,8 +553,15 @@ export const deleteUserController = async (req: Request, res: Response) => {
 			return res.status(401).json({ message: "Unauthorized" });
 		}
 
-		assertAdminOrThrow(requester.userType);
 		const userId = getUserIdParamOrThrow(req);
+
+		// Users can only delete their own account
+		if (requester.id !== userId) {
+			return res.status(403).json({ 
+				error: "Forbidden",
+				message: "You can only delete your own account." 
+			});
+		}
 
 		const result = await deleteUserById(userId);
 		return res.status(200).json(result);
@@ -341,3 +570,314 @@ export const deleteUserController = async (req: Request, res: Response) => {
 		return res.status(statusCode).json({ message });
 	}
 };
+
+/**
+ * REQUEST PASSWORD RESET
+ * POST /api/users/forgot-password
+ * Body: { email }
+ * 
+ * Generates a reset token and sends magic link via email
+ */
+export const requestPasswordResetController = async (req: Request, res: Response) => {
+	try {
+		const { email } = req.body;
+
+		if (!email || typeof email !== "string" || !email.trim()) {
+			return res.status(400).json({
+				success: false,
+				message: "Valid email is required",
+			});
+		}
+
+		// Check if user exists
+		const user = await getUserByEmail(email.toLowerCase());
+		if (!user) {
+			// Don't reveal if email exists (security best practice)
+			return res.status(200).json({
+				success: true,
+				message: "If the email exists, a password reset link has been sent",
+			});
+		}
+
+		// Generate secure reset token
+		const resetToken = randomBytes(32).toString("hex");
+		
+		// Create reset URL - send directly to frontend with token
+		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
+		const resetURL = `${frontendURL}?token=${resetToken}`;
+
+		// Store reset token in database with 1 hour expiration
+		const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+		// Store using Verification table from Better Auth
+		await db.verification.create({
+			data: {
+				identifier: `password_reset_${email.toLowerCase()}`,
+				value: resetToken,
+				token: resetToken,
+				expiresAt: expiresAt,
+			},
+		});
+
+		// Send email with reset link
+		await emailService.sendMagicLink(email.toLowerCase(), resetToken, resetURL);
+
+		return res.status(200).json({
+			success: true,
+			message: "Password reset link has been sent to your email",
+			expiresIn: 3600, // 1 hour in seconds
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
+/**
+ * RESET PASSWORD CALLBACK (Optional - for email clicks)
+ * GET /api/users/reset-password-callback
+ * Query: { token, redirectTo }
+ * Redirects to http://localhost:3000 with token for password reset
+ */
+export const resetPasswordCallbackController = async (req: Request, res: Response) => {
+	try {
+		const { token, redirectTo } = req.query;
+
+		if (!token || typeof token !== "string") {
+			return res.redirect(
+				`${redirectTo || "http://localhost:3000"}?error=invalid_token`
+			);
+		}
+
+		// Verify token exists and not expired
+		const verification = await db.verification.findFirst({
+			where: {
+				token: token,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
+
+		if (!verification) {
+			return res.redirect(
+				`${redirectTo || "http://localhost:3000"}?error=expired_token`
+			);
+		}
+
+		// Redirect to frontend with token
+		return res.redirect(
+			`${redirectTo || "http://localhost:3000"}?token=${token}`
+		);
+	} catch (error: unknown) {
+		return res.redirect(
+			`${(req.query.redirectTo as string) || "http://localhost:3000"}?error=server_error`
+		);
+	}
+};
+
+/**
+ * RESET PASSWORD
+ * POST /api/users/reset-password
+ * Body: { token, newPassword }
+ * 
+ * Verifies token and resets the password
+ */
+export const resetPasswordController = async (req: Request, res: Response) => {
+	try {
+		const { token, newPassword } = req.body;
+
+		if (!token || typeof token !== "string") {
+			return res.status(400).json({
+				success: false,
+				message: "Valid reset token is required",
+			});
+		}
+
+		if (!newPassword || typeof newPassword !== "string" || newPassword.length < 8) {
+			return res.status(400).json({
+				success: false,
+				message: "Password must be at least 8 characters",
+			});
+		}
+
+		// Verify token exists and not expired
+		const verification = await db.verification.findFirst({
+			where: {
+				token: token,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
+
+		if (!verification) {
+			return res.status(400).json({
+				success: false,
+				message: "Reset token is invalid or expired",
+			});
+		}
+
+		// Extract email from identifier (format: "password_reset_{email}")
+		const email = verification.identifier.replace("password_reset_", "");
+		
+		const user = await getUserByEmail(email);
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		// Update password in Account table with hashed password
+		// Use Better Auth's native hashPassword function (same as signup)
+		const hashedPassword = await hashPassword(newPassword);
+		
+		await db.account.updateMany({
+			where: {
+				userId: user.id,
+				providerId: "credential",
+			},
+			data: {
+				password: hashedPassword,
+			},
+		});
+
+		// Delete the used verification token
+		await db.verification.delete({
+			where: {
+				id: verification.id,
+			},
+		});
+
+		return res.status(200).json({
+			success: true,
+			message: "Password has been reset successfully. Please log in with your new password.",
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
+/**
+ * VERIFY EMAIL CALLBACK (for email clicks)
+ * GET /api/users/verify-email-callback
+ * Query: { token, redirectTo }
+ * Redirects to http://localhost:3000 with token for email verification
+ */
+export const verifyEmailCallbackController = async (req: Request, res: Response) => {
+	try {
+		const { token, redirectTo } = req.query;
+
+		if (!token || typeof token !== "string") {
+			return res.redirect(
+				`${redirectTo || "http://localhost:3000"}?error=invalid_token`
+			);
+		}
+
+		// Verify token exists and not expired
+		const verification = await db.verification.findFirst({
+			where: {
+				token: token,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
+
+		if (!verification) {
+			return res.redirect(
+				`${redirectTo || "http://localhost:3000"}?error=expired_token`
+			);
+		}
+
+		// Redirect to frontend with token for final confirmation
+		return res.redirect(
+			`${redirectTo || "http://localhost:3000"}?verificationToken=${token}`
+		);
+	} catch (error: unknown) {
+		return res.redirect(
+			`${(req.query.redirectTo as string) || "http://localhost:3000"}?error=server_error`
+		);
+	}
+};
+
+/**
+ * CONFIRM EMAIL VERIFICATION
+ * POST /api/users/verify-email
+ * Body: { token }
+ * 
+ * Marks email as verified
+ */
+export const verifyEmailController = async (req: Request, res: Response) => {
+	try {
+		const { token } = req.body;
+
+		if (!token || typeof token !== "string") {
+			return res.status(400).json({
+				success: false,
+				message: "Valid verification token is required",
+			});
+		}
+
+		// Verify token exists and not expired
+		const verification = await db.verification.findFirst({
+			where: {
+				token: token,
+				expiresAt: {
+					gt: new Date(),
+				},
+			},
+		});
+
+		if (!verification) {
+			return res.status(400).json({
+				success: false,
+				message: "Verification token is invalid or expired",
+			});
+		}
+
+		// Extract email from identifier (format: "email_verification_{email}")
+		const email = verification.identifier.replace("email_verification_", "");
+		
+		const user = await getUserByEmail(email);
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		// Mark email as verified
+		await db.user.update({
+			where: { id: user.id },
+			data: { emailVerified: true },
+		});
+
+		// Delete the used verification token
+		await db.verification.delete({
+			where: {
+				id: verification.id,
+			},
+		});
+
+		return res.status(200).json({
+			success: true,
+			message: "Email verified successfully. Your account is now active!",
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+

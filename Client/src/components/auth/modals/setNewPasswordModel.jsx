@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Modal from "@/components/common/Modal";
-import Lock from "@/components/svg/lock";
+import Lock from "@/components/svg/Lock";
+import EyeClose from "@/components/svg/EyeClose";
+import EyeOpen from "@/components/svg/EyeOpen";
 
-const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
+const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoading = false, apiError = "", token = "" }) => {
   const passwordRef = useRef(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -26,7 +28,7 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSuccess?.();
+    onSuccess?.({ password, confirmPassword, token });
   };
 
   return (
@@ -59,6 +61,7 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
               ref={passwordRef}
               type={showPassword ? "text" : "password"}
               value={password}
+              autoComplete="new-password"
               onChange={(event) => setPassword(event.target.value)}
               placeholder="••••••••"
               className="h-11 w-full rounded-xl border border-border-input px-4 pr-10 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
@@ -66,10 +69,10 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[16px] text-gray5"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray5"
               aria-label="Toggle password visibility"
             >
-              {showPassword ? "︿" : "﹀"}
+              {showPassword ? <EyeOpen size={16} /> : <EyeClose size={16} />}
             </button>
           </div>
 
@@ -81,6 +84,7 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
               id="confirm-password"
               type={showConfirmPassword ? "text" : "password"}
               value={confirmPassword}
+              autoComplete="new-password"
               onChange={(event) => setConfirmPassword(event.target.value)}
               placeholder="••••••••"
               className="h-11 w-full rounded-xl border border-border-input px-4 pr-10 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
@@ -88,10 +92,10 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
             <button
               type="button"
               onClick={() => setShowConfirmPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[16px] text-gray5"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray5"
               aria-label="Toggle confirm password visibility"
             >
-              {showConfirmPassword ? "︿" : "﹀"}
+              {showConfirmPassword ? <EyeOpen size={16} /> : <EyeClose size={16} />}
             </button>
           </div>
 
@@ -108,11 +112,13 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
 
           <button
             type="submit"
-            disabled={!(meetsMinLength && hasSpecialChar && passwordsMatch)}
+            disabled={!(meetsMinLength && hasSpecialChar && passwordsMatch) || isLoading}
             className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-green-primary px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:opacity-60"
           >
-            Reset password
+            {isLoading ? "Resetting..." : "Reset password"}
           </button>
+
+          {apiError ? <p className="mt-2 text-[13px] text-red-500">{apiError}</p> : null}
 
           <button
             type="button"

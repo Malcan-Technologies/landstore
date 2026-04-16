@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}\r\n// {\r\n//     \"email\": \"dawartoor30@gmail.com\",\r\n//     \"password\": \"Test@123456789\"\r\n// }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -31,14 +31,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/auth/sign-in/email",
+              "raw": "{{baseUrl}}/users/login",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "auth",
-                "sign-in",
-                "email"
+                "users",
+                "login"
               ]
             }
           },
@@ -87,6 +86,24 @@
           "response": []
         },
         {
+          "name": "Get session Copy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/my-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "my-profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Register(Individual)",
           "request": {
             "method": "POST",
@@ -99,7 +116,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitshykh888@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\r\n        \"Land owner\"\r\n    ]\r\n}",
+              "raw": "{\r\n    \"email\": \"ahsanmaqsood177@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\r\n        \"Land owner\"\r\n    ]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -253,6 +270,123 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Reset Password Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"dawartoor30@gmail.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"token\": \"{{token}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "verify-email"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{Origin}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"token\": \"{{token}}\",\r\n    \"newPassword\" : \"Test@123456789\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/my-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "my-profile"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -265,13 +399,23 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/",
+              "raw": "{{baseUrl}}/users/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           },
@@ -294,7 +438,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
+                  "value": "coP4p6LVw82DR1Ds3Df0SuwzyCqfabph"
                 }
               ]
             }
@@ -307,28 +451,55 @@
             "method": "PATCH",
             "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Basit Sheikh\",\r\n    \"identityNo\": \"123456-12-1234\",\r\n    \"firstName\": \"Basit\",\r\n    \"lastName\": \"Sheikh\",\r\n    \"name\": \"Basit Sheikh\",\r\n    \"companyName\": null,\r\n    \"koperasiName\": null,\r\n    \"registrationNo\": null\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "dawartoor30@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+60123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "profileType",
+                  "value": "individual",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "Basit Sheikh",
+                  "type": "text"
+                },
+                {
+                  "key": "identityNo",
+                  "value": "123456-12-1234",
+                  "type": "text"
+                },
+                {
+                  "key": "firstName",
+                  "value": "Basit",
+                  "type": "text"
+                },
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "uuid": "29738c2f-b594-4ea3-a73f-600cda2e19cf",
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/author.jpeg",
+                  "disabled": true
                 }
-              }
+              ]
             },
             "url": {
-              "raw": "{{baseUrl}}/users/::id",
+              "raw": "{{baseUrl}}/users/me",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "users",
-                "::id"
-              ],
-              "variable": [
-                {
-                  "key": ":id",
-                  "value": "c682184c-e5ec-497e-b558-9d71e2f451fd"
-                }
+                "me"
               ]
             }
           },
@@ -366,36 +537,6 @@
             }
           },
           "response": []
-        },
-        {
-          "name": "Complete User Profile",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Basit Sheikh\",\r\n    \"identityNo\": \"123456-12-1234\",\r\n    \"firstName\": \"Basit\",\r\n    \"lastName\": \"Sheikh\",\r\n    \"name\": \"Basit Sheikh\",\r\n    \"companyName\": null,\r\n    \"koperasiName\": null,\r\n    \"registrationNo\": null\r\n}\r\n\r\n// {\r\n//   \"email\": \"company@example.com\",\r\n//   \"userType\": \"user\",\r\n//   \"phone\": \"+60123456789\",\r\n//   \"profileType\": \"company\",\r\n//   \"companyName\": \"ABC Properties Sdn Bhd\",\r\n//   \"registrationNo\": \"123456789\",\r\n//   \"name\": \"ABC Properties\",\r\n//   \"email\": \"company@example.com\",\r\n//   \"fullName\": null,\r\n//   \"identityNo\": null,\r\n//   \"firstName\": null,\r\n//   \"lastName\": null,\r\n//   \"koperasiName\": null\r\n// }\r\n\r\n// {\r\n//   \"email\": \"koperasi@example.com\",\r\n//   \"userType\": \"user\",\r\n//   \"phone\": \"+60123456789\",\r\n//   \"profileType\": \"koperasi\",\r\n//   \"koperasiName\": \"Koperasi Tanah ABC\",\r\n//   \"registrationNo\": \"987654321\",\r\n//   \"name\": \"Koperasi Tanah ABC\",\r\n//   \"fullName\": null,\r\n//   \"identityNo\": null,\r\n//   \"companyName\": null,\r\n//   \"firstName\": null,\r\n//   \"lastName\": null\r\n// }",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users/complete-profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "complete-profile"
-              ]
-            }
-          },
-          "response": []
         }
       ]
     },
@@ -409,7 +550,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\" : \"New Folder\"\r\n}",
+              "raw": "{\r\n    \"name\" : \"My shortlist\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -424,40 +565,6 @@
               "path": [
                 "folders",
                 ""
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Sub Folder",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"name\" : \"New Folder\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/folders/:id/subfolders",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "folders",
-                ":id",
-                "subfolders"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "86235d68-e933-4c50-b8b3-ea72e2f178fc"
-                }
               ]
             }
           },
@@ -490,7 +597,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": ""
+                  "value": "d885da82-bb7c-403e-94d6-f42d89360582"
                 }
               ]
             }
@@ -525,11 +632,11 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": ""
+                  "value": "d885da82-bb7c-403e-94d6-f42d89360582"
                 },
                 {
                   "key": "propertyId",
-                  "value": ""
+                  "value": "aa9a1a73-0909-4aed-be85-0149577d0e78"
                 }
               ]
             }
@@ -599,51 +706,44 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/folders/",
+              "raw": "{{baseUrl}}/folders/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "folders",
                 ""
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Folders hirarchy",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/folders/hierarchy/all",
-              "host": [
-                "{{baseUrl}}"
               ],
-              "path": [
-                "folders",
-                "hierarchy",
-                "all"
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Sub folder tree",
+          "name": "short listed properties",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/folders/:id/hierarchy",
+              "raw": "{{baseUrl}}/folders/:id/shortlist",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "folders",
                 ":id",
-                "hierarchy"
+                "shortlist"
               ],
               "variable": [
                 {
@@ -730,7 +830,7 @@
                 },
                 {
                   "key": "listingCode",
-                  "value": "LAND-2026-002",
+                  "value": "LAND-2026-004",
                   "type": "text",
                   "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
                 },
@@ -809,7 +909,7 @@
                 },
                 {
                   "key": "status",
-                  "value": "draft",
+                  "value": "active",
                   "type": "text",
                   "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024"
                 }
@@ -829,7 +929,164 @@
           "response": []
         },
         {
-          "name": "Get all listings",
+          "name": "Update listing",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Any",
+                  "type": "text",
+                  "uuid": "008976aa-243b-4cbd-8994-12e529a14ffa"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "99f16847-4681-4984-b0cc-e9debe0c2c64",
+                  "type": "text",
+                  "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e"
+                },
+                {
+                  "key": "ownershipTypeId",
+                  "value": "a5a937da-bb18-4157-bdf6-a42c3df0b947",
+                  "type": "text",
+                  "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e"
+                },
+                {
+                  "key": "utilizationId",
+                  "value": "162a0a33-7531-4e5b-b668-4992a8ba139f",
+                  "type": "text",
+                  "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391"
+                },
+                {
+                  "key": "titleTypeId",
+                  "value": "2a56fa5d-781d-46e6-86ea-335fef8e1e7b",
+                  "type": "text",
+                  "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad"
+                },
+                {
+                  "key": "landAreaUnit",
+                  "value": "km",
+                  "type": "text",
+                  "uuid": "38a78f65-281b-4355-ae3d-cb501205a75b"
+                },
+                {
+                  "key": "listingCode",
+                  "value": "LAND-2026-007",
+                  "type": "text",
+                  "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c",
+                  "disabled": true
+                },
+                {
+                  "key": "landArea",
+                  "value": "5000",
+                  "type": "text",
+                  "uuid": "2a4c37b1-f4ef-47b9-a8c6-abefe71ba879"
+                },
+                {
+                  "key": "price",
+                  "value": "400000",
+                  "type": "text",
+                  "uuid": "eaefa9e7-2ec3-4631-8073-9ccdfc1950ab"
+                },
+                {
+                  "key": "pricePerSqrft",
+                  "value": "1250",
+                  "type": "text",
+                  "uuid": "36d4ab24-5df2-4a36-8bf4-09b827255eeb"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
+                  "src": [
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
+                  ],
+                  "disabled": true
+                },
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "uuid": "625f394d-38e2-459a-9dca-278290853ba4",
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Database Students.pdf",
+                  "disabled": true
+                },
+                {
+                  "key": "tanahRizabMelayu",
+                  "value": "true",
+                  "description": "true // false",
+                  "type": "text",
+                  "uuid": "a8bcdfdc-b899-4044-876b-891bfe9e0409"
+                },
+                {
+                  "key": "dealTypes",
+                  "value": "buy",
+                  "description": "buy / jv/ financing",
+                  "type": "text",
+                  "uuid": "9c1ec4ce-b890-4bb8-9192-e0c2d5fb3020"
+                },
+                {
+                  "key": "terrainChips",
+                  "value": "flat",
+                  "description": "flat / hilly / mix",
+                  "type": "text",
+                  "uuid": "d50b4700-1009-466b-ac77-d90848749b73"
+                },
+                {
+                  "key": "featureTags",
+                  "value": "road_access",
+                  "description": "road_access/ water / electricity",
+                  "type": "text",
+                  "uuid": "77871cf6-5145-4766-a442-c4692652bd21",
+                  "disabled": true
+                },
+                {
+                  "key": "estimatedValuation",
+                  "value": "5000000",
+                  "type": "text",
+                  "uuid": "9b44ad7f-a4bb-4bd5-b2a6-b00c9d20a831",
+                  "disabled": true
+                },
+                {
+                  "key": "description",
+                  "value": "this is description",
+                  "type": "text",
+                  "uuid": "2b76bf15-3406-42fd-adc0-41a736d6821a",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text",
+                  "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024",
+                  "description": "active / draft / under review / reserved"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": "ad53afb9-459b-43e8-8681-0794e0bd4999"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My listings",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -848,6 +1105,43 @@
               "path": [
                 "list-lands",
                 ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All listings",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/all-listings?page=1&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "all-listings"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -877,35 +1171,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": ""
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update listing",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": []
-            },
-            "url": {
-              "raw": "{{baseUrl}}/list-lands/::id",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "list-lands",
-                "::id"
-              ],
-              "variable": [
-                {
-                  "key": ":id",
-                  "value": ""
+                  "value": "132debd9-f4d0-4809-a12d-793d46aa601b"
                 }
               ]
             }
@@ -933,8 +1199,36 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": ""
+                  "value": "6ce15cec-a3ac-4cd5-bc05-6d5a269278a3"
                 }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Explore Map",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"latitude\" : \"3.1738\",\r\n    \"longitude\": \"101.595\",\r\n    \"radiusKm\": \"5\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/search/by-radius",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "search",
+                "by-radius"
               ]
             }
           },
@@ -1035,13 +1329,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/categories/",
+              "raw": "{{baseUrl}}/categories/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "categories",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1166,13 +1472,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/ownership-types/",
+              "raw": "{{baseUrl}}/ownership-types/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "ownership-types",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1297,13 +1615,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/title-types/",
+              "raw": "{{baseUrl}}/title-types/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "title-types",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1428,13 +1758,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/utilizations/",
+              "raw": "{{baseUrl}}/utilizations/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "utilizations",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1559,13 +1901,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/notifications/",
+              "raw": "{{baseUrl}}/notifications/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "notifications",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1690,13 +2044,23 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/entity-types/",
+              "raw": "{{baseUrl}}/entity-types/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "entity-types",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           },
@@ -1821,13 +2185,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/interest-types/",
+              "raw": "{{baseUrl}}/interest-types/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "interest-types",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -1952,13 +2328,23 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/leaseholds/",
+              "raw": "{{baseUrl}}/leaseholds/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "leaseholds",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           },
@@ -2000,7 +2386,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2093,13 +2479,43 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/enquiries/",
+              "raw": "{{baseUrl}}/enquiries/?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "enquiries",
                 ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Enquiries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enquiries/my-enquiries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiries",
+                "my-enquiries"
               ]
             }
           },
@@ -2297,12 +2713,24 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/locations",
+              "raw": "{{baseUrl}}/locations?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "locations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "type": "text"
+                }
               ]
             }
           },
@@ -2351,6 +2779,177 @@
                 {
                   "key": ":id",
                   "value": "ad53afb9-459b-43e8-8681-0794e0bd4999"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notification Preferences",
+      "item": [
+        {
+          "name": "Create Notification Preferences",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Notification Preferences",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Notification Preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Notification Preferences Copy",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "All Notification Preferences",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Notification Preferences By Id",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"emailEnabled\": true,\r\n    \"pushEnabled\": false\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification-preferences/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
                 }
               ]
             }

@@ -2,19 +2,26 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import ChooseFolder from "@/components/userDashboard/explore/ChooseFolder";
 import CreateFolder from "@/components/userDashboard/explore/createFolder";
 import DeleteFolderModal from "@/components/userDashboard/explore/DeleteFolderModal";
 import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
 import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import Funnel from "@/components/svg/Funnel";
 import { folderService } from "@/services/folderService";
+const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
+const formatPrice = (value) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return "RM 0";
 
-const initialShortlistFolders = [
-  { id: "saved", label: "Saved", count: 3 },
-  { id: "investment-ideas", label: "Investment ideas", count: 3 },
-  { id: "johor-potentials", label: "Johor Potentials", count: 3 },
-];
+  return `RM ${numericValue.toLocaleString("en-US")}`;
+};
+
+const formatArea = (landArea, landAreaUnit) => {
+  const numericValue = Number(landArea);
+  const area = Number.isFinite(numericValue) ? numericValue.toLocaleString("en-US") : String(landArea || "-");
+  const unit = landAreaUnit ? ` ${landAreaUnit}` : "";
+  return `${area}${unit}`;
+};
 
 /*
 const shortlistedProperties = [
@@ -159,13 +166,11 @@ const shortlistedProperties = [
 const shortlistedProperties = [];
 
 const ShortlistsPage = () => {
-  const [folders, setFolders] = useState(initialShortlistFolders);
-  const [activeFolderId, setActiveFolderId] = useState(initialShortlistFolders[0].id);
+  const [folders, setFolders] = useState([]);
+  const [properties, setProperties] = useState(shortlistedProperties);
+  const [activeFolderId, setActiveFolderId] = useState(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
-  const [chooseFolderOpen, setChooseFolderOpen] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
-  const [pendingFolderName, setPendingFolderName] = useState("");
-  const [selectedParentFolderId, setSelectedParentFolderId] = useState(null);
   const [activeFolderMenuId, setActiveFolderMenuId] = useState(null);
   const [renamingFolderId, setRenamingFolderId] = useState(null);
   const [folderToDelete, setFolderToDelete] = useState(null);
@@ -192,7 +197,12 @@ const ShortlistsPage = () => {
             return null;
           }
 
-          const count = typeof folder?.count === "number" ? folder.count : folder?.propertiesCount;
+          const count =
+            typeof folder?.count === "number"
+              ? folder.count
+              : typeof folder?.propertyCount === "number"
+                ? folder.propertyCount
+                : folder?.propertiesCount;
           const parentId = folder?.parentId ?? folder?.parentFolderId ?? null;
 
           return {
@@ -205,17 +215,71 @@ const ShortlistsPage = () => {
         .filter(Boolean);
     };
 
+    const normalizeProperties = (payload) => {
+      const items = Array.isArray(payload) ? payload : payload?.data;
+      if (!Array.isArray(items)) {
+        return [];
+      }
+
+      return items.flatMap((folder) => {
+        const folderId = folder?.id ?? folder?._id;
+        const folderProperties = Array.isArray(folder?.properties) ? folder.properties : [];
+
+        return folderProperties
+          .map((entry) => {
+            const property = entry?.property ?? entry;
+            const propertyId = property?.id ?? entry?.propertyId;
+
+            if (!folderId || !propertyId) {
+              return null;
+            }
+
+            return {
+              id: propertyId,
+              status: "Active",
+              statusColor: "var(--color-green-secondary)",
+              image: fallbackListingImage,
+              category: property?.category?.name || "-",
+              area: formatArea(property?.landArea, property?.landAreaUnit),
+              code: property?.listingCode || "-",
+              title: property?.title || "Land listing",
+              dealTags: [],
+              price: formatPrice(property?.price),
+              valuation: property?.pricePerSqrft
+                ? `RM ${Number(property.pricePerSqrft).toLocaleString("en-US")}/sqft`
+                : "-",
+              folderId,
+            };
+          })
+          .filter(Boolean);
+      });
+    };
+
     (async () => {
       try {
         const response = await folderService.getFolders();
         const normalized = normalizeFolders(response);
+        const normalizedProperties = normalizeProperties(response);
+
+        if (mounted) {
+          setProperties(normalizedProperties);
+        }
 
         if (!mounted || normalized.length === 0) {
+          if (mounted) {
+            setFolders([]);
+            setActiveFolderId(null);
+          }
           return;
         }
 
         setFolders(normalized);
-        setActiveFolderId((prev) => (normalized.some((folder) => folder.id === prev) ? prev : normalized[0].id));
+        setActiveFolderId((prev) => {
+          if (normalized.length === 0) {
+            return null;
+          }
+          return normalized.some((folder) => folder.id === prev) ? prev : normalized[0].id;
+        });
       } catch (_error) {
         if (!mounted) {
           return;
@@ -246,18 +310,42 @@ const ShortlistsPage = () => {
     };
   }, [isFilterMenuOpen]);
 
-  const handleCreateFolder = (folderName) => {
-    setPendingFolderName(folderName);
-    setSelectedParentFolderId(null);
+  const handleCreateFolder = async (folderName) => {
     setCreateFolderOpen(false);
-    setChooseFolderOpen(true);
+    
+    // Create folder immediately without asking for parent folder
+    const folderId = folderName
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const newFolder = {
+      id: `${folderId || "folder"}-${Date.now()}`,
+      label: folderName,
+      count: 0,
+      parentId: null,
+    };
+
+    try {
+      const created = await folderService.createFolder({ name: folderName });
+      const createdId = created?.data?.id ?? created?.id ?? created?._id;
+
+      const folderToAdd = {
+        ...newFolder,
+        id: createdId || newFolder.id,
+      };
+
+      setFolders((prev) => [...prev, folderToAdd]);
+      setActiveFolderId(folderToAdd.id);
+    } catch (_error) {
+      setFolders((prev) => [...prev, newFolder]);
+      setActiveFolderId(newFolder.id);
+    }
   };
 
   const handleCloseCreateFlow = () => {
     setCreateFolderOpen(false);
-    setChooseFolderOpen(false);
-    setPendingFolderName("");
-    setSelectedParentFolderId(null);
   };
 
   const handleFolderMenuToggle = (folderId) => {
@@ -319,65 +407,37 @@ const ShortlistsPage = () => {
     await Promise.allSettled(idsToDeleteOnServer.map((id) => folderService.deleteFolder(id)));
   };
 
-  const handleBackToCreateFolder = () => {
-    setChooseFolderOpen(false);
-    setCreateFolderOpen(true);
-  };
 
-  const handleConfirmFolderCreation = async () => {
-    const folderName = pendingFolderName.trim();
 
-    if (!folderName) {
-      return;
-    }
+  const handleRemoveFromShortlist = async (propertyId, folderId) => {
+    // Remove property from the shortlist
+    setProperties((prev) => prev.filter((p) => !(p.id === propertyId && p.folderId === folderId)));
+    setFolders((prev) =>
+      prev.map((folder) => {
+        if (folder.id !== folderId || typeof folder.count !== "number") {
+          return folder;
+        }
 
-    const folderId = folderName
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
-    const existingFolder = folders.find(
-      (folder) =>
-        folder.id === folderId && (folder.parentId ?? null) === (selectedParentFolderId ?? null)
-          || folder.label.toLowerCase() === folderName.toLowerCase() && (folder.parentId ?? null) === (selectedParentFolderId ?? null)
+        return {
+          ...folder,
+          count: Math.max(0, folder.count - 1),
+        };
+      })
     );
-
-    if (existingFolder) {
-      setActiveFolderId(existingFolder.id);
-      handleCloseCreateFlow();
-      return;
-    }
-
-    const newFolder = {
-      id: `${folderId || "folder"}-${Date.now()}`,
-      label: folderName,
-      count: 0,
-      parentId: selectedParentFolderId ?? null,
-    };
-
-    try {
-      const created = await folderService.createFolder({ name: folderName });
-      const createdId = created?.data?.id ?? created?.id ?? created?._id;
-
-      const folderToAdd = {
-        ...newFolder,
-        id: createdId || newFolder.id,
-      };
-
-      setFolders((prev) => [...prev, folderToAdd]);
-      setActiveFolderId(folderToAdd.id);
-    } catch (_error) {
-      setFolders((prev) => [...prev, newFolder]);
-      setActiveFolderId(newFolder.id);
-    } finally {
-      handleCloseCreateFlow();
+    
+    // Optionally call API to remove from folder
+    if (folderId && isLikelyUuid(folderId)) {
+      try {
+        await folderService.removeFromFolder(folderId, propertyId);
+      } catch (_error) {
+        // Property still removed from UI even if API fails
+      }
     }
   };
 
   const visibleProperties = useMemo(
-    () => shortlistedProperties.filter((property) => property.folderId === activeFolderId),
-    [activeFolderId]
+    () => properties.filter((property) => property.folderId === activeFolderId),
+    [activeFolderId, properties]
   );
 
   return (
@@ -451,7 +511,13 @@ const ShortlistsPage = () => {
                   key={property.id}
                   land={property}
                   className="w-full"
-                  // showMenuButton
+                  isSaved={true}
+                  heartStyle="shortlist"
+                  onLikeClick={({ propertyId, isSaved }) => {
+                    if (isSaved) {
+                      handleRemoveFromShortlist(propertyId, property.folderId);
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -462,15 +528,6 @@ const ShortlistsPage = () => {
           open={createFolderOpen}
           onClose={handleCloseCreateFlow}
           onSubmit={handleCreateFolder}
-        />
-        <ChooseFolder
-          open={chooseFolderOpen}
-          onClose={handleCloseCreateFlow}
-          folders={folders}
-          selectedFolderId={selectedParentFolderId}
-          onSelect={setSelectedParentFolderId}
-          onBack={handleBackToCreateFolder}
-          onConfirm={handleConfirmFolderCreation}
         />
         <DeleteFolderModal
           open={Boolean(folderToDelete)}

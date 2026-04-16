@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useSelector } from "react-redux";
 
+import ChooseFolder from "@/components/userDashboard/explore/ChooseFolder";
+import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
 import PropertyGallery from "@/components/landingPage/property/PropertyGallery";
 import MapView from "@/components/userDashboard/explore/MapView";
 import Bag from "@/components/svg/Bag";
@@ -18,7 +21,10 @@ import Pointer from "@/components/svg/Pointer";
 import Plus from "@/components/svg/Plus";
 import Sheild from "@/components/svg/Sheild";
 import Person from "@/components/svg/Person";
+import { enquiryService } from "@/services/enquiryService";
+import { folderService } from "@/services/folderService";
 import { landService } from "@/services/landService";
+import { checkAuth } from "@/utils/auth";
 
 const fallbackPropertyDetails = {
   id: "LS-000128",
@@ -123,6 +129,68 @@ const formatStatusLabel = (value) =>
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+const normalizeOptionText = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const formatEnquiryCode = (enquiryId) => {
+  if (!enquiryId || typeof enquiryId !== "string") {
+    return "ENQ-000000";
+  }
+
+  return `ENQ-${enquiryId.replace(/-/g, "").toUpperCase().slice(0, 6)}`;
+};
+
+const extractInterestTypeItems = (response) => {
+  const rawItems = Array.isArray(response?.data)
+    ? response.data
+    : Array.isArray(response?.result)
+      ? response.result
+      : Array.isArray(response?.items)
+        ? response.items
+        : Array.isArray(response?.data?.items)
+          ? response.data.items
+          : Array.isArray(response?.data?.data)
+            ? response.data.data
+            : Array.isArray(response?.result?.items)
+              ? response.result.items
+              : Array.isArray(response?.result?.data)
+                ? response.result.data
+                : [];
+
+  return rawItems
+    .map((item) => {
+      if (typeof item === "string") {
+        return { id: null, name: item };
+      }
+
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      return {
+        id:
+          item.id ||
+          item._id ||
+          item.interestTypeId ||
+          item?.interestType?.id ||
+          item?.type?.id ||
+          null,
+        name:
+          item.name ||
+          item.label ||
+          item.title ||
+          item.value ||
+          item?.interestType?.name ||
+          item?.type?.name ||
+          "",
+      };
+    })
+    .filter((item) => typeof item?.name === "string" && item.name.trim());
+};
+
 const mapPropertyToDetails = (property) => {
   const locationTitle = [property?.location?.district, property?.location?.state]
     .filter(Boolean)
@@ -192,6 +260,7 @@ const mapPropertyToDetails = (property) => {
 
 const PropertyPage = () => {
   const router = useRouter();
+  const { isAuth, hydrated, user } = useSelector((state) => state.auth);
   const params = useParams();
   const searchParams = useSearchParams();
   const propertyId = Array.isArray(params?.propertyId) ? params.propertyId[0] : params?.propertyId;
@@ -206,6 +275,279 @@ const PropertyPage = () => {
   const [interestType, setInterestType] = useState(interestTypeOptions[0]);
   const [message, setMessage] = useState("");
   const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
+  const [isLoginRequiredOpen, setIsLoginRequiredOpen] = useState(false);
+  const [interestTypes, setInterestTypes] = useState([]);
+  const [interestSubmitError, setInterestSubmitError] = useState("");
+  const [interestSubmitSuccess, setInterestSubmitSuccess] = useState("");
+  const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
+  const [isEnquirySuccessOpen, setIsEnquirySuccessOpen] = useState(false);
+  const [submittedEnquiryId, setSubmittedEnquiryId] = useState("");
+  const [isChooseFolderOpen, setIsChooseFolderOpen] = useState(false);
+  const [folders, setFolders] = useState([]);
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
+  const [pendingPropertyId, setPendingPropertyId] = useState(null);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
+  const [isSavingToFolder, setIsSavingToFolder] = useState(false);
+  const [isShortlisted, setIsShortlisted] = useState(false);
+  const [shortlistError, setShortlistError] = useState("");
+  const [shortlistSuccess, setShortlistSuccess] = useState("");
+
+  const isLoggedIn = useMemo(() => {
+    if (hydrated) {
+      return Boolean(isAuth);
+    }
+
+    return checkAuth();
+  }, [hydrated, isAuth]);
+
+  const handleRequireLogin = () => {
+    setIsLoginRequiredOpen(true);
+  };
+
+  const handleSubmitInterestClick = () => {
+    if (!isLoggedIn) {
+      handleRequireLogin();
+      return;
+    }
+
+    setInterestSubmitError("");
+    setInterestSubmitSuccess("");
+    setShowInterestForm(true);
+  };
+
+  const normalizeFolders = (payload) => {
+    const items = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.items)
+          ? payload.items
+          : Array.isArray(payload?.data?.items)
+            ? payload.data.items
+            : [];
+
+    return items
+      .map((folder) => {
+        const id = folder?.id ?? folder?._id;
+        const label = folder?.label ?? folder?.name;
+
+        if (!id || !label) {
+          return null;
+        }
+
+        return {
+          id,
+          label,
+          parentId: folder?.parentId ?? folder?.parentFolderId ?? null,
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const handleShortlistClick = async () => {
+    if (!isLoggedIn) {
+      handleRequireLogin();
+      return;
+    }
+
+    if (!propertyId || isShortlisted) {
+      return;
+    }
+
+    setShortlistError("");
+    setShortlistSuccess("");
+    setPendingPropertyId(propertyId);
+    setIsChooseFolderOpen(true);
+    setIsLoadingFolders(true);
+
+    try {
+      const response = await folderService.getFolders();
+      const normalized = normalizeFolders(response);
+      setFolders(normalized);
+      setSelectedFolderId(normalized[0]?.id ?? null);
+
+      if (normalized.length === 0) {
+        setShortlistError("No folders found. Create a folder from My Shortlists first.");
+      }
+    } catch (error) {
+      setFolders([]);
+      setSelectedFolderId(null);
+      setShortlistError(error?.message || "Failed to load folders.");
+    } finally {
+      setIsLoadingFolders(false);
+    }
+  };
+
+  const handleCloseChooseFolder = () => {
+    if (isSavingToFolder) {
+      return;
+    }
+
+    setIsChooseFolderOpen(false);
+    setSelectedFolderId(null);
+    setPendingPropertyId(null);
+    setIsLoadingFolders(false);
+    setIsSavingToFolder(false);
+  };
+
+  const handleConfirmChooseFolder = async () => {
+    if (!pendingPropertyId || !selectedFolderId || isSavingToFolder) {
+      return;
+    }
+
+    setIsSavingToFolder(true);
+    setShortlistError("");
+
+    try {
+      await folderService.addToFolder(selectedFolderId, pendingPropertyId);
+      setIsShortlisted(true);
+      setShortlistSuccess("Property added to shortlist successfully.");
+      handleCloseChooseFolder();
+    } catch (error) {
+      setShortlistError(error?.message || "Failed to add property to shortlist.");
+      setIsSavingToFolder(false);
+    }
+  };
+
+  const handleViewMyEnquiries = () => {
+    setIsEnquirySuccessOpen(false);
+    router.push("/user-dashboard/enquiries");
+  };
+
+  const currentUserId = user?.id || user?.user?.id || user?._id || null;
+
+  const availableInterestTypeOptions = useMemo(() => {
+    const names = interestTypes
+      .map((item) => item?.name)
+      .filter((name) => typeof name === "string" && name.trim());
+
+    return names.length > 0 ? names : interestTypeOptions;
+  }, [interestTypes]);
+
+  const selectedInterestTypeId = useMemo(() => {
+    const normalizedSelected = normalizeOptionText(interestType);
+    const matchedType =
+      interestTypes.find((item) => normalizeOptionText(item?.name) === normalizedSelected) ||
+      interestTypes.find((item) => {
+        const normalizedName = normalizeOptionText(item?.name);
+        return normalizedName.includes(normalizedSelected) || normalizedSelected.includes(normalizedName);
+      });
+
+    if (!matchedType?.id) {
+      const firstAvailableType = interestTypes.find((item) => item?.id);
+      return firstAvailableType?.id || null;
+    }
+
+    return matchedType?.id || null;
+  }, [interestType, interestTypes]);
+
+  const handleConfirmSelection = async () => {
+    if (!isLoggedIn) {
+      handleRequireLogin();
+      return;
+    }
+
+    setInterestSubmitError("");
+    setInterestSubmitSuccess("");
+
+    if (!propertyId) {
+      setInterestSubmitError("Property id is missing.");
+      return;
+    }
+
+    if (!currentUserId) {
+      setInterestSubmitError("User id is missing. Please login again.");
+      return;
+    }
+
+    try {
+      setIsSubmittingInterest(true);
+
+      let resolvedInterestTypeId = selectedInterestTypeId;
+
+      if (!resolvedInterestTypeId) {
+        const response = await enquiryService.getInterestTypes({ page: 1, limit: 100 });
+        const refreshedItems = extractInterestTypeItems(response);
+
+        const normalizedSelected = normalizeOptionText(interestType);
+        const matchedType =
+          refreshedItems.find((item) => normalizeOptionText(item?.name) === normalizedSelected) ||
+          refreshedItems.find((item) => {
+            const normalizedName = normalizeOptionText(item?.name);
+            return normalizedName.includes(normalizedSelected) || normalizedSelected.includes(normalizedName);
+          });
+
+        if (refreshedItems.length > 0) {
+          setInterestTypes(refreshedItems);
+        }
+
+        resolvedInterestTypeId = matchedType?.id || refreshedItems.find((item) => item?.id)?.id || null;
+      }
+
+      if (!resolvedInterestTypeId) {
+        setInterestSubmitError("Please select a valid interest type.");
+        return;
+      }
+
+      const enquiryPayload = {
+        propertyId,
+        userId: currentUserId,
+        interestTypeId: resolvedInterestTypeId,
+        message: message.trim() || "Hello, I am interested in your property. Please contact me at your earliest convenience.",
+        budget: "12300",
+        timeline: selectedRole || "2 years",
+        status: "pending",
+      };
+
+      const response = await enquiryService.createEnquiry(enquiryPayload);
+      const enquiryId = response?.data?.id || response?.result?.id || response?.id || "";
+
+      setInterestSubmitSuccess("Enquiry submitted successfully.");
+      setShowInterestForm(false);
+      setMessage("");
+      setSubmittedEnquiryId(enquiryId);
+      setIsEnquirySuccessOpen(true);
+    } catch (error) {
+      setInterestSubmitError(error?.message || "Failed to submit enquiry.");
+    } finally {
+      setIsSubmittingInterest(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadInterestTypes = async () => {
+      try {
+        const response = await enquiryService.getInterestTypes({ page: 1, limit: 100 });
+        const items = extractInterestTypeItems(response);
+
+        if (isMounted) {
+          setInterestTypes(items);
+        }
+      } catch {
+        if (isMounted) {
+          setInterestTypes([]);
+        }
+      }
+    };
+
+    loadInterestTypes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!availableInterestTypeOptions.includes(interestType)) {
+      setInterestType(availableInterestTypeOptions[0] || "");
+    }
+  }, [availableInterestTypeOptions, interestType]);
 
   useEffect(() => {
     let isMounted = true;
@@ -282,6 +624,44 @@ const PropertyPage = () => {
     ],
     [propertyDetails]
   );
+
+  if (isEnquirySuccessOpen) {
+    return (
+      <main className="bg-background-primary py-20">
+        <div className="mx-3 flex min-h-[72vh] items-center justify-center px-2 lg:px-6 xl:px-10">
+          <section className="flex w-full max-w-xl flex-col items-center text-center">
+            <div className="flex h-22 w-22 items-center justify-center rounded-full bg-green-secondary/10">
+              <div className="flex h-18 w-18 items-center justify-center rounded-full bg-green-secondary/20 shadow-inner">
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-green-secondary">
+                  <Check
+                    size={26}
+                    stroke="white"
+                    circleFill="transparent"
+                    circleStroke="transparent"
+                    className="absolute inset-0 m-auto"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <h2 className="mt-8 text-[40px] font-semibold leading-tight text-gray2">Interest Submitted</h2>
+            <p className="mt-4 max-w-110 text-[16px] leading-7 text-gray7">
+              Your enquiry ({formatEnquiryCode(submittedEnquiryId)}) has been logged. Our land specialists will review your profile for matching with the seller.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleViewMyEnquiries}
+              className="mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-green-primary px-6 text-[14px] font-semibold text-white transition hover:opacity-95"
+            >
+              View my enquiries
+              <span aria-hidden>→</span>
+            </button>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="bg-background-primary py-20">
@@ -431,7 +811,7 @@ const PropertyPage = () => {
                     onChange={(event) => setInterestType(event.target.value)}
                     className="h-11 w-full appearance-none rounded-xl border border-border-input bg-white px-4 text-sm font-semibold text-gray2 outline-none"
                   >
-                    {interestTypeOptions.map((option) => (
+                    {availableInterestTypeOptions.map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
@@ -482,8 +862,17 @@ const PropertyPage = () => {
                 </div>
               </div>
 
-              <button className="flex h-11 w-full items-center justify-center rounded-lg bg-green-primary text-sm font-semibold text-white">
-                Confirm selection
+              {interestSubmitError ? (
+                <p className="text-center text-xs leading-5 text-red-500">{interestSubmitError}</p>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={handleConfirmSelection}
+                disabled={isSubmittingInterest}
+                className="flex h-11 w-full items-center justify-center rounded-lg bg-green-primary text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSubmittingInterest ? "Submitting..." : "Confirm selection"}
               </button>
 
               <button
@@ -509,21 +898,54 @@ const PropertyPage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setShowInterestForm(true)}
+                onClick={handleSubmitInterestClick}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-primary text-sm font-semibold text-white"
               >
                 <Plus size={16} color="white" />
                 Submit interest
               </button>
-              <button className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border-card bg-white text-sm font-semibold text-green-primary">
+              <button
+                type="button"
+                onClick={handleShortlistClick}
+                className={`flex h-11 w-full items-center justify-center gap-2 rounded-lg border text-sm font-semibold ${
+                  isShortlisted
+                    ? "border-border-green bg-activebg text-green-secondary"
+                    : "border-border-card bg-white text-green-primary"
+                }`}
+              >
                 <Heart size={16} color="currentColor" />
-                Add to shortlist
+                {isShortlisted ? "Saved to shortlist" : "Add to shortlist"}
               </button>
+              {shortlistError ? <p className="text-center text-xs leading-5 text-red-500">{shortlistError}</p> : null}
+              {shortlistSuccess ? <p className="text-center text-xs leading-5 text-green-secondary">{shortlistSuccess}</p> : null}
               <p className="text-center text-xs leading-5 text-gray5">No direct seller contact. Bypass attempts result in immediate account suspension.</p>
             </div>
           )}
         </aside>
         ) : null}
+
+        <LoginRequiredModal
+          open={isLoginRequiredOpen}
+          onClose={() => setIsLoginRequiredOpen(false)}
+          title="Login required"
+          message="Please log in to submit interest or add this property to your shortlist."
+        />
+
+        <ChooseFolder
+          open={isChooseFolderOpen}
+          onClose={handleCloseChooseFolder}
+          folders={folders}
+          selectedFolderId={selectedFolderId}
+          onSelect={setSelectedFolderId}
+          onBack={handleCloseChooseFolder}
+          onConfirm={handleConfirmChooseFolder}
+          title="Choose folder"
+          description="Select a folder to save this property to shortlist"
+          backLabel="Cancel"
+          confirmLabel="Save to folder"
+          isConfirmDisabled={!selectedFolderId || isLoadingFolders || isSavingToFolder}
+          isConfirmLoading={isLoadingFolders || isSavingToFolder}
+        />
       </div>
 
     </main>

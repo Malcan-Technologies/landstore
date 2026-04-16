@@ -1,23 +1,6 @@
-/**
- * USER SERVICE
- * 
- * UNIFIED REGISTRATION FLOW (Better Auth):
- * 1. Client calls POST /api/users/register with ALL data (email, password, profile info)
- *    → Better Auth hashes password and stores encrypted in Account.password
- *    → User record created with email
- *    → User profile completed with phone, userType, and custom fields
- *    → Returns full user profile with all details
- * 
- * 2. Client signs in via POST /api/auth/sign-in with email & password
- *    → Better Auth verifies password against Account.password (hashed comparison)
- *    → Session created and returned
- * 
- * ⚠️ IMPORTANT: Passwords are ALWAYS hashed by Better Auth before database storage.
- * Account.password field stores ONLY hashed passwords, never plain text.
- */
-
 import db from "../../config/prisma.js";
 import { auth } from "../../config/auth.js";
+import { transformMediaWithSignedUrl } from "./signedUrlTransformer.js";
 import type { User, UserType } from "@prisma/client";
 
 type UpdateUserPayload = {
@@ -448,10 +431,33 @@ export const getUserByEmail = async (email: string) => {
   return user;
 };
 
-export const getAllUsers = async () => {
-  return db.user.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+export const getAllUsers = async (page: number = 1, limit: number = 10) => {
+  const validPage = Number.isFinite(page) && page > 0 ? page : 1;
+  const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+  const skip = (validPage - 1) * validLimit;
+
+  try {
+    const [users, total] = await Promise.all([
+      db.user.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: validLimit,
+      }),
+      db.user.count(),
+    ]);
+
+    return {
+      items: users,
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        total,
+        totalPages: Math.ceil(total / validLimit) || 1,
+      },
+    };
+  } catch (error: unknown) {
+    throw error;
+  }
 };
 
 export const updateUserById = async (id: string, payload: UpdateUserPayload) => {
@@ -540,6 +546,13 @@ export const getUserCompleteProfile = async (userId: string) => {
       individuals: true,
       companies: true,
       koperasi: true,
+      notificationPrefs: true,
+      profileMedia: true,
+      entityTypes: {
+        include: {
+          entityType: true,
+        },
+      },
     },
   });
 
@@ -559,37 +572,97 @@ export const getUserCompleteProfile = async (userId: string) => {
     profileType = "koperasi";
   }
 
-  // Build individual profile if exists
+  // Build individual profile if exists (with all fields)
   const individual = user.individuals
     ? {
+        id: user.individuals.id,
+        userId: user.individuals.userId,
         fullName: user.individuals.fullName,
         identityNo: user.individuals.identityNo,
+        createdAt: user.individuals.createdAt,
+        updatedAt: user.individuals.updatedAt,
       }
     : null;
 
-  // Build company profile if exists
+  // Build company profile if exists (with all fields)
   const company = user.companies
     ? {
+        id: user.companies.id,
+        userId: user.companies.userId,
         companyName: user.companies.companyName,
         registrationNo: user.companies.registrationNo,
+        createdAt: user.companies.createdAt,
+        updatedAt: user.companies.updatedAt,
       }
     : null;
 
-  // Build koperasi profile if exists
+  // Build koperasi profile if exists (with all fields)
   const koperasi = user.koperasi
     ? {
+        id: user.koperasi.id,
+        userId: user.koperasi.userId,
         koperasiName: user.koperasi.koperasiName,
         registrationNo: user.koperasi.registrationNo,
+        createdAt: user.koperasi.createdAt,
+        updatedAt: user.koperasi.updatedAt,
       }
     : null;
 
-  // Build complete profile response
+  // Build notification preferences
+  const notificationPreferences = user.notificationPrefs
+    ? {
+        id: user.notificationPrefs.id,
+        userId: user.notificationPrefs.userId,
+        emailEnabled: user.notificationPrefs.emailEnabled,
+        pushEnabled: user.notificationPrefs.pushEnabled,
+        createdAt: user.notificationPrefs.createdAt,
+        updatedAt: user.notificationPrefs.updatedAt,
+      }
+    : null;
+
+  // Build profile media with signed URL
+  let profilePicture = null;
+  if (user.profileMedia) {
+    try {
+      const mediaWithSignedUrl = await transformMediaWithSignedUrl(user.profileMedia);
+      profilePicture = {
+        id: mediaWithSignedUrl.id,
+        fileUrl: mediaWithSignedUrl.fileUrl,
+        mediaType: mediaWithSignedUrl.mediaType,
+        mediaCategory: mediaWithSignedUrl.mediaCategory,
+        userId: mediaWithSignedUrl.userId,
+      };
+    } catch (error) {
+      console.error("Error transforming profile media:", error);
+      // Fallback: return media without signed URL
+      profilePicture = {
+        id: user.profileMedia.id,
+        fileUrl: user.profileMedia.fileUrl,
+        mediaType: user.profileMedia.mediaType,
+        mediaCategory: user.profileMedia.mediaCategory,
+        userId: user.profileMedia.userId,
+      };
+    }
+  }
+
+  // Build entity types list
+  const entityTypesData = user.entityTypes.map((ue) => ({
+    id: ue.id,
+    entityTypeId: ue.entityTypeId,
+    entityType: ue.entityType,
+  }));
+
+  // Build complete profile response with all fields
   const profile = {
     // Basic user info from Better Auth and user table
     id: user.id,
+    name: user.name,
     email: user.email,
+    emailVerified: user.emailVerified,
+    image: user.image,
     userType: user.userType,
     phone: user.phone,
+    profileMediaId: user.profileMediaId,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
 
@@ -598,6 +671,15 @@ export const getUserCompleteProfile = async (userId: string) => {
     individual,
     company,
     koperasi,
+
+    // Profile picture/media
+    profilePicture,
+
+    // User preferences
+    notificationPreferences,
+
+    // Entity types associated with user
+    entityTypes: entityTypesData,
   };
 
   return profile;

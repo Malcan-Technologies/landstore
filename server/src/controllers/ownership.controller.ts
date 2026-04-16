@@ -66,12 +66,16 @@ export const getAllOwnershipTypesController = async (
 	res: Response
 ) => {
 	try {
-		const types = await getAllOwnershipTypes();
+		const page = parseInt(req.query.page as string) || 1;
+		const limit = parseInt(req.query.limit as string) || 10;
+
+		const result = await getAllOwnershipTypes(page, limit);
 
 		res.status(200).json({
 			success: true,
 			message: "Ownership types retrieved successfully",
-			data: types,
+			data: result.items,
+			pagination: result.pagination,
 		});
 	} catch (error: any) {
 		const { statusCode, message } = getErrorPayload(error);

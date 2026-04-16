@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
 
 import DualNote from "@/components/svg/DualNote";
@@ -10,19 +10,6 @@ import Verify from "@/components/svg/Verify";
 import Edit from "@/components/svg/Edit";
 import Sheild from "@/components/svg/Sheild";
 import ProfileCheck from "@/components/svg/ProfileCheck";
-
-const verifiedBadge = (
-  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ECFDF3] px-2.5 py-1 text-[12px] font-bold text-active">
-    <Sheild size={14} color="var(--color-active)" />
-    Identity Verified
-  </span>
-);
-
-const memberBadge = (
-  <span className="inline-flex items-center rounded-full bg-[#1F1F1F] px-2.5 py-1 text-[12px] font-medium text-white">
-    Member ID: U123
-  </span>
-);
 
 const lockIcon = (
   <svg
@@ -57,27 +44,52 @@ const inputClassName =
   "h-11 w-full rounded-lg border border-border-input bg-white px-4 text-[14px] text-gray2 outline-none transition focus:border-green-secondary focus:ring-1 focus:ring-border-green disabled:bg-background-primary disabled:text-gray5";
 
 const ProfilePage = () => {
-  const { user } = useSelector((state) => state.auth);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profile, setProfile] = useState(null);
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("MY");
   const [phone, setPhone] = useState("");
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [appAlerts, setAppAlerts] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(false);
+  const [appAlerts, setAppAlerts] = useState(false);
+  const [selectedProfileImage, setSelectedProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState("");
+  const [saveError, setSaveError] = useState("");
+
+  const profileImageSrc =
+    profileImagePreview ||
+    profile?.profilePicture?.url ||
+    profile?.profilePicture ||
+    profile?.profileMedia?.fileUrl ||
+    profile?.profileImage ||
+    profile?.image ||
+    "/user.jpg";
+  const isEmailVerified = Boolean(profile?.emailVerified);
+  const displayName =
+    profile?.name ||
+    profile?.individual?.fullName ||
+    profile?.company?.companyName ||
+    profile?.koperasi?.koperasiName ||
+    "User";
+  const memberId = profile?.id || "-";
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
-        const response = await userService.getUserProfile();
-        
-        if (response.success && response.result) {
-          const profileData = response.result;
+        const response = await authService.myProfile();
+
+        const profileData = response?.result || response?.data || response?.profile || response?.user || null;
+
+        if (profileData) {
           setProfile(profileData);
           setEmail(profileData.email || "");
           setPhone(profileData.phone || "");
+
+          const notificationPreferences = profileData.notificationPreferences;
+          setEmailNotifications(Boolean(notificationPreferences?.emailEnabled));
+          setAppAlerts(Boolean(notificationPreferences?.pushEnabled));
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -88,6 +100,86 @@ const ProfilePage = () => {
 
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (profileImagePreview) {
+        URL.revokeObjectURL(profileImagePreview);
+      }
+    };
+  }, [profileImagePreview]);
+
+  const handleProfileImageChange = (event) => {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!selectedFile.type.startsWith("image/")) {
+      setSaveError("Please select a valid image file.");
+      return;
+    }
+
+    setSaveError("");
+    setSelectedProfileImage(selectedFile);
+
+    const previewUrl = URL.createObjectURL(selectedFile);
+    setProfileImagePreview((previousPreview) => {
+      if (previousPreview) {
+        URL.revokeObjectURL(previousPreview);
+      }
+      return previewUrl;
+    });
+  };
+
+  const handleEditProfileClick = async () => {
+    if (!isEditing) {
+      setIsEditing(true);
+      setSaveError("");
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      setSaveError("");
+
+      const payload = new FormData();
+      payload.append("email", email);
+      payload.append("phone", phone);
+
+      if (selectedProfileImage) {
+        payload.append("profileImage", selectedProfileImage);
+      }
+
+      const response = await userService.updateProfileMe(payload);
+      const updatedProfile =
+        response?.user || response?.result || response?.data || null;
+
+      if (updatedProfile) {
+        setProfile((previousProfile) => ({
+          ...(previousProfile || {}),
+          ...updatedProfile,
+        }));
+      }
+
+      setIsEditing(false);
+      setSelectedProfileImage(null);
+      setProfileImagePreview((previousPreview) => {
+        if (previousPreview) {
+          URL.revokeObjectURL(previousPreview);
+        }
+        return "";
+      });
+    } catch (error) {
+      setSaveError(
+        error?.response?.data?.message ||
+          "Failed to update profile. Please try again."
+      );
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   return (
     <main className="bg-background-primary pb-14 pt-10">
@@ -106,7 +198,7 @@ const ProfilePage = () => {
             <div className="relative md:h-36 md:w-36 shrink-0 h-30 w-30">
               <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-white shadow-[0px_4px_18px_rgba(15,61,46,0.08)]">
                 <Image
-                  src="/user.jpg"
+                  src={profileImageSrc || "/user.jpg"}
                   alt="User profile"
                   fill
                   unoptimized
@@ -114,19 +206,59 @@ const ProfilePage = () => {
                   sizes="143px"
                 />
               </div>
-              <span className="absolute bottom-2 md:bottom-2 right-1 md:right-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full z-10">
-                <Verify width={28} height={28} />
-              </span>
+              {isEditing && (
+                <>
+                  <input
+                    id="profile-image-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfileImageChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="profile-image-input"
+                    className="absolute inset-0 z-20 cursor-pointer rounded-full"
+                  >
+                    <span className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray2 shadow-md transition hover:bg-gray-50">
+                      <Edit
+                        size={14}
+                        stroke="currentColor"
+                        accentStroke="currentColor"
+                      />
+                    </span>
+                  </label>
+                </>
+              )}
+              {isEmailVerified && (
+                <span className="absolute bottom-2 md:bottom-2 right-1 md:right-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full z-10">
+                  <Verify width={28} height={28} />
+                </span>
+              )}
             </div>
 
             <div className="max-w-155 items-center sm:items-start flex flex-col">
               <h2 className="text-[22px] font-semibold leading-tight text-gray2 sm:text-[24px] md:text-[26px]">
-                {isLoading ? "Loading..." : profile?.individual?.fullName || profile?.company?.companyName || profile?.koperasi?.koperasiName || "User"}
+                {isLoading ? "Loading..." : displayName}
               </h2>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {verifiedBadge}
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${
+                    isEmailVerified
+                      ? "bg-[#ECFDF3] text-active"
+                      : "bg-[#FEF3F2] text-[#B42318]"
+                  }`}
+                >
+                  <Sheild
+                    size={14}
+                    color={isEmailVerified ? "var(--color-active)" : "#B42318"}
+                  />
+                  {isEmailVerified ? "Identity Verified" : "Identity Not Verified"}
+                </span>
                 <span className="inline-flex items-center rounded-full bg-[#1F1F1F] px-2.5 py-1 text-[12px] font-medium text-white">
-                  Member ID: {profile?.id ? `U${profile.id.slice(0, 6)}` : "U123"}
+                  Member ID: {memberId}
+                </span>
+                <span className="inline-flex items-center rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[12px] font-medium text-[#3538CD]">
+                  User Type: {profile?.userType || "-"}
                 </span>
               </div>
               <p className="mt-4 max-w-140 text-[14px] leading-6 text-gray5 md:text-[15px] text-center sm:text-left">
@@ -141,12 +273,13 @@ const ProfilePage = () => {
           <div className="flex sm:items-center sm:justify-start justify-center">
             <button
               type="button"
-              onClick={() => setIsEditing((prev) => !prev)}
+              onClick={handleEditProfileClick}
+              disabled={isSavingProfile}
               className={`inline-flex h-11 items-center justify-center gap-2 self-start whitespace-nowrap rounded-lg px-3 text-[14px] font-medium transition md:px-4 ${
                 isEditing
                   ? "bg-green-primary text-white hover:bg-green-secondary"
                   : "border border-border-input  text-gray2 hover:bg-background-primary"
-              }`}
+              } ${isSavingProfile ? "cursor-not-allowed opacity-70" : ""}`}
             >
               {!isEditing ? (
                 <Edit
@@ -157,10 +290,18 @@ const ProfilePage = () => {
               ) : (
                 ""
               )}
-              {isEditing ? "Save profile" : "Edit profile"}
+              {isSavingProfile
+                ? "Saving..."
+                : isEditing
+                ? "Save profile"
+                : "Edit profile"}
             </button>
           </div>
         </section>
+
+        {saveError && (
+          <p className="mb-6 text-[13px] font-medium text-[#B42318]">{saveError}</p>
+        )}
 
         <section className="mb-10">
           <h3 className="text-[18px] font-semibold text-gray2 md:text-[22px]">

@@ -19,6 +19,7 @@ import entityTypeRoutes from "./src/routes/entityType.routes.js";
 import notificationRoutes from "./src/routes/notification.routes.js";
 import locationRoutes from "./src/routes/location.routes.js";
 import leaseholdRoutes from "./src/routes/leasehold.routes.js";
+import notificationPreference from "./src/routes/notificationPreference.routes.js"
 
 const app: Application = express();
 
@@ -85,8 +86,10 @@ app.use(cookieParser());
 // User routes (protected and unprotected)
 app.use("/api/users", userRoutes);
 
+// Public routes (list-lands has auth on individual routes)
+app.use("/api/list-lands", listLandRoutes);
+
 // Protected routes (require authentication)
-app.use("/api/list-lands", requireApiAuth, listLandRoutes);
 app.use("/api/folders", requireApiAuth, folderRoutes);
 app.use("/api/categories", requireApiAuth, categoryRoutes);
 app.use("/api/ownership-types", requireApiAuth, ownershipRoutes);
@@ -98,6 +101,7 @@ app.use("/api/entity-types", requireApiAuth, entityTypeRoutes);
 app.use("/api/notifications", requireApiAuth, notificationRoutes);
 app.use("/api/locations", requireApiAuth, locationRoutes);
 app.use("/api/leaseholds", requireApiAuth, leaseholdRoutes);
+app.use("/api/notification-preferences", notificationPreference)
 
 // Global error handler middleware
 app.use((err: any, req: express.Request, res: express.Response, next: Function) => {

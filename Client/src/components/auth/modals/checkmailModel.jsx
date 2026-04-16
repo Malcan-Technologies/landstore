@@ -6,6 +6,17 @@ import Message from "@/components/svg/message";
 const CheckMailModal = ({ open, onClose, email, onContinue, onBackToLogin }) => {
   const resolvedEmail = typeof email === "string" ? email.trim() : "";
 
+  const handleContinue = () => {
+    if (typeof onContinue === "function") {
+      onContinue();
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.open("https://mail.google.com/mail/", "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
     <Modal
       open={open}
@@ -31,7 +42,7 @@ const CheckMailModal = ({ open, onClose, email, onContinue, onBackToLogin }) => 
         <button
           type="button"
           className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-green-primary px-4 text-[14px] font-medium text-white transition hover:opacity-95"
-          onClick={onContinue}
+          onClick={handleContinue}
         >
           Open email app
         </button>

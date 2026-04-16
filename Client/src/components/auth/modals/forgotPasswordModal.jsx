@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Modal from "@/components/common/Modal";
 import Key from "@/components/svg/key";
 
-const ForgotPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
+const ForgotPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoading = false, apiError = "" }) => {
   const inputRef = useRef(null);
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -65,13 +65,14 @@ const ForgotPasswordModal = ({ open, onClose, onBackToLogin, onSuccess }) => {
           />
 
           {error ? <p className="mt-2 text-[13px] text-red-500">{error}</p> : null}
+          {apiError ? <p className="mt-2 text-[13px] text-red-500">{apiError}</p> : null}
 
           <button
             type="submit"
-            disabled={!email.trim()}
+            disabled={!email.trim() || isLoading}
             className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-green-primary px-4 text-[14px] font-medium text-white transition hover:opacity-95 disabled:opacity-60"
           >
-            Reset password
+            {isLoading ? "Sending..." : "Reset password"}
           </button>
 
           <button

@@ -33,30 +33,47 @@ export const createUtilization = async (name: string) => {
 };
 
 /**
- * Get all utilizations with property count
+ * Get all utilizations with property count (paginated)
  */
-export const getAllUtilizations = async () => {
+export const getAllUtilizations = async (page: number = 1, limit: number = 10) => {
+	const validPage = Number.isFinite(page) && page > 0 ? page : 1;
+	const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+	const skip = (validPage - 1) * validLimit;
+
 	try {
-		const utilizations = await db.utilization.findMany({
-			include: {
-				properties: {
-					select: {
-						id: true,
+		const [utilizations, total] = await Promise.all([
+			db.utilization.findMany({
+				include: {
+					properties: {
+						select: {
+							id: true,
+						},
 					},
 				},
-			},
-			orderBy: {
-				name: "asc",
-			},
-		});
+				orderBy: {
+					name: "asc",
+				},
+				skip,
+				take: validLimit,
+			}),
+			db.utilization.count(),
+		]);
 
-		return utilizations.map((util: any) => ({
-			id: util.id,
-			name: util.name,
-			propertyCount: util.properties.length,
-			createdAt: util.createdAt,
-			updatedAt: util.updatedAt,
-		}));
+		return {
+			items: utilizations.map((util: any) => ({
+				id: util.id,
+				name: util.name,
+				propertyCount: util.properties.length,
+				createdAt: util.createdAt,
+				updatedAt: util.updatedAt,
+			})),
+			pagination: {
+				page: validPage,
+				limit: validLimit,
+				total,
+				totalPages: Math.ceil(total / validLimit) || 1,
+			},
+		};
 	} catch (error: unknown) {
 		throw error;
 	}

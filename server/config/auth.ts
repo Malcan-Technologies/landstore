@@ -28,7 +28,9 @@ export const auth = betterAuth({
     },
     deferSessionRefresh: true, // refresh session in background after response is sent
   },
-  plugins: [dash()],
+  plugins: [
+    dash(),
+  ],
 });
 
 export type Session = typeof auth.$Infer.Session;

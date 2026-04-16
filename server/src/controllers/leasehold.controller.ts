@@ -162,17 +162,19 @@ export const deleteLeaseholdDetailController = async (req: Request, res: Respons
  */
 export const getAllLeaseholdDetailsController = async (req: Request, res: Response) => {
   try {
-    const { startYearFrom, startYearTo } = req.query;
+    const { startYearFrom, startYearTo, page, limit } = req.query;
 
-    const leaseholdDetails = await getAllLeaseholdDetails(
+    const result = await getAllLeaseholdDetails(
       startYearFrom ? Number(startYearFrom) : undefined,
-      startYearTo ? Number(startYearTo) : undefined
+      startYearTo ? Number(startYearTo) : undefined,
+      parseInt(page as string) || 1,
+      parseInt(limit as string) || 10
     );
 
     return res.status(200).json({
       success: true,
-      leaseholdDetails,
-      count: leaseholdDetails.length,
+      data: result.items,
+      pagination: result.pagination,
     });
   } catch (error: unknown) {
     const { statusCode, message } = getErrorPayload(error);

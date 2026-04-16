@@ -5,7 +5,27 @@ export const userService = {
   // Get complete authenticated profile
   getUserProfile: async () => {
     try {
-      const response = await api.get('/users/profile');
+      const response = await api.get('/users/me');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update authenticated user's profile via PATCH /users/me
+  updateProfileMe: async (profileData, config = {}) => {
+    try {
+      const isFormData = typeof FormData !== 'undefined' && profileData instanceof FormData;
+      const response = await api.patch('/users/me', profileData, {
+        ...(isFormData
+          ? {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            }
+          : {}),
+        ...config,
+      });
       return response.data;
     } catch (error) {
       throw error;

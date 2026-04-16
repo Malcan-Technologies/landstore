@@ -1,7 +1,58 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import NotificationList from "@/components/userDashboard/notifications/NotificationList";
-import { fullNotificationItems } from "@/components/userDashboard/notifications/notificationData";
+import { notificationService } from "@/services/notificationService";
 
 const NotificationsPage = () => {
+  const { isAuth, user } = useSelector((state) => state.auth);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (!isAuth || !user?.id) {
+      setNotifications([]);
+      return;
+    }
+
+    let mounted = true;
+
+    const mapNotification = (item) => {
+      const apiType = item?.type;
+      const type = apiType === "urgent" ? "warning" : "success";
+      const createdAt = item?.createdAt ? new Date(item.createdAt) : null;
+
+      return {
+        id: item?.id,
+        title: apiType === "urgent" ? "Action needed" : "Notification",
+        message: item?.content || "",
+        timeLabel: createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toLocaleString() : "",
+        type,
+        href: "/user-dashboard/notifications",
+        read: Boolean(item?.isRead),
+      };
+    };
+
+    (async () => {
+      try {
+        const response = await notificationService.getNotifications({ page: 1, limit: 5, userId: user.id });
+        const items = Array.isArray(response) ? response : response?.data;
+        const mapped = Array.isArray(items) ? items.map(mapNotification).filter((n) => n?.id) : [];
+        if (mounted) {
+          setNotifications(mapped);
+        }
+      } catch (_error) {
+        if (mounted) {
+          setNotifications([]);
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAuth, user?.id]);
+
   return (
     <main className="bg-background-primary py-8 sm:py-8 md:py-10">
       <div className="mx-auto w-full max-w-245 px-4 sm:px-5 md:px-6">
@@ -15,7 +66,7 @@ const NotificationsPage = () => {
           </button>
         </header>
 
-        <NotificationList notifications={fullNotificationItems} />
+        <NotificationList notifications={notifications} />
       </div>
     </main>
   );

@@ -159,14 +159,16 @@ export const deleteLocationController = async (req: Request, res: Response) => {
  */
 export const getAllLocationsController = async (req: Request, res: Response) => {
   try {
-    const { state, district } = req.query;
+    const { state, district, page, limit } = req.query;
 
-    const locations = await getAllLocations(
+    const result = await getAllLocations(
       state ? String(state) : undefined,
-      district ? String(district) : undefined
+      district ? String(district) : undefined,
+      parseInt(page as string) || 1,
+      parseInt(limit as string) || 10
     );
 
-    return res.status(200).json({ success: true, locations, count: locations.length });
+    return res.status(200).json({ success: true, data: result.items, pagination: result.pagination });
   } catch (error: unknown) {
     const { statusCode, message } = getErrorPayload(error);
     return res.status(statusCode).json({ success: false, message });
