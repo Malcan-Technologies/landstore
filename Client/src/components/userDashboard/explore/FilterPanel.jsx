@@ -229,7 +229,7 @@ const FilterPanel = ({
             <div className="my-5 border-t border-border-input" />
           </div>
 
-          {folders.length ? (
+          {folders.length || onCreateFolder ? (
             <div className="space-y-5">
               <p className="flex items-center gap-2 text-[15px] font-semibold text-gray2">
                 <Folder size={18} color="var(--color-gray2)" /> {foldersTitle}

@@ -79,7 +79,7 @@ const CreateFolder = ({ open, onClose, onSubmit }) => {
             <Button
               type="submit"
               className="h-12 w-full justify-center rounded-2xl px-5 text-[16px] font-medium shadow-none"
-              label="Next"
+              label="Create folder"
               disabled={!folderName.trim()}
             />
           </div>

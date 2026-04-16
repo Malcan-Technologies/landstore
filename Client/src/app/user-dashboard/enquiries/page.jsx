@@ -84,22 +84,29 @@ const EnquiriesPage = () => {
       setError("");
 
       try {
-        const response = await enquiryService.getAllEnquiries({ page: 1, limit: 50 });
+        const response = await enquiryService.getMyEnquiries({ page: 1, limit: 50 });
         const items = normalizeEnquiries(response);
 
-        const mappedEnquiries = items.map((item, index) => ({
-          id: item?.id || `enquiry-${index + 1}`,
-          code: formatEnquiryCode(item?.id),
-          status: toStatusLabel(item?.status),
-          title: item?.property?.title || "Property details pending",
-          category: item?.property?.category || "N/A",
-          area: item?.property?.size || "N/A",
-          dealTags: [item?.interestType?.name || "General"],
-          updatedAt: formatDate(item?.updatedAt || item?.createdAt),
-          unreadCount: Number(item?.messagesCount) || 0,
-          highlighted: index === 0,
-          image: item?.property?.images?.[0]?.url || item?.property?.image || FALLBACK_IMAGE,
-        }));
+        const mappedEnquiries = items.map((item, index) => {
+          // API shape: top-level `id` is the enquiry id.
+          const enquiryId = item?.id ?? item?.enquiryId ?? item?._id;
+
+          return {
+            id: enquiryId || `enquiry-${index + 1}`,
+            enquiryId: enquiryId || "",
+            propertyId: item?.propertyId ?? item?.property?.id ?? "",
+            code: formatEnquiryCode(enquiryId),
+            status: toStatusLabel(item?.status),
+            title: item?.property?.title || "Property details pending",
+            category: item?.property?.category || "N/A",
+            area: item?.property?.size || "N/A",
+            dealTags: [item?.interestType?.name || "General"],
+            updatedAt: formatDate(item?.updatedAt || item?.createdAt),
+            unreadCount: Number(item?.messagesCount) || 0,
+            highlighted: index === 0,
+            image: item?.property?.images?.[0]?.url || item?.property?.image || FALLBACK_IMAGE,
+          };
+        });
 
         setEnquiries(mappedEnquiries);
       } catch (apiError) {

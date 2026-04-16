@@ -149,7 +149,7 @@ const ProfilePage = () => {
       payload.append("phone", phone);
 
       if (selectedProfileImage) {
-        payload.append("image", selectedProfileImage);
+        payload.append("profileImage", selectedProfileImage);
       }
 
       const response = await userService.updateProfileMe(payload);

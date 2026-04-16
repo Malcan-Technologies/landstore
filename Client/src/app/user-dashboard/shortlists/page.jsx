@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import ChooseFolder from "@/components/userDashboard/explore/ChooseFolder";
 import CreateFolder from "@/components/userDashboard/explore/createFolder";
 import DeleteFolderModal from "@/components/userDashboard/explore/DeleteFolderModal";
 import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
@@ -171,10 +170,7 @@ const ShortlistsPage = () => {
   const [properties, setProperties] = useState(shortlistedProperties);
   const [activeFolderId, setActiveFolderId] = useState(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
-  const [chooseFolderOpen, setChooseFolderOpen] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
-  const [pendingFolderName, setPendingFolderName] = useState("");
-  const [selectedParentFolderId, setSelectedParentFolderId] = useState(null);
   const [activeFolderMenuId, setActiveFolderMenuId] = useState(null);
   const [renamingFolderId, setRenamingFolderId] = useState(null);
   const [folderToDelete, setFolderToDelete] = useState(null);
@@ -314,18 +310,42 @@ const ShortlistsPage = () => {
     };
   }, [isFilterMenuOpen]);
 
-  const handleCreateFolder = (folderName) => {
-    setPendingFolderName(folderName);
-    setSelectedParentFolderId(null);
+  const handleCreateFolder = async (folderName) => {
     setCreateFolderOpen(false);
-    setChooseFolderOpen(true);
+    
+    // Create folder immediately without asking for parent folder
+    const folderId = folderName
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const newFolder = {
+      id: `${folderId || "folder"}-${Date.now()}`,
+      label: folderName,
+      count: 0,
+      parentId: null,
+    };
+
+    try {
+      const created = await folderService.createFolder({ name: folderName });
+      const createdId = created?.data?.id ?? created?.id ?? created?._id;
+
+      const folderToAdd = {
+        ...newFolder,
+        id: createdId || newFolder.id,
+      };
+
+      setFolders((prev) => [...prev, folderToAdd]);
+      setActiveFolderId(folderToAdd.id);
+    } catch (_error) {
+      setFolders((prev) => [...prev, newFolder]);
+      setActiveFolderId(newFolder.id);
+    }
   };
 
   const handleCloseCreateFlow = () => {
     setCreateFolderOpen(false);
-    setChooseFolderOpen(false);
-    setPendingFolderName("");
-    setSelectedParentFolderId(null);
   };
 
   const handleFolderMenuToggle = (folderId) => {
@@ -387,59 +407,31 @@ const ShortlistsPage = () => {
     await Promise.allSettled(idsToDeleteOnServer.map((id) => folderService.deleteFolder(id)));
   };
 
-  const handleBackToCreateFolder = () => {
-    setChooseFolderOpen(false);
-    setCreateFolderOpen(true);
-  };
 
-  const handleConfirmFolderCreation = async () => {
-    const folderName = pendingFolderName.trim();
 
-    if (!folderName) {
-      return;
-    }
+  const handleRemoveFromShortlist = async (propertyId, folderId) => {
+    // Remove property from the shortlist
+    setProperties((prev) => prev.filter((p) => !(p.id === propertyId && p.folderId === folderId)));
+    setFolders((prev) =>
+      prev.map((folder) => {
+        if (folder.id !== folderId || typeof folder.count !== "number") {
+          return folder;
+        }
 
-    const folderId = folderName
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
-    const existingFolder = folders.find(
-      (folder) =>
-        folder.id === folderId && (folder.parentId ?? null) === (selectedParentFolderId ?? null)
-          || folder.label.toLowerCase() === folderName.toLowerCase() && (folder.parentId ?? null) === (selectedParentFolderId ?? null)
+        return {
+          ...folder,
+          count: Math.max(0, folder.count - 1),
+        };
+      })
     );
-
-    if (existingFolder) {
-      setActiveFolderId(existingFolder.id);
-      handleCloseCreateFlow();
-      return;
-    }
-
-    const newFolder = {
-      id: `${folderId || "folder"}-${Date.now()}`,
-      label: folderName,
-      count: 0,
-      parentId: selectedParentFolderId ?? null,
-    };
-
-    try {
-      const created = await folderService.createFolder({ name: folderName });
-      const createdId = created?.data?.id ?? created?.id ?? created?._id;
-
-      const folderToAdd = {
-        ...newFolder,
-        id: createdId || newFolder.id,
-      };
-
-      setFolders((prev) => [...prev, folderToAdd]);
-      setActiveFolderId(folderToAdd.id);
-    } catch (_error) {
-      setFolders((prev) => [...prev, newFolder]);
-      setActiveFolderId(newFolder.id);
-    } finally {
-      handleCloseCreateFlow();
+    
+    // Optionally call API to remove from folder
+    if (folderId && isLikelyUuid(folderId)) {
+      try {
+        await folderService.removeFromFolder(folderId, propertyId);
+      } catch (_error) {
+        // Property still removed from UI even if API fails
+      }
     }
   };
 
@@ -519,7 +511,13 @@ const ShortlistsPage = () => {
                   key={property.id}
                   land={property}
                   className="w-full"
-                  // showMenuButton
+                  isSaved={true}
+                  heartStyle="shortlist"
+                  onLikeClick={({ propertyId, isSaved }) => {
+                    if (isSaved) {
+                      handleRemoveFromShortlist(propertyId, property.folderId);
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -530,15 +528,6 @@ const ShortlistsPage = () => {
           open={createFolderOpen}
           onClose={handleCloseCreateFlow}
           onSubmit={handleCreateFolder}
-        />
-        <ChooseFolder
-          open={chooseFolderOpen}
-          onClose={handleCloseCreateFlow}
-          folders={folders}
-          selectedFolderId={selectedParentFolderId}
-          onSelect={setSelectedParentFolderId}
-          onBack={handleBackToCreateFolder}
-          onConfirm={handleConfirmFolderCreation}
         />
         <DeleteFolderModal
           open={Boolean(folderToDelete)}
