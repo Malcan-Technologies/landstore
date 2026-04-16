@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,9 +18,19 @@ import { logoutUser } from "@/store/authSlice";
 
 const ADMIN_AUTH_STORAGE_KEY = "landstore_admin_auth";
 
+const AdminSearchParamsHandler = ({ onToken }) => {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const tokenFromUrl = searchParams?.get("token") || "";
+    if (tokenFromUrl) {
+      onToken();
+    }
+  }, [searchParams, onToken]);
+  return null;
+};
+
 const AdminHeader = ({ onMenuClick }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const { isAuth, user, hydrated } = useSelector((state) => state.auth);
 
@@ -75,14 +85,6 @@ const AdminHeader = ({ onMenuClick }) => {
       mounted = false;
     };
   }, [isAuth, user?.id]);
-
-  useEffect(() => {
-    const tokenFromUrl = searchParams?.get("token") || "";
-    if (tokenFromUrl) {
-      setAuthTab("login");
-      setIsLoginOpen(true);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -233,6 +235,9 @@ const AdminHeader = ({ onMenuClick }) => {
         </div>
       </div>
 
+      <Suspense fallback={null}>
+        <AdminSearchParamsHandler onToken={() => { setAuthTab("login"); setIsLoginOpen(true); }} />
+      </Suspense>
       <LoginModal open={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialTab={authTab} />
     </>
   );
