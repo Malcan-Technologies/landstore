@@ -224,7 +224,7 @@ export const addPropertyToFolderController = async (
 			throw badRequestError;
 		}
 
-		const shortlist = await addPropertyToFolder(
+		const property = await addPropertyToFolder(
 			folderId,
 			propertyId,
 			requester.id
@@ -233,7 +233,7 @@ export const addPropertyToFolderController = async (
 		res.status(201).json({
 			success: true,
 			message: "Property added to shortlist",
-			data: shortlist,
+			data: property,
 		});
 	} catch (error: unknown) {
 		const errorPayload = getErrorPayload(error);

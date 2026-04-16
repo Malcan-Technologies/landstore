@@ -1,5 +1,6 @@
 import { Router } from "express";
 import requireApiAuth from "../middleware/requireApiAuth.js";
+import optionalApiAuth from "../middleware/optionalApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
 import upload from "../middleware/multer.js";
 import {
@@ -17,8 +18,8 @@ const listLandRouter = Router();
 // Create property with images and documents: Images + Documents uploaded to S3 -> Media/Document records created -> Property created
 listLandRouter.post("/", requireApiAuth, upload.any(), createListLandController);
 
-// Search properties by geographic radius
-listLandRouter.post("/search/by-radius", searchPropertiesByRadiusController);
+// Search properties by geographic radius (public with optional authentication)
+listLandRouter.post("/search/by-radius", optionalApiAuth, searchPropertiesByRadiusController);
 
 // Get all public listings (accessible to any authenticated user)
 listLandRouter.get("/all-listings", requireApiAuth, requireAdmin,getAllListingsController);

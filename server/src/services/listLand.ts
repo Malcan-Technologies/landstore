@@ -809,7 +809,9 @@ export const updateListLandById = async (
  * Delete property by ID (Hard Delete)
  */
 export const deleteListLandById = async (
-	propertyId: string
+	propertyId: string,
+	userId: string,
+	userType: string
 ) => {
 	const existingProperty = await db.property.findUnique({
 		where: { id: propertyId },
@@ -819,7 +821,13 @@ export const deleteListLandById = async (
 		throw createHttpError("Property not found", 404);
 	}
 
-	
+	// Check authorization: only admin or property owner can delete
+	if (userType !== "admin" && existingProperty.userId !== userId) {
+		throw createHttpError(
+			"You do not have permission to delete this property",
+			403
+		);
+	}
 
 	try {
 		await db.$transaction([
