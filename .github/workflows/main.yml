@@ -3,6 +3,8 @@ name: Deploy Client to ECS
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'Client'
   workflow_dispatch:
 
 jobs:
@@ -52,17 +54,13 @@ jobs:
       run: |
         jq --arg IMAGE "$REGISTRY/$REPOSITORY:$IMAGE_TAG" \
            --arg MAP_KEY "${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
-           --arg ADMIN "${{ secrets.ADMIN_EMAIL }}" \
-           --arg ADMIN_PASS "${{ secrets.ADMIN_PASSWORD }}" \
-           --arg USER_TYPE "${{ secrets.USERTYPE }}" \
+           --arg API_URL "${{ secrets.SERVER_URL }}" \
         '
         (.containerDefinitions[] | select(.name=="landstore-client") | .image) = $IMAGE
         |
         (.containerDefinitions[] | select(.name=="landstore-client") | .environment) += [
           {"name":"NEXT_PUBLIC_GOOGLE_MAPS_API_KEY","value":$MAP_KEY},
-          {"name":"admin","value":$ADMIN},
-          {"name":"adminpassword","value":$ADMIN_PASS},
-          {"name":"userType","value":$USER_TYPE}
+          {"name":"NEXT_PUBLIC_API_URL","value":$API_URL}
         ]
         |
         del(.taskDefinitionArn)
