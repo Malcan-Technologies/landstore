@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useDispatch } from "react-redux";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/common/Button";
@@ -17,11 +17,22 @@ import { loginSuccess } from "@/store/authSlice";
 import { authService } from "@/services/authService";
 import { validateForm, loginValidation } from "@/validators";
 
+const LoginModalSearchParamsHandler = ({ open, onToken }) => {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (!open) return;
+    const tokenFromUrl = searchParams?.get("token") || "";
+    if (tokenFromUrl) {
+      onToken(tokenFromUrl);
+    }
+  }, [open, searchParams, onToken]);
+  return null;
+};
+
 const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
@@ -64,20 +75,13 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
     }
   }, [open, initialTab]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const tokenFromUrl = searchParams?.get("token") || "";
-    if (tokenFromUrl) {
-      setResetToken(tokenFromUrl);
-      setForgotPasswordOpen(false);
-      setCheckMailOpen(false);
-      setResetPasswordSuccessOpen(false);
-      setSetNewPasswordOpen(true);
-    }
-  }, [open, searchParams]);
+  const handleToken = (tokenFromUrl) => {
+    setResetToken(tokenFromUrl);
+    setForgotPasswordOpen(false);
+    setCheckMailOpen(false);
+    setResetPasswordSuccessOpen(false);
+    setSetNewPasswordOpen(true);
+  };
 
   const handleForgotPasswordSuccess = async (submittedEmail) => {
     setForgotPasswordLoading(true);
@@ -184,6 +188,9 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
 
   return (
     <>
+      <Suspense fallback={null}>
+        <LoginModalSearchParamsHandler open={open} onToken={handleToken} />
+      </Suspense>
       <Modal
         open={open && !forgotPasswordOpen && !checkMailOpen && !setNewPasswordOpen && !resetPasswordSuccessOpen}
         onClose={onClose}

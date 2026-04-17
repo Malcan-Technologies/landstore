@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Arrow from "@/components/svg/Arrow";
 import Button from "@/components/common/Button";
 import Heart from "@/components/svg/Heart";
+import RedHeart from "@/components/svg/RedHeart";
 import Pointer from "@/components/svg/Pointer";
 import Building from "@/components/svg/Building";
 import Bag from "@/components/svg/Bag";
@@ -25,6 +26,7 @@ const PropertyCard = ({
   onLoginRequired,
   onLikeClick,
   isSaved,
+  heartStyle = "default",
 }) => {
   const router = useRouter();
   const {
@@ -57,6 +59,7 @@ const PropertyCard = ({
 
   const [internalIsSaved, setInternalIsSaved] = useState(false);
   const [resolvedImageSrc, setResolvedImageSrc] = useState(resolvedImageFromProps);
+  const [isHeartHovered, setIsHeartHovered] = useState(false);
   const savedState = typeof isSaved === "boolean" ? isSaved : internalIsSaved;
 
   useEffect(() => {
@@ -106,8 +109,30 @@ const PropertyCard = ({
     }
   };
 
-  const renderHeartIcon = (width, height) => {
+  const renderHeartIcon = (width, height, hovered = false) => {
     if (savedState) {
+      if (heartStyle === "shortlist") {
+        if (hovered) {
+          return <RedHeart width={width} height={height} />;
+        }
+
+        return (
+          <svg
+            width={width}
+            height={height}
+            viewBox="0 0 20 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              d="M10 15.2C9.7003 15.2 9.29142 15.0867 8.78521 14.7909C8.37698 14.5523 7.96313 14.2269 7.56297 13.9116C7.35179 13.7452 7.12947 13.574 6.90028 13.3975C5.88418 12.6149 4.73225 11.7275 3.81195 10.6912C2.67027 9.40581 1.8 7.81312 1.8 5.7C1.8 3.57454 3.00695 1.73093 4.75333 0.932875C6.40787 0.176768 8.45937 0.38399 10 2.01758C11.5406 0.38399 13.5921 0.176768 15.2467 0.932875C16.9931 1.73093 18.2 3.57454 18.2 5.7C18.2 7.81312 17.3297 9.40581 16.188 10.6912C15.2678 11.7275 14.1158 12.6149 13.0997 13.3975C12.8705 13.574 12.6482 13.7452 12.437 13.9116C12.0369 14.2269 11.623 14.5523 11.2148 14.7909C10.7086 15.0867 10.2997 15.2 10 15.2Z"
+              fill="#000000"
+            />
+          </svg>
+        );
+      }
+
       return (
         <svg
           width={width}
@@ -125,7 +150,7 @@ const PropertyCard = ({
       );
     }
 
-    return <Heart width={width} height={height} color="currentColor" />;
+    return <Heart width={width} height={height} color="#000000" />;
   };
 
   if (variant === "compact") {
@@ -188,13 +213,21 @@ const PropertyCard = ({
               <button
                 type="button"
                 onClick={handleSaveToggle}
+                onMouseEnter={() => setIsHeartHovered(true)}
+                onMouseLeave={() => setIsHeartHovered(false)}
                 className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition ${
-                  savedState ? "text-red-500" : "text-gray5"
+                  savedState
+                    ? heartStyle === "shortlist"
+                      ? isHeartHovered
+                        ? "rounded-full bg-[#FBEAEC] text-red-600 ring-1 ring-red-100"
+                        : "text-black"
+                      : "text-red-500"
+                    : "text-black hover:text-red-500"
                 }`.trim()}
                 aria-label={savedState ? "Remove from saved" : "Save card"}
                 aria-pressed={savedState}
               >
-                {renderHeartIcon(12, 12)}
+                {renderHeartIcon(12, 12, isHeartHovered)}
               </button>
             </div>
           </div>
@@ -223,13 +256,25 @@ const PropertyCard = ({
         <button
           type="button"
           onClick={handleSaveToggle}
-          className={`absolute right-4 top-4 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white shadow transition ${
-            savedState ? "text-red-500" : "text-gray2"
+          onMouseEnter={() => setIsHeartHovered(true)}
+          onMouseLeave={() => setIsHeartHovered(false)}
+          className={`absolute right-4 top-4 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full shadow transition ${
+            savedState && heartStyle === "shortlist" && isHeartHovered
+              ? "bg-[#FBEAEC] ring-1 ring-red-100"
+              : "bg-white"
+          } ${
+            savedState
+              ? heartStyle === "shortlist"
+                ? isHeartHovered
+                  ? "text-red-600"
+                  : "text-black"
+                : "text-red-500"
+              : "text-black hover:text-red-500"
           }`.trim()}
           aria-label={savedState ? "Remove from shortlist" : "Save to shortlist"}
           aria-pressed={savedState}
         >
-          {renderHeartIcon(16, 16)}
+          {renderHeartIcon(16, 16, isHeartHovered)}
         </button>
         {showMenuButton ? (
           <button

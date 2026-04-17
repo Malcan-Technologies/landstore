@@ -21,6 +21,15 @@ export const enquiryService = {
 			throw error;
 		}
 	},
+	// Get all enquiries
+	getMyEnquiries: async (params = {}) => {
+		try {
+			const response = await api.get('/enquiries/my-enquiries', { params });
+			return response.data;
+		} catch (error) {
+			throw error;
+		}
+	},
 
 	// Get all interest types (used for enquiry creation payload)
 	getInterestTypes: async (params = {}) => {
