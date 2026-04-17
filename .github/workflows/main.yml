@@ -56,9 +56,9 @@ jobs:
            --arg ADMIN_PASS "${{ secrets.ADMIN_PASSWORD }}" \
            --arg USER_TYPE "${{ secrets.USERTYPE }}" \
         '
-        (.containerDefinitions[] | select(.name=="client") | .image) = $IMAGE
+        (.containerDefinitions[] | select(.name=="landstore-client") | .image) = $IMAGE
         |
-        (.containerDefinitions[] | select(.name=="client") | .environment) += [
+        (.containerDefinitions[] | select(.name=="landstore-client") | .environment) += [
           {"name":"NEXT_PUBLIC_GOOGLE_MAPS_API_KEY","value":$MAP_KEY},
           {"name":"admin","value":$ADMIN},
           {"name":"adminpassword","value":$ADMIN_PASS},
