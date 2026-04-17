@@ -22,6 +22,7 @@ type CreateUserProfilePayload = {
   firstName?: string | undefined;
   lastName?: string | undefined;
   name?: string | undefined;
+  entityTypes?: (string | undefined)[];
 };
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -130,6 +131,9 @@ export const registerAndCompleteProfile = async (
 
 			return updatedUser;
 		});
+
+		// Associate entity types if provided
+		await upsertUserEntityTypes(userId, profileData.entityTypes);
 
 		return {
 			userId: userId,
@@ -241,7 +245,36 @@ export const completeUserProfile = async (
 	// Create user profile details
 	await upsertUserProfileDetail(user.id, payload);
 
+	// Associate entity types if provided
+	await upsertUserEntityTypes(user.id, payload.entityTypes);
+
 	return updatedUser;
+};
+
+const upsertUserEntityTypes = async (
+	userId: string,
+	entityTypeIds?: (string | undefined)[]
+) => {
+	// Delete all existing entity types for this user
+	await db.userEntityType.deleteMany({
+		where: { userId },
+	});
+
+	if (!entityTypeIds || entityTypeIds.length === 0) {
+		return;
+	}
+
+	const validEntityTypeIds = entityTypeIds.filter((id) => id !== undefined) as string[];
+
+	// Create new entity type associations
+	for (const entityTypeId of validEntityTypeIds) {
+		await db.userEntityType.create({
+			data: {
+				userId,
+				entityTypeId,
+			},
+		});
+	}
 };
 
 const upsertUserProfileDetail = async (
@@ -380,6 +413,9 @@ export const signUpAndCompleteProfile = async (
 
       return updatedUser;
     });
+
+    // Associate entity types if provided
+    await upsertUserEntityTypes(userId, profileData.entityTypes);
 
     return {
       userId: userId,
@@ -683,4 +719,157 @@ export const getUserCompleteProfile = async (userId: string) => {
   };
 
   return profile;
+};
+
+/**
+ * Get user growth over time with optional filtering by profile type
+ * Supports time ranges: 24hours, 7days, 30days, 12months
+ * Can filter by profile type: individual, company, koperasi, or all
+ * Returns data points with cumulative counts and percentage increase
+ */
+export const getUserGrowthOverTime = async (
+	timeRange: "12months" | "30days" | "7days" | "24hours" = "12months",
+	profileType?: "individual" | "company" | "koperasi"
+) => {
+	try {
+		// Calculate date range
+		const now = new Date();
+		let startDate = new Date();
+
+		switch (timeRange) {
+			case "24hours":
+				startDate.setHours(startDate.getHours() - 24);
+				break;
+			case "7days":
+				startDate.setDate(startDate.getDate() - 7);
+				break;
+			case "30days":
+				startDate.setDate(startDate.getDate() - 30);
+				break;
+			case "12months":
+				startDate.setFullYear(startDate.getFullYear() - 1);
+				break;
+		}
+
+		// Build where clause based on user type
+		let whereClause: any = {
+			createdAt: {
+				gte: startDate,
+				lte: now,
+			},
+		};
+
+		if (profileType === "individual") {
+			whereClause.individuals = { isNot: null };
+		} else if (profileType === "company") {
+			whereClause.companies = { isNot: null };
+		} else if (profileType === "koperasi") {
+			whereClause.koperasi = { isNot: null };
+		}
+
+		// Get all users within the date range
+		const users = await db.user.findMany({
+			where: whereClause,
+			select: {
+				id: true,
+				createdAt: true,
+			},
+			orderBy: {
+				createdAt: "asc",
+			},
+		});
+
+		// Group users by date and calculate cumulative count
+		const usersByDate: Record<string, number> = {};
+		let cumulativeCount = 0;
+
+		// Get the starting cumulative count (users before the start date)
+		const priorCount = await db.user.count({
+			where: {
+				createdAt: { lt: startDate },
+				...(!profileType
+					? {}
+					: profileType === "individual"
+						? { individuals: { isNot: null } }
+						: profileType === "company"
+							? { companies: { isNot: null } }
+							: { koperasi: { isNot: null } }),
+			},
+		});
+
+		cumulativeCount = priorCount;
+
+		// Process each user and group by date
+		users.forEach((user) => {
+			const dateKey = user.createdAt.toISOString().split("T")[0] || ""; // YYYY-MM-DD format
+			
+			if (dateKey) {
+				if (!usersByDate[dateKey]) {
+					usersByDate[dateKey] = 0;
+				}
+				usersByDate[dateKey]++;
+			}
+		});
+
+		// Generate data points with cumulative counts
+		const dataPoints: Array<{
+			date: string;
+			count: number;
+			cumulativeCount: number;
+		}> = [];
+
+		Object.keys(usersByDate)
+			.sort()
+			.forEach((date) => {
+				const count = usersByDate[date];
+				if (count !== undefined) {
+					cumulativeCount += count;
+					dataPoints.push({
+						date,
+						count,
+						cumulativeCount,
+					});
+				}
+			});
+
+		// Calculate percentage increase
+		let percentageIncrease = 0;
+		if (dataPoints.length > 1) {
+			const firstDataPoint = dataPoints[0];
+			const lastDataPoint = dataPoints[dataPoints.length - 1];
+			if (firstDataPoint && lastDataPoint) {
+				const firstCount = firstDataPoint.cumulativeCount;
+				const lastCount = lastDataPoint.cumulativeCount;
+				percentageIncrease = ((lastCount - firstCount) / firstCount) * 100;
+			}
+		}
+
+		// Get current total
+		const currentTotal = await db.user.count({
+			where: {
+				...(!profileType
+					? {}
+					: profileType === "individual"
+						? { individuals: { isNot: null } }
+						: profileType === "company"
+							? { companies: { isNot: null } }
+							: { koperasi: { isNot: null } }),
+			},
+		});
+
+		return {
+			timeRange,
+			profileType: profileType || "all",
+			dataPoints,
+			summary: {
+				totalUsers: currentTotal,
+				usersInRange: dataPoints.reduce((sum, dp) => sum + dp.count, 0),
+				percentageIncrease: parseFloat(percentageIncrease.toFixed(3)),
+				startDate: startDate.toISOString(),
+				endDate: now.toISOString(),
+			},
+		};
+	} catch (error: unknown) {
+		throw error;
+	}
 };

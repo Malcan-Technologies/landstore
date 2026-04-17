@@ -347,6 +347,8 @@ export const deleteListLandController = async (req: Request, res: Response) => {
  * Get all public listings endpoint
  * Accessible by any authenticated user
  * Returns all approved listings with pagination
+ * Query: { page?, limit?, recentlyApproved? }
+ * - recentlyApproved: if true, returns only active listings sorted by creation date (descending)
  */
 export const getAllListingsController = async (req: Request, res: Response) => {
 	try {
@@ -354,10 +356,12 @@ export const getAllListingsController = async (req: Request, res: Response) => {
 
 		const page = parseInt(req.query.page as string) || 1;
 		const limit = parseInt(req.query.limit as string) || 10;
+		const recentlyApproved = req.query.recentlyApproved === "true";
 
 		const query: GetLandsQuery = {
 			page,
 			limit,
+			recentlyApproved,
 		};
 
 		const result = await getAllListings(query, user.id);
@@ -373,11 +377,12 @@ export const getAllListingsController = async (req: Request, res: Response) => {
  * SEARCH PROPERTIES BY RADIUS
  * POST /api/list-lands/search/by-radius
  * Body: { latitude, longitude, radiusKm }
- * Query: { page?, limit? }
+	 * Query: { page?, limit?, state?, dealTypes?, categoryId?, terrainChips?, utilizationId?, tanahRizabMelayu?, landAreaMin?, landAreaMax?, pricePerSqft?, titleTypeId? }
  *
  * Searches for active properties within a geographic radius using:
  * 1. Bounding box calculation for initial filtering
  * 2. Pythagorean theorem for precise distance verification
+ * 3. Optional filters for refining results
  *
  * Returns: { items, pagination, searchParams }
  */
@@ -417,13 +422,56 @@ export const searchPropertiesByRadiusController = async (
 		const user = getOptionalAuthenticatedUser(req);
 		const userId = user?.id;
 		
+        // Extract optional filters from query parameters
+		const filters: {
+			state?: string;
+			dealTypes?: string[];
+			categoryId?: string;
+			terrainChips?: string[];
+			utilizationId?: string;
+			tanahRizabMelayu?: boolean;
+			landAreaMin?: number;
+			landAreaMax?: number;
+			pricePerSqft?: number;
+			titleTypeId?: string;
+		} = {};
+
+		if (req.query.state !== undefined) filters.state = req.query.state as string;
+		if (req.query.dealTypes !== undefined) {
+			const dealTypes = req.query.dealTypes;
+			filters.dealTypes = Array.isArray(dealTypes) ? (dealTypes as string[]) : [dealTypes as string];
+		}
+		if (req.query.categoryId !== undefined) filters.categoryId = req.query.categoryId as string;
+		if (req.query.terrainChips !== undefined) {
+			const terrainChips = req.query.terrainChips;
+			filters.terrainChips = Array.isArray(terrainChips) ? (terrainChips as string[]) : [terrainChips as string];
+		}
+		if (req.query.utilizationId !== undefined) filters.utilizationId = req.query.utilizationId as string;
+		if (req.query.tanahRizabMelayu !== undefined) {
+			filters.tanahRizabMelayu = req.query.tanahRizabMelayu === "true";
+		}
+		if (req.query.landAreaMin !== undefined) {
+			const landAreaMin = Number(req.query.landAreaMin);
+			if (Number.isFinite(landAreaMin)) filters.landAreaMin = landAreaMin;
+		}
+		if (req.query.landAreaMax !== undefined) {
+			const landAreaMax = Number(req.query.landAreaMax);
+			if (Number.isFinite(landAreaMax)) filters.landAreaMax = landAreaMax;
+		}
+		if (req.query.pricePerSqft !== undefined) {
+			const pricePerSqft = Number(req.query.pricePerSqft);
+			if (Number.isFinite(pricePerSqft)) filters.pricePerSqft = pricePerSqft;
+		}
+		if (req.query.titleTypeId !== undefined) filters.titleTypeId = req.query.titleTypeId as string;
+		
 		const result = await searchPropertiesByRadius(
 			latitude,
 			longitude,
 			radiusKm,
 			page,
 			limit,
-			userId
+			userId,
+			filters
 		);
 
 		return res.status(200).json({

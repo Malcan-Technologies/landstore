@@ -52,6 +52,7 @@ type GetLandsQuery = {
 	page?: number;
 	limit?: number;
 	status?: string;
+	recentlyApproved?: boolean;
 };
 
 const createHttpError = (message: string, statusCode: number) => {
@@ -513,9 +514,9 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 			: 10;
 	const skip = (page - 1) * limit;
 
-	const where: Prisma.PropertyWhereInput = {
-		status: { not: null }, // Only show properties with a status set
-	};
+	const where: Prisma.PropertyWhereInput = query.recentlyApproved
+		? { status: "active" } // Filter for active listings only
+		: { status: { not: null } }; // Show all properties with a status set
 
 	const [items, total] = await Promise.all([
 		db.property.findMany({
@@ -872,7 +873,19 @@ export const searchPropertiesByRadius = async (
 	radiusKm: number | string,
 	page: number = 1,
 	limit: number = 10,
-	userId?: string
+	userId?: string,
+	filters?: {
+		state?: string;
+		dealTypes?: string[];
+		categoryId?: string;
+		terrainChips?: string[];
+		utilizationId?: string;
+		tanahRizabMelayu?: boolean;
+		landAreaMin?: number;
+		landAreaMax?: number;
+		pricePerSqft?: number;
+		titleTypeId?: string;
+	}
 ) => {
 	try {
 		// Parse and validate inputs
@@ -905,27 +918,80 @@ export const searchPropertiesByRadius = async (
 		const minLon = lon - dX;
 		const maxLon = lon + dX;
 
-		// Step 2: Query properties within the bounding box with status = "active"
+		// Build WHERE clause with filters
+		const whereCondition: Prisma.PropertyWhereInput = {
+			status: "active",
+			location: {
+				latitude: {
+					gte: new Prisma.Decimal(minLat),
+					lte: new Prisma.Decimal(maxLat),
+				},
+				longitude: {
+					gte: new Prisma.Decimal(minLon),
+					lte: new Prisma.Decimal(maxLon),
+				},
+			},
+		};
+
+		// Apply optional filters
+		if (filters) {
+			if (filters.state) {
+				(whereCondition.location as any).state = filters.state;
+			}
+
+			if (filters.dealTypes && filters.dealTypes.length > 0) {
+				whereCondition.dealTypes = {
+					hasSome: filters.dealTypes as DealType[],
+				};
+			}
+
+			if (filters.categoryId) {
+				whereCondition.categoryId = filters.categoryId;
+			}
+
+			if (filters.terrainChips && filters.terrainChips.length > 0) {
+				whereCondition.terrainChips = {
+					hasSome: filters.terrainChips as TerrainType[],
+				};
+			}
+
+			if (filters.utilizationId) {
+				whereCondition.utilizationId = filters.utilizationId;
+			}
+
+			if (filters.tanahRizabMelayu !== undefined) {
+				whereCondition.tanahRizabMelayu = filters.tanahRizabMelayu;
+			}
+
+			if (filters.landAreaMin !== undefined || filters.landAreaMax !== undefined) {
+				whereCondition.landArea = {};
+				if (filters.landAreaMin !== undefined) {
+					(whereCondition.landArea as any).gte = new Prisma.Decimal(filters.landAreaMin);
+				}
+				if (filters.landAreaMax !== undefined) {
+					(whereCondition.landArea as any).lte = new Prisma.Decimal(filters.landAreaMax);
+				}
+			}
+
+			if (filters.pricePerSqft !== undefined) {
+				whereCondition.pricePerSqrft = new Prisma.Decimal(filters.pricePerSqft);
+			}
+
+			if (filters.titleTypeId) {
+				whereCondition.titleTypeId = filters.titleTypeId;
+			}
+		}
+
+		// Step 2: Query properties within the bounding box with status = "active" and filters
 		const skip = (page - 1) * limit;
 
 		const boxResults = await db.property.findMany({
-			where: {
-				status: "active",
-				location: {
-					latitude: {
-						gte: new Prisma.Decimal(minLat),
-						lte: new Prisma.Decimal(maxLat),
-					},
-					longitude: {
-						gte: new Prisma.Decimal(minLon),
-						lte: new Prisma.Decimal(maxLon),
-					},
-				},
-			},
+			where: whereCondition,
 			include: includePropertyRelations,
 			skip,
 			take: limit,
 		});
+
 		// Step 3: Refine results using Pythagorean theorem
 		// Filter properties that are actually within the radius circle
 		const radiusSquared = radius * radius;
@@ -948,21 +1014,9 @@ export const searchPropertiesByRadius = async (
 			return distanceSquared <= Math.pow(dY, 2);
 		});
 
-		// Get total count for pagination (approximate based on bounding box)
+		// Get total count for pagination (approximate based on bounding box and filters)
 		const totalCount = await db.property.count({
-			where: {
-				status: "active",
-				location: {
-					latitude: {
-						gte: new Prisma.Decimal(minLat),
-						lte: new Prisma.Decimal(maxLat),
-					},
-					longitude: {
-						gte: new Prisma.Decimal(minLon),
-						lte: new Prisma.Decimal(maxLon),
-					},
-				},
-			},
+			where: whereCondition,
 		});
 		
 		// Transform results with signed URLs and add isShortListed with error handling

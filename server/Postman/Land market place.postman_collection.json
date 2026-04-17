@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}\r\n// {\r\n//     \"email\": \"dawartoor30@gmail.com\",\r\n//     \"password\": \"Test@123456789\"\r\n// }",
+              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    // \"email\": \"ahsanmaqsood786@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}\r\n// {\r\n//     \"email\": \"dawartoor30@gmail.com\",\r\n//     \"password\": \"Test@123456789\"\r\n// }",
               "options": {
                 "raw": {
                   "language": "json"
@@ -116,7 +116,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"ahsanmaqsood177@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\r\n        \"Land owner\"\r\n    ]\r\n}",
+              "raw": "{\r\n    \"email\": \"ahsanmaqsood786@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\"1790ec04-21db-49da-860a-614f0a033042\"] \r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -149,7 +149,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"company13@business.com\",\r\n    \"password\": \"CompanyPass123\",\r\n    \"name\": \"John Doe\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"company\",\r\n    \"companyName\": \"ABC Development Sdn Bhd\",\r\n    \"registrationNo\": \"REG123456\",\r\n    \"entityTypes\": [\"Land owner\"]\r\n}",
+              "raw": "{\r\n    \"email\": \"company3@business.com\",\r\n    \"password\": \"CompanyPass123\",\r\n    \"name\": \"John Doe\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"company\",\r\n    \"companyName\": \"ABC Development Sdn Bhd\",\r\n    \"registrationNo\": \"REG123456\",\r\n    \"entityTypes\": [\"1790ec04-21db-49da-860a-614f0a033042\"]    // array of entity type ids\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -182,7 +182,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"koperasi52@example.com\",\r\n    \"password\": \"SecurePass123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"phone\": \"1234567890\", // ← Optional\r\n    \"userType\": \"user\", // ← System role (admin or user)\r\n    \"profileType\": \"koperasi\", // ← Business profile type\r\n    \"koperasiName\": \"Koperasi ABC\",\r\n    \"registrationNo\": \"REG789\",\r\n    \"entityTypes\": [\"Land owner\"]\r\n}",
+              "raw": "{\r\n    \"email\": \"koperasi52@example.com\",\r\n    \"password\": \"SecurePass123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"phone\": \"1234567890\", // ← Optional\r\n    \"userType\": \"user\", // ← System role (admin or user)\r\n    \"profileType\": \"koperasi\", // ← Business profile type\r\n    \"koperasiName\": \"Koperasi ABC\",\r\n    \"registrationNo\": \"REG789\",\r\n    \"entityTypes\": [\"1790ec04-21db-49da-860a-614f0a033042\"] \r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1123,7 +1123,7 @@
               "formdata": []
             },
             "url": {
-              "raw": "{{baseUrl}}/list-lands/all-listings?page=1&limit=5",
+              "raw": "{{baseUrl}}/list-lands/all-listings?page=1&limit=5&recentlyApproved=true",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1134,13 +1134,16 @@
               "query": [
                 {
                   "key": "page",
-                  "value": "1",
-                  "type": "text"
+                  "value": "1"
                 },
                 {
                   "key": "limit",
-                  "value": "5",
-                  "type": "text"
+                  "value": "5"
+                },
+                {
+                  "key": "recentlyApproved",
+                  "value": "true",
+                  "description": "ture or false"
                 }
               ]
             }
@@ -1171,7 +1174,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "132debd9-f4d0-4809-a12d-793d46aa601b"
+                  "value": "aa9a1a73-0909-4aed-be85-0149577d0e78"
                 }
               ]
             }
@@ -1229,6 +1232,60 @@
                 "list-lands",
                 "search",
                 "by-radius"
+              ],
+              "query": [
+                {
+                  "key": "location",
+                  "value": "Selangor",
+                  "description": "any state",
+                  "disabled": true
+                },
+                {
+                  "key": "dealTypes",
+                  "value": "buy",
+                  "description": "buy",
+                  "disabled": true
+                },
+                {
+                  "key": "categoryId",
+                  "value": "99f16847-4681-4984-b0cc-e9debe0c2c64",
+                  "disabled": true
+                },
+                {
+                  "key": "terrainChips",
+                  "value": "flat",
+                  "disabled": true
+                },
+                {
+                  "key": "utilizationId",
+                  "value": "162a0a33-7531-4e5b-b668-4992a8ba139f",
+                  "disabled": true
+                },
+                {
+                  "key": "tanahRizabMelayu",
+                  "value": "false",
+                  "disabled": true
+                },
+                {
+                  "key": "landAreaMin",
+                  "value": "5000",
+                  "disabled": true
+                },
+                {
+                  "key": "landAreaMax",
+                  "value": "5000",
+                  "disabled": true
+                },
+                {
+                  "key": "pricePerSqft",
+                  "value": "400000",
+                  "disabled": true
+                },
+                {
+                  "key": "titleTypeId",
+                  "value": "2a56fa5d-781d-46e6-86ea-335fef8e1e7b",
+                  "disabled": true
+                }
               ]
             }
           },
@@ -2538,7 +2595,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": ""
+                  "value": "e8928627-605d-4e1a-9e0c-1432f3bc51e9"
                 }
               ]
             }
@@ -2950,6 +3007,42 @@
                 {
                   "key": ":id",
                   "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Graphs(Admin)",
+      "item": [
+        {
+          "name": "User growth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/analytics/growth?timeRange=7days&profileType=individual",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "analytics",
+                "growth"
+              ],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "7days",
+                  "description": "12months | 30days | 7days | 24hours (default: 12months)"
+                },
+                {
+                  "key": "profileType",
+                  "value": "individual",
+                  "description": "individual | company | koperasi (no filter = all types)"
                 }
               ]
             }

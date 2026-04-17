@@ -161,21 +161,8 @@ export const createEnquiry = async (payload: CreateEnquiryPayload) => {
 		});
 
 		return {
-			id: enquiry.id,
-			propertyId: enquiry.propertyId,
-			userId: enquiry.userId,
-			interestTypeId: enquiry.interestTypeId,
-			message: enquiry.message,
+			...enquiry,
 			budget: enquiry.budget?.toString(),
-			timeline: enquiry.timeline,
-			status: enquiry.status,
-			property: enquiry.property,
-			user: enquiry.user,
-			interestType: enquiry.interestType,
-			roles: enquiry.roles,
-			messages: enquiry.messages,
-			createdAt: enquiry.createdAt,
-			updatedAt: enquiry.updatedAt,
 		};
 	} catch (error: unknown) {
 		throw error;
@@ -220,21 +207,9 @@ export const getEnquiries = async (query: GetEnquiriesQuery) => {
 
 		return {
 			data: enquiries.map((enquiry) => ({
-				id: enquiry.id,
-				propertyId: enquiry.propertyId,
-				userId: enquiry.userId,
-				interestTypeId: enquiry.interestTypeId,
-				message: enquiry.message,
+				...enquiry,
 				budget: enquiry.budget?.toString(),
-				timeline: enquiry.timeline,
-				status: enquiry.status,
-				property: enquiry.property,
-				user: enquiry.user,
-				interestType: enquiry.interestType,
-				roles: enquiry.roles,
 				messagesCount: enquiry.messages.length,
-				createdAt: enquiry.createdAt,
-				updatedAt: enquiry.updatedAt,
 			})),
 			pagination: {
 				page: pageNumber,
@@ -274,21 +249,8 @@ export const getEnquiryById = async (enquiryId: string) => {
 		}
 
 		return {
-			id: enquiry.id,
-			propertyId: enquiry.propertyId,
-			userId: enquiry.userId,
-			interestTypeId: enquiry.interestTypeId,
-			message: enquiry.message,
+			...enquiry,
 			budget: enquiry.budget?.toString(),
-			timeline: enquiry.timeline,
-			status: enquiry.status,
-			property: enquiry.property,
-			user: enquiry.user,
-			interestType: enquiry.interestType,
-			roles: enquiry.roles,
-			messages: enquiry.messages,
-			createdAt: enquiry.createdAt,
-			updatedAt: enquiry.updatedAt,
 		};
 	} catch (error: unknown) {
 		throw error;
@@ -337,20 +299,9 @@ export const getEnquiriesByPropertyId = async (
 
 		return {
 			data: enquiries.map((enquiry) => ({
-				id: enquiry.id,
-				propertyId: enquiry.propertyId,
-				userId: enquiry.userId,
-				interestTypeId: enquiry.interestTypeId,
-				message: enquiry.message,
+				...enquiry,
 				budget: enquiry.budget?.toString(),
-				timeline: enquiry.timeline,
-				status: enquiry.status,
-				user: enquiry.user,
-				interestType: enquiry.interestType,
-				roles: enquiry.roles,
 				messagesCount: enquiry.messages.length,
-				createdAt: enquiry.createdAt,
-				updatedAt: enquiry.updatedAt,
 			})),
 			pagination: {
 				page: pageNumber,
@@ -406,20 +357,9 @@ export const getEnquiriesByUserId = async (
 
 		return {
 			data: enquiries.map((enquiry) => ({
-				id: enquiry.id,
-				propertyId: enquiry.propertyId,
-				userId: enquiry.userId,
-				interestTypeId: enquiry.interestTypeId,
-				message: enquiry.message,
+				...enquiry,
 				budget: enquiry.budget?.toString(),
-				timeline: enquiry.timeline,
-				status: enquiry.status,
-				property: enquiry.property,
-				interestType: enquiry.interestType,
-				roles: enquiry.roles,
 				messagesCount: enquiry.messages.length,
-				createdAt: enquiry.createdAt,
-				updatedAt: enquiry.updatedAt,
 			})),
 			pagination: {
 				page: pageNumber,
@@ -491,21 +431,8 @@ export const updateEnquiry = async (
 		});
 
 		return {
-			id: updatedEnquiry.id,
-			propertyId: updatedEnquiry.propertyId,
-			userId: updatedEnquiry.userId,
-			interestTypeId: updatedEnquiry.interestTypeId,
-			message: updatedEnquiry.message,
+			...updatedEnquiry,
 			budget: updatedEnquiry.budget?.toString(),
-			timeline: updatedEnquiry.timeline,
-			status: updatedEnquiry.status,
-			property: updatedEnquiry.property,
-			user: updatedEnquiry.user,
-			interestType: updatedEnquiry.interestType,
-			roles: updatedEnquiry.roles,
-			messages: updatedEnquiry.messages,
-			createdAt: updatedEnquiry.createdAt,
-			updatedAt: updatedEnquiry.updatedAt,
 		};
 	} catch (error: unknown) {
 		throw error;

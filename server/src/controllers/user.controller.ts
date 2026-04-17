@@ -44,6 +44,7 @@ import { emailService } from "../services/email.js";
 import { uploadFileToS3 } from "../services/s3Upload.js";
 import { auth } from "../../config/auth.js";
 import db from "../../config/prisma.js";
+import { getUserGrowthOverTime } from "../services/user.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -95,7 +96,8 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			registrationNo,
 			firstName,
 			lastName,
-			name
+			name,
+			entityTypes
 		} = req.body;
 
 		// Validate required fields
@@ -127,7 +129,8 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			registrationNo,
 			firstName,
 			lastName,
-			name
+			name,
+			entityTypes
 		});
 
 		// Generate email verification token
@@ -871,6 +874,55 @@ export const verifyEmailController = async (req: Request, res: Response) => {
 		return res.status(200).json({
 			success: true,
 			message: "Email verified successfully. Your account is now active!",
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
+/**
+ * Get user growth analytics over time
+ * Supports time ranges: 12months, 30days, 7days, 24hours
+ * Can filter by profile type: individual, company, koperasi
+ */
+export const getUserGrowthController = async (req: Request, res: Response) => {
+	try {
+		const { timeRange, profileType } = req.query;
+		console.log(req.query);
+
+		// Set default timeRange to "12months" if not provided
+		const validatedTimeRange = (timeRange as string) || "12months";
+
+		// Validate timeRange
+		const validTimeRanges = ["12months", "30days", "7days", "24hours"];
+		if (!validTimeRanges.includes(validatedTimeRange)) {
+			return res.status(400).json({
+				success: false,
+				message: `Invalid timeRange. Must be one of: ${validTimeRanges.join(", ")}`,
+			});
+		}
+
+		// Validate profileType if provided
+		const validProfileTypes = ["individual", "company", "koperasi"];
+		if (profileType && !validProfileTypes.includes(profileType as string)) {
+			return res.status(400).json({
+				success: false,
+				message: `Invalid profileType. Must be one of: ${validProfileTypes.join(", ")}`,
+			});
+		}
+
+		const growthData = await getUserGrowthOverTime(
+			validatedTimeRange as "12months" | "30days" | "7days" | "24hours",
+			profileType as "individual" | "company" | "koperasi" | undefined
+		);
+
+		return res.status(200).json({
+			success: true,
+			data: growthData,
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);

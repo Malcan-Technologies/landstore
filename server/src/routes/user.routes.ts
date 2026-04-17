@@ -14,7 +14,8 @@ import {
   verifyEmailCallbackController,
   verifyEmailController,
   getMyProfileController,
-  loginController
+  loginController,
+  getUserGrowthController
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
@@ -62,5 +63,8 @@ userRouter.get("/", requireApiAuth, requireAdmin,getAllUsersController);
 userRouter.get("/:id", requireApiAuth, getUserByIdController);
 userRouter.patch("/me", requireApiAuth, upload.single("profileImage"), updateUserController);
 userRouter.delete("/:id", requireApiAuth, deleteUserController);
+
+// Analytics - User growth over time (admin only)
+userRouter.get("/analytics/growth", requireApiAuth, requireAdmin, getUserGrowthController);
 
 export default userRouter;
