@@ -6,7 +6,7 @@ import Table from "@/components/common/Table";
 import Search from "@/components/svg/Search";
 import Person from "@/components/svg/Person";
 import EyeOpen from "@/components/svg/EyeOpen";
-import Delete from "@/components/svg/Delete";
+import RedCross from "@/components/svg/RedCross";
 import Sheet from "@/components/svg/Sheet";
 import { enquiryService } from "@/services/enquiryService";
 
@@ -99,7 +99,7 @@ const statusStyles = {
 };
 
 const interestBadgeClass =
-  "inline-flex items-center rounded-full border border-[#D6DAE3] bg-white px-2 py-1 text-[12px] font-medium leading-none text-[#52525B]";
+  "inline-flex items-center rounded-full border border-[#D6DAE3] bg-white px-2 py-1 font-medium leading-none text-[#52525B]";
 
 const iconButtonBase =
   "inline-flex h-8 w-8 items-center justify-center rounded-lg transition border-0";
@@ -181,19 +181,19 @@ export default function EnquiryHubPage() {
       {
         key: "enquiry-id",
         content: (
-          <span className="inline-flex items-center rounded-sm bg-[#F4F4F5] px-2 py-1 text-[10px] font-medium leading-none text-[#71717A] sm:text-[11px]">
+          <span className="inline-flex items-center rounded-sm bg-[#F4F4F5] px-2 py-1 font-medium leading-none text-[#71717A]">
             {enquiry.enquiryId}
           </span>
         ),
       },
       {
         key: "listing-id",
-        content: <span className="text-[12px] font-semibold text-[#111827]">{enquiry.listingId}</span>,
+        content: <span className="font-semibold text-[#111827]">{enquiry.listingId}</span>,
       },
       {
         key: "activity-dates",
         content: (
-          <div className="space-y-0.5 text-[11px] leading-4 sm:text-[12px]">
+          <div className="space-y-0.5 leading-4">
             <div className="text-[#52525B]">
               <span className="font-medium text-[#71717A]">IN:</span>{" "}
               <span className="font-medium text-active">{enquiry.inDate}</span>
@@ -213,8 +213,8 @@ export default function EnquiryHubPage() {
               <Person size={12} color="#A1A1AA" />
             </span>
             <div className="min-w-0 leading-4">
-              <div className="truncate text-[12px] font-medium text-[#111827]">{enquiry.requester}</div>
-              <div className="truncate text-[11px] text-gray5">{enquiry.requesterType}</div>
+              <div className="truncate font-medium text-[#111827]">{enquiry.requester}</div>
+              <div className="truncate text-gray5">{enquiry.requesterType}</div>
             </div>
           </div>
         ),
@@ -222,7 +222,7 @@ export default function EnquiryHubPage() {
       {
         key: "status",
         content: (
-          <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-medium leading-none sm:text-[11px] ${statusStyles[enquiry.status]}`}>
+          <span className={`inline-flex items-center rounded-full px-2 py-1 font-medium leading-none ${statusStyles[enquiry.status]}`}>
             {enquiry.status}
           </span>
         ),
@@ -260,7 +260,7 @@ export default function EnquiryHubPage() {
               className={`${iconButtonBase} bg-[#FFF1F2] text-[#F43F5E]`}
               aria-label="Delete enquiry"
             >
-              <Delete size={14} className="text-[#F43F5E]" />
+              <RedCross size={14} />
             </button>
           </div>
         ),

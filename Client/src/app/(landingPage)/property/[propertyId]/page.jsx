@@ -289,6 +289,8 @@ const PropertyPage = () => {
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
   const [isSavingToFolder, setIsSavingToFolder] = useState(false);
   const [isShortlisted, setIsShortlisted] = useState(false);
+  const [shortlistFolderId, setShortlistFolderId] = useState(null);
+  const [isRemovingShortlist, setIsRemovingShortlist] = useState(false);
   const [shortlistError, setShortlistError] = useState("");
   const [shortlistSuccess, setShortlistSuccess] = useState("");
 
@@ -350,7 +352,7 @@ const PropertyPage = () => {
       return;
     }
 
-    if (!propertyId || isShortlisted) {
+    if (!propertyId) {
       return;
     }
 
@@ -401,11 +403,56 @@ const PropertyPage = () => {
     try {
       await folderService.addToFolder(selectedFolderId, pendingPropertyId);
       setIsShortlisted(true);
+      setShortlistFolderId(selectedFolderId);
       setShortlistSuccess("Property added to shortlist successfully.");
       handleCloseChooseFolder();
     } catch (error) {
       setShortlistError(error?.message || "Failed to add property to shortlist.");
       setIsSavingToFolder(false);
+    }
+  };
+
+  const handleUnshortlistClick = async () => {
+    if (!isLoggedIn) {
+      handleRequireLogin();
+      return;
+    }
+
+    let folderId = shortlistFolderId;
+
+    if (!folderId) {
+      try {
+        const response = await folderService.getFolders();
+        const normalized = normalizeFolders(response);
+        const match = normalized.find((folder) =>
+          folder.properties?.some?.((p) => (p?.propertyId ?? p?.id) === propertyId)
+        );
+        folderId = match?.id ?? normalized[0]?.id ?? null;
+        if (folderId) setShortlistFolderId(folderId);
+      } catch {
+        setShortlistError("Unable to find the shortlist folder.");
+        return;
+      }
+    }
+
+    if (!folderId) {
+      setShortlistError("Could not find the folder this property is saved in.");
+      return;
+    }
+
+    setIsRemovingShortlist(true);
+    setShortlistError("");
+    setShortlistSuccess("");
+
+    try {
+      await folderService.removeFromFolder(folderId, propertyId);
+      setIsShortlisted(false);
+      setShortlistFolderId(null);
+      setShortlistSuccess("Removed from shortlist.");
+    } catch (error) {
+      setShortlistError(error?.message || "Failed to remove from shortlist.");
+    } finally {
+      setIsRemovingShortlist(false);
     }
   };
 
@@ -572,6 +619,9 @@ const PropertyPage = () => {
         }
 
         setPropertyDetails(mapPropertyToDetails(property));
+        if (property?.isShortListed) {
+          setIsShortlisted(true);
+        }
       } catch (error) {
         if (!isMounted) return;
         setPropertyLoadError(error?.message || "Failed to load property details.");
@@ -906,15 +956,19 @@ const PropertyPage = () => {
               </button>
               <button
                 type="button"
-                onClick={handleShortlistClick}
-                className={`flex h-11 w-full items-center justify-center gap-2 rounded-lg border text-sm font-semibold ${
+                onClick={isShortlisted ? handleUnshortlistClick : handleShortlistClick}
+                disabled={isRemovingShortlist}
+                className={`flex h-11 w-full items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition disabled:opacity-70 ${
                   isShortlisted
-                    ? "border-border-green bg-activebg text-green-secondary"
+                    ? "border-green-primary bg-green-primary text-white"
                     : "border-border-card bg-white text-green-primary"
                 }`}
               >
-                <Heart size={16} color="currentColor" />
-                {isShortlisted ? "Saved to shortlist" : "Add to shortlist"}
+                <Heart
+                  size={16}
+                  color={isShortlisted ? "white" : "currentColor"}
+                />
+                {isRemovingShortlist ? "Removing..." : isShortlisted ? "Already shortlisted" : "Add to shortlist"}
               </button>
               {shortlistError ? <p className="text-center text-xs leading-5 text-red-500">{shortlistError}</p> : null}
               {shortlistSuccess ? <p className="text-center text-xs leading-5 text-green-secondary">{shortlistSuccess}</p> : null}

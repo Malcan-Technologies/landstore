@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import CreateFolder from "@/components/userDashboard/explore/createFolder";
 import DeleteFolderModal from "@/components/userDashboard/explore/DeleteFolderModal";
-import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
+import FolderSection from "@/components/userDashboard/explore/FolderSection";
 import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
+import Folder from "@/components/svg/Folder";
 import Funnel from "@/components/svg/Funnel";
 import { folderService } from "@/services/folderService";
 const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
@@ -23,146 +24,6 @@ const formatArea = (landArea, landAreaUnit) => {
   return `${area}${unit}`;
 };
 
-/*
-const shortlistedProperties = [
-  {
-    id: "LS-000128",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1470246973918-29a93221c455?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000129",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000130",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1502904550040-7534597429ae?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "saved",
-  },
-  {
-    id: "LS-000131",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "investment-ideas",
-  },
-  {
-    id: "LS-000132",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "investment-ideas",
-  },
-  {
-    id: "LS-000133",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1501183638710-841dd1904471?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "johor-potentials",
-  },
-  {
-    id: "LS-000141",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "investment-ideas",
-  },
-  {
-    id: "LS-000142",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "investment-ideas",
-  },
-  {
-    id: "LS-000153",
-    status: "Active",
-    statusColor: "var(--color-green-secondary)",
-    image: "https://images.unsplash.com/photo-1501183638710-841dd1904471?auto=format&fit=crop&w=1200&q=80",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    code: "LS - 000128",
-    title: "Palm Valley Agricultural Land",
-    dealTags: ["Buy", "Financing", "JV"],
-    extraDealsLabel: "+2 more",
-    price: "RM 850k",
-    valuation: "RM1000/sqft",
-    folderId: "johor-potentials",
-  },
-];
-*/
-
 const shortlistedProperties = [];
 
 const ShortlistsPage = () => {
@@ -170,11 +31,11 @@ const ShortlistsPage = () => {
   const [properties, setProperties] = useState(shortlistedProperties);
   const [activeFolderId, setActiveFolderId] = useState(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
-  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
   const [activeFolderMenuId, setActiveFolderMenuId] = useState(null);
   const [renamingFolderId, setRenamingFolderId] = useState(null);
   const [folderToDelete, setFolderToDelete] = useState(null);
-  const filterMenuRef = useRef(null);
+  const folderMenuRef = useRef(null);
 
   const isLikelyUuid = (value) =>
     typeof value === "string" &&
@@ -293,13 +154,13 @@ const ShortlistsPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!isFilterMenuOpen) {
+    if (!isFolderMenuOpen) {
       return undefined;
     }
 
     const handlePointerDown = (event) => {
-      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
-        setIsFilterMenuOpen(false);
+      if (folderMenuRef.current && !folderMenuRef.current.contains(event.target)) {
+        setIsFolderMenuOpen(false);
       }
     };
 
@@ -308,7 +169,7 @@ const ShortlistsPage = () => {
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
     };
-  }, [isFilterMenuOpen]);
+  }, [isFolderMenuOpen]);
 
   const handleCreateFolder = async (folderName) => {
     setCreateFolderOpen(false);
@@ -445,60 +306,67 @@ const ShortlistsPage = () => {
       <div className="sm:px-8 px-2">
         <div className="flex items-center justify-between">
           <div className="mb-6">
-            <h1 className="text-[20px] font-semibold tracking-tight text-gray2 sm:text-[28px] md:text-[32px]">My Shortlists</h1>
+            <h1 className="text-[20px] font-bold tracking-tight text-gray2 sm:text-[28px] md:text-[32px]">My Shortlists</h1>
             <p className="mt-1 lg:text-[18px] md:text-[16px] text-[12px] text-gray5">Manage your saved land options</p>
           </div>
-          <div ref={filterMenuRef} className="relative mb-6 lg:hidden">
+          <div className="mb-6 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setIsFilterMenuOpen((prev) => !prev)}
-              className="flex items-center gap-1 sm:gap-1.5 md:gap-2 rounded-lg border border-border-card bg-white px-2 py-2 sm:px-2.5 sm:py-1.5 md:px-3 md:py-1.5 text-xs sm:text-sm md:text-base transition-colors hover:bg-gray1"
+              onClick={() => setCreateFolderOpen(true)}
+              className="inline-flex items-center justify-center rounded-lg bg-background-primary px-3 py-2 text-xs font-semibold border border-border-green text-green-secondary transition hover:opacity-90 sm:text-sm"
             >
-              <Funnel className="w-4 h-4 md:w-5 md:h-5" />
-              <span>Filter</span>
+              + Create new folder
             </button>
 
-            {isFilterMenuOpen ? (
-              <div className="absolute right-0 top-12 z-40 flex max-h-[calc(100vh-14rem)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-xl bg-white shadow-lg">
-                <FilterPanel
-                  showFilters={false}
-                  variant="modal"
-                  folders={folders}
-                  activeFolderId={activeFolderId}
-                  onFolderSelect={setActiveFolderId}
-                  createFolderLabel="Create new folder"
-                  onCreateFolder={() => {
-                    setIsFilterMenuOpen(false);
-                    setCreateFolderOpen(true);
-                  }}
-                  activeFolderMenuId={activeFolderMenuId}
-                  onFolderMenuToggle={handleFolderMenuToggle}
-                  onRenameFolder={handleRenameFolderClick}
-                  renamingFolderId={renamingFolderId}
-                  onRenameFolderSave={handleRenameFolderSave}
-                  onDeleteFolder={handleDeleteFolderClick}
-                />
-              </div>
-            ) : null}
+            <div ref={folderMenuRef} className="relative lg:hidden">
+              <button
+                type="button"
+                onClick={() => setIsFolderMenuOpen((prev) => !prev)}
+                className="flex items-center gap-1 sm:gap-1.5 md:gap-2 rounded-lg border border-border-card bg-background-primary px-2 py-2 sm:px-2.5 sm:py-1.5 md:px-3 md:py-1.5 text-xs sm:text-sm md:text-base transition-colors hover:bg-gray1"
+              >
+                <Funnel className="w-4 h-4 md:w-5 md:h-5" />
+                <span>Folders</span>
+              </button>
+
+              {isFolderMenuOpen ? (
+                <div className="absolute right-0 top-12 z-40 w-[min(92vw,380px)] overflow-visible rounded-xl bg-transparent">
+                  <div className="overflow-visible p-4">
+                    <FolderSection
+                      folders={folders}
+                      activeFolderId={activeFolderId}
+                      onFolderSelect={(folderId) => {
+                        setActiveFolderId(folderId);
+                        setIsFolderMenuOpen(false);
+                      }}
+                      activeFolderMenuId={activeFolderMenuId}
+                      onFolderMenuToggle={handleFolderMenuToggle}
+                      onRenameFolder={handleRenameFolderClick}
+                      renamingFolderId={renamingFolderId}
+                      onRenameFolderSave={handleRenameFolderSave}
+                      onDeleteFolder={handleDeleteFolderClick}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 
         <div className="flex gap-6">
           <div className="w-auto shrink-0 hidden lg:block">
-            <FilterPanel
-              showFilters={false}
-              folders={folders}
-              activeFolderId={activeFolderId}
-              onFolderSelect={setActiveFolderId}
-              createFolderLabel="Create new folder"
-              onCreateFolder={() => setCreateFolderOpen(true)}
-              activeFolderMenuId={activeFolderMenuId}
-              onFolderMenuToggle={handleFolderMenuToggle}
-              onRenameFolder={handleRenameFolderClick}
-              renamingFolderId={renamingFolderId}
-              onRenameFolderSave={handleRenameFolderSave}
-              onDeleteFolder={handleDeleteFolderClick}
-            />
+            <aside className="w-full max-w-80 min-w-72 rounded-xl ">
+              <FolderSection
+                folders={folders}
+                activeFolderId={activeFolderId}
+                onFolderSelect={setActiveFolderId}
+                activeFolderMenuId={activeFolderMenuId}
+                onFolderMenuToggle={handleFolderMenuToggle}
+                onRenameFolder={handleRenameFolderClick}
+                renamingFolderId={renamingFolderId}
+                onRenameFolderSave={handleRenameFolderSave}
+                onDeleteFolder={handleDeleteFolderClick}
+              />
+            </aside>
           </div>
 
           <section className="flex h-[calc(100vh-8rem)] min-h-0 flex-1 flex-col">

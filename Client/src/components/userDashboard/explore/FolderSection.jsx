@@ -65,7 +65,7 @@ const FolderSection = memo(
           return (
             <div key={folder.id} className="relative">
               <div
-                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 transition ${
+                className={`flex w-full items-center justify-between gap-10 rounded-xl border px-3 py-2.5 transition ${
                   active ? "border-gray2 bg-gray2 text-white" : "border-border-input bg-white text-gray7"
                 }`}
               >
@@ -101,19 +101,21 @@ const FolderSection = memo(
                       }`}
                     />
                   ) : (
-                    <span className="truncate text-[14px] font-medium">{folder.label}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-[14px] font-medium">{folder.label}</span>
+                      {typeof folder.count === "number" ? (
+                        <span
+                          className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+                            active ? "bg-white/15 text-white" : "bg-background-primary text-gray5"
+                          }`}
+                        >
+                          {folder.count}
+                        </span>
+                      ) : null}
+                    </span>
                   )}
                 </button>
                 <div className="ml-2 flex shrink-0 items-center gap-2">
-                  {typeof folder.count === "number" ? (
-                    <span
-                      className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
-                        active ? "bg-white/15 text-white" : "bg-background-primary text-gray5"
-                      }`}
-                    >
-                      {folder.count}
-                    </span>
-                  ) : null}
                   <button
                     type="button"
                     onClick={() => onFolderMenuToggle?.(folder.id)}

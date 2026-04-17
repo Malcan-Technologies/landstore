@@ -1,29 +1,45 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useId, useMemo, useState } from "react";
 import Button from "@/components/common/Button";
 import PillCheckbox from "@/components/common/PillCheckbox";
 import CircleRadioGroup from "@/components/common/CircleRadioGroup";
 import RangeSlider from "@/components/common/RangeSlider";
 import SelectDropdown from "@/components/common/SelectDropdown";
-import FolderSection from "@/components/userDashboard/explore/FolderSection";
 import ThreeBars from "@/components/svg/ThreeBars";
 import List from "@/components/svg/List";
 import Note from "@/components/svg/Note";
 import DualNote from "@/components/svg/DualNote";
-import Folder from "@/components/svg/Folder";
 import Funnel from "@/components/svg/Funnel";
 import Map from "@/components/svg/Map";
 
-const dealTypeOptions = ["Buy", "JV", "Financing"];
-const categoryOptions = ["Industrial", "Agriculture", "Commercial", "Residential"];
-const terrainOptions = ["Flat", "Hilly", "Mixed"];
-const utilizationOptions = ["Vacant", "Plantation", "Rented", "Occupied"];
-const negeriOptions = [
-  { value: "selangor", label: "Selangor" },
-  { value: "kualalumpur", label: "Kuala Lumpur" },
-  { value: "johor", label: "Johor" },
-  { value: "penang", label: "Penang" },
+const defaultDealTypeOptions = [
+  { value: "buy", label: "Buy" },
+  { value: "jv", label: "JV" },
+  { value: "financing", label: "Financing" },
+];
+const defaultCategoryOptions = [
+  { value: "industrial", label: "Industrial" },
+  { value: "agriculture", label: "Agriculture" },
+  { value: "commercial", label: "Commercial" },
+  { value: "residential", label: "Residential" },
+];
+const defaultTerrainOptions = [
+  { value: "flat", label: "Flat" },
+  { value: "hilly", label: "Hilly" },
+  { value: "mix", label: "Mixed" },
+];
+const defaultUtilizationOptions = [
+  { value: "vacant", label: "Vacant" },
+  { value: "plantation", label: "Plantation" },
+  { value: "rented", label: "Rented" },
+  { value: "occupied", label: "Occupied" },
+];
+const defaultStateOptions = [
+  { value: "Selangor", label: "Selangor" },
+  { value: "Kuala Lumpur", label: "Kuala Lumpur" },
+  { value: "Johor", label: "Johor" },
+  { value: "Penang", label: "Penang" },
 ];
 const tanahOptions = [
   { value: "yes", label: "Yes" },
@@ -37,10 +53,51 @@ const landAreaUnitOptions = [
   { value: "sqm", label: "Square meters" },
 ];
 
+const defaultFilterValues = {
+  locationSearch: "",
+  selectedState: "",
+  selectedDealTypes: [],
+  selectedCategories: [],
+  selectedTerrain: [],
+  selectedUtilization: [],
+  tanahRizab: "both",
+  landArea: [0, 100],
+  landAreaUnit: landAreaUnitOptions[0].value,
+  pricePerSqft: "",
+  titleType: "",
+  myListings: false,
+  myShortlistings: false,
+  myEnquiries: false,
+};
+
+const normalizeOption = (option) => {
+  if (!option) {
+    return null;
+  }
+
+  if (typeof option === "string") {
+    return { value: option, label: option };
+  }
+
+  const value = option.value ?? option.id ?? option.key;
+  const label = option.label ?? option.name ?? option.title ?? value;
+
+  if (value === undefined || value === null || label === undefined || label === null) {
+    return null;
+  }
+
+  return { value: String(value), label: String(label) };
+};
+
+const normalizeOptionList = (options, fallbackOptions = []) => {
+  const source = Array.isArray(options) && options.length > 0 ? options : fallbackOptions;
+  return source.map(normalizeOption).filter(Boolean);
+};
+
 const summaryStats = [
-  { label: "Listings", value: 5, icon: Note, key: "listings" },
-  { label: "Shortlists", value: 15, icon: Note, key: "shortlists" },
-  { label: "Deals", value: 2, icon: List, key: "deals" },
+  { label: "Listings", value: 5, icon: Note, key: "listings", filterKey: "myListings" },
+  { label: "Shortlists", value: 15, icon: Note, key: "shortlists", filterKey: "myShortlistings" },
+  { label: "Deals", value: 2, icon: List, key: "deals", filterKey: "myEnquiries" },
 ];
 
 const viewModeOptions = [
@@ -90,10 +147,10 @@ const ViewToggle = memo(({ options, activeKey, onChange }) => (
   </div>
 ));
 
-const SummaryList = memo(({ summary, activeKey, onSelect }) => (
+const SummaryList = memo(({ summary, activeKeys, onSelect }) => (
   <div className="space-y-1">
-    {summary.map(({ label, value, icon: Icon, key }) => {
-      const active = activeKey === key;
+    {summary.map(({ label, value, icon: Icon, key, filterKey }) => {
+      const active = activeKeys.has(filterKey);
       const iconColor = active ? "var(--color-green-secondary)" : "var(--color-gray5)";
       const inactiveColor = "text-gray1";
       const labelColor = active ? "text-green-secondary" : inactiveColor;
@@ -101,8 +158,8 @@ const SummaryList = memo(({ summary, activeKey, onSelect }) => (
         <button
           key={label}
           type="button"
-          onClick={() => onSelect(key)}
-          className={`flex w-full items-center justify-between rounded-2xl py-2 text-left text-[14px] font-medium transition ${
+          onClick={() => onSelect(filterKey)}
+          className={`flex w-full items-center justify-start gap-1 rounded-2xl py-2 text-left text-[14px] font-medium transition ${
             active ? "text-green-secondary" : inactiveColor
           }`}
         >
@@ -123,10 +180,10 @@ const CheckboxSection = memo(({ label, options, selected, onToggle }) => (
     <div className="flex flex-wrap gap-2">
       {options.map((option) => (
         <PillCheckbox
-          key={option}
-          label={option}
-          checked={selected.includes(option)}
-          onChange={() => onToggle(option)}
+          key={option.value}
+          label={option.label}
+          checked={selected.includes(option.value)}
+          onChange={() => onToggle(option.value)}
         />
       ))}
     </div>
@@ -138,63 +195,150 @@ const FilterPanel = ({
   variant = "sidebar",
   collapseBehavior = "internal",
   onToggleRequest,
-  folders = [],
-  foldersTitle = "Folders",
-  activeFolderId,
-  onFolderSelect,
-  createFolderLabel = "Create new folder",
-  onCreateFolder,
-  activeFolderMenuId,
-  onFolderMenuToggle,
-  onRenameFolder,
-  renamingFolderId,
-  onRenameFolderSave,
-  onDeleteFolder,
+  filterOptions,
+  locationSuggestions,
+  filterValues,
+  onFilterValuesChange,
+  onApplyFilters,
+  onSummarySelect,
+  isApplyLoading = false,
 }) => {
-  // console.log("FilterPanel rendered");
-  const [locationSearch, setLocationSearch] = useState("");
-  const [selectedState, setSelectedState] = useState(negeriOptions[0].value);
-  const [selectedDealTypes, setSelectedDealTypes] = useState(["Buy", "JV"]);
-  const [selectedCategories, setSelectedCategories] = useState(["Industrial", "Agriculture"]);
-  const [selectedTerrain, setSelectedTerrain] = useState(["Flat", "Hilly"]);
-  const [selectedUtilization, setSelectedUtilization] = useState(["Vacant", "Plantation"]);
-  const [tanahRizab, setTanahRizab] = useState("yes");
-  const [landArea, setLandArea] = useState([25, 75]);
-  const [landAreaUnit, setLandAreaUnit] = useState(landAreaUnitOptions[0].value);
-  const [pricePerSqft, setPricePerSqft] = useState("");
-  const [titleType, setTitleType] = useState("");
+  const [internalFilterValues, setInternalFilterValues] = useState(defaultFilterValues);
   const [viewMode, setViewMode] = useState(viewModeOptions[0].key);
-  const [activeSummary, setActiveSummary] = useState(summaryStats[0].key);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const isModalVariant = variant === "modal";
   const usesExternalCollapse = collapseBehavior === "external";
+  const isFilterControlled = typeof onFilterValuesChange === "function";
 
-  const handleLocationChange = (event) => setLocationSearch(event.target.value);
-  const handleStateChange = useCallback((value) => setSelectedState(value), []);
+  const effectiveFilterValues = useMemo(
+    () => ({
+      ...defaultFilterValues,
+      ...(isFilterControlled ? filterValues : internalFilterValues),
+    }),
+    [filterValues, internalFilterValues, isFilterControlled]
+  );
+
+  const resolvedDealTypeOptions = useMemo(
+    () => normalizeOptionList(filterOptions?.dealTypes, defaultDealTypeOptions),
+    [filterOptions]
+  );
+  const resolvedCategoryOptions = useMemo(
+    () => normalizeOptionList(filterOptions?.categories, defaultCategoryOptions),
+    [filterOptions]
+  );
+  const resolvedTerrainOptions = useMemo(
+    () => normalizeOptionList(filterOptions?.terrain, defaultTerrainOptions),
+    [filterOptions]
+  );
+  const resolvedUtilizationOptions = useMemo(
+    () => normalizeOptionList(filterOptions?.utilizations, defaultUtilizationOptions),
+    [filterOptions]
+  );
+  const resolvedStateOptions = useMemo(
+    () => normalizeOptionList(filterOptions?.states, defaultStateOptions),
+    [filterOptions]
+  );
+  const resolvedLocationSuggestionOptions = useMemo(() => {
+    const normalized = normalizeOptionList(locationSuggestions, resolvedStateOptions);
+    const seen = new Set();
+
+    return normalized.filter((item) => {
+      const key = String(item?.label || item?.value || "").trim().toLowerCase();
+      if (!key || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  }, [locationSuggestions, resolvedStateOptions]);
+  const resolvedTitleTypeOptions = useMemo(
+    () => normalizeOptionList(filterOptions?.titleTypes),
+    [filterOptions]
+  );
+
+  const locationSuggestionListId = useId();
+
+  const currentLandArea = Array.isArray(effectiveFilterValues.landArea) && effectiveFilterValues.landArea.length === 2
+    ? effectiveFilterValues.landArea
+    : defaultFilterValues.landArea;
+
+  const syncFilterValues = useCallback(
+    (patch) => {
+      const nextValues = {
+        ...effectiveFilterValues,
+        ...patch,
+      };
+
+      if (isFilterControlled) {
+        onFilterValuesChange(nextValues);
+        return;
+      }
+
+      setInternalFilterValues(nextValues);
+    },
+    [effectiveFilterValues, isFilterControlled, onFilterValuesChange]
+  );
+
+  const handleLocationChange = useCallback((event) => {
+    const nextLocationSearch = event.target.value;
+    const normalizedQuery = nextLocationSearch.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      syncFilterValues({ locationSearch: "", selectedState: "" });
+      return;
+    }
+
+    const matchedState = resolvedStateOptions.find((stateOption) => {
+      const normalizedLabel = String(stateOption.label || "").trim().toLowerCase();
+      const normalizedValue = String(stateOption.value || "").trim().toLowerCase();
+      return normalizedLabel === normalizedQuery || normalizedValue === normalizedQuery;
+    });
+
+    if (matchedState) {
+      syncFilterValues({
+        locationSearch: matchedState.label,
+        selectedState: matchedState.value,
+      });
+      return;
+    }
+
+    syncFilterValues({ locationSearch: nextLocationSearch });
+  }, [resolvedStateOptions, syncFilterValues]);
+
+  const handleStateChange = useCallback((value) => {
+    const selectedOption = resolvedStateOptions.find((stateOption) => stateOption.value === value);
+
+    syncFilterValues({
+      selectedState: value,
+      locationSearch: selectedOption?.label || "",
+    });
+  }, [resolvedStateOptions, syncFilterValues]);
   const handleDealTypeToggle = useCallback(
-    (value) => setSelectedDealTypes((prev) => toggleValue(prev, value)),
-    []
+    (value) => syncFilterValues({ selectedDealTypes: toggleValue(effectiveFilterValues.selectedDealTypes, value) }),
+    [effectiveFilterValues.selectedDealTypes, syncFilterValues]
   );
   const handleCategoryToggle = useCallback(
-    (value) => setSelectedCategories((prev) => toggleValue(prev, value)),
-    []
+    (value) => syncFilterValues({ selectedCategories: toggleValue(effectiveFilterValues.selectedCategories, value) }),
+    [effectiveFilterValues.selectedCategories, syncFilterValues]
   );
   const handleTerrainToggle = useCallback(
-    (value) => setSelectedTerrain((prev) => toggleValue(prev, value)),
-    []
+    (value) => syncFilterValues({ selectedTerrain: toggleValue(effectiveFilterValues.selectedTerrain, value) }),
+    [effectiveFilterValues.selectedTerrain, syncFilterValues]
   );
   const handleUtilizationToggle = useCallback(
-    (value) => setSelectedUtilization((prev) => toggleValue(prev, value)),
-    []
+    (value) => syncFilterValues({ selectedUtilization: toggleValue(effectiveFilterValues.selectedUtilization, value) }),
+    [effectiveFilterValues.selectedUtilization, syncFilterValues]
   );
-  const handleTanahChange = useCallback((value) => setTanahRizab(value), []);
-  const handleRangeChange = useCallback((range) => setLandArea(range), []);
-  const handleLandAreaUnitChange = useCallback((value) => setLandAreaUnit(value), []);
-  const handlePriceChange = useCallback((event) => setPricePerSqft(event.target.value), []);
-  const handleTitleChange = useCallback((event) => setTitleType(event.target.value), []);
+  const handleTanahChange = useCallback((value) => syncFilterValues({ tanahRizab: value }), [syncFilterValues]);
+  const handleRangeChange = useCallback((range) => syncFilterValues({ landArea: range }), [syncFilterValues]);
+  const handleLandAreaUnitChange = useCallback((value) => syncFilterValues({ landAreaUnit: value }), [syncFilterValues]);
+  const handlePriceChange = useCallback((event) => syncFilterValues({ pricePerSqft: event.target.value }), [syncFilterValues]);
+  const handleTitleTypeChange = useCallback((value) => syncFilterValues({ titleType: value }), [syncFilterValues]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    onApplyFilters?.(effectiveFilterValues);
   };
 
   const handleViewModeChange = useCallback((nextViewMode) => {
@@ -225,30 +369,28 @@ const FilterPanel = ({
       {isModalVariant || usesExternalCollapse || !isPanelCollapsed ? (
         <div className={`space-y-5 ${isModalVariant || usesExternalCollapse ? "min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1" : ""}`}>
           <div>
-            <SummaryList summary={summaryStats} activeKey={activeSummary} onSelect={setActiveSummary} />
+            <SummaryList
+            summary={summaryStats}
+            activeKeys={new Set(summaryStats.filter((s) => effectiveFilterValues[s.filterKey]).map((s) => s.filterKey))}
+            onSelect={(filterKey) => {
+              const isCurrentlyActive = effectiveFilterValues[filterKey];
+              const patch = {
+                myListings: false,
+                myShortlistings: false,
+                myEnquiries: false,
+                [filterKey]: !isCurrentlyActive,
+              };
+              const nextValues = { ...effectiveFilterValues, ...patch };
+              if (isFilterControlled) {
+                onFilterValuesChange(nextValues);
+              } else {
+                setInternalFilterValues(nextValues);
+              }
+              onSummarySelect?.(nextValues);
+            }}
+          />
             <div className="my-5 border-t border-border-input" />
           </div>
-
-          {folders.length || onCreateFolder ? (
-            <div className="space-y-5">
-              <p className="flex items-center gap-2 text-[15px] font-semibold text-gray2">
-                <Folder size={18} color="var(--color-gray2)" /> {foldersTitle}
-              </p>
-              <FolderSection
-                folders={folders}
-                activeFolderId={activeFolderId}
-                onFolderSelect={onFolderSelect}
-                createFolderLabel={createFolderLabel}
-                onCreateFolder={onCreateFolder}
-                activeFolderMenuId={activeFolderMenuId}
-                onFolderMenuToggle={onFolderMenuToggle}
-                onRenameFolder={onRenameFolder}
-                renamingFolderId={renamingFolderId}
-                onRenameFolderSave={onRenameFolderSave}
-                onDeleteFolder={onDeleteFolder}
-              />
-            </div>
-          ) : null}
 
           {showFilters ? (
             <div className="space-y-5">
@@ -265,51 +407,59 @@ const FilterPanel = ({
                     <input
                       type="text"
                       placeholder="Search Negeri or Daerah..."
-                      value={locationSearch}
+                      value={effectiveFilterValues.locationSearch}
                       onChange={handleLocationChange}
+                      list={locationSuggestionListId}
                       autoComplete="off"
                       className="h-10 w-full rounded-xl border border-border-input px-3.5 pl-4 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
                     />
+                    {resolvedLocationSuggestionOptions.length > 0 ? (
+                      <datalist id={locationSuggestionListId}>
+                        {resolvedLocationSuggestionOptions.map((option) => (
+                          <option key={`${option.value}-${option.label}`} value={option.label} />
+                        ))}
+                      </datalist>
+                    ) : null}
                   </div>
                   <SelectDropdown
-                    value={selectedState}
+                    value={effectiveFilterValues.selectedState}
                     onChange={handleStateChange}
-                    options={negeriOptions}
+                    options={resolvedStateOptions}
                     placeholder="Select Negeri"
                   />
                 </div>
 
                 <CheckboxSection
                   label="Deal type"
-                  options={dealTypeOptions}
-                  selected={selectedDealTypes}
+                  options={resolvedDealTypeOptions}
+                  selected={effectiveFilterValues.selectedDealTypes}
                   onToggle={handleDealTypeToggle}
                 />
 
                 <CheckboxSection
                   label="Category"
-                  options={categoryOptions}
-                  selected={selectedCategories}
+                  options={resolvedCategoryOptions}
+                  selected={effectiveFilterValues.selectedCategories}
                   onToggle={handleCategoryToggle}
                 />
 
                 <CheckboxSection
                   label="Terrain"
-                  options={terrainOptions}
-                  selected={selectedTerrain}
+                  options={resolvedTerrainOptions}
+                  selected={effectiveFilterValues.selectedTerrain}
                   onToggle={handleTerrainToggle}
                 />
 
                 <CheckboxSection
                   label="Current utilization"
-                  options={utilizationOptions}
-                  selected={selectedUtilization}
+                  options={resolvedUtilizationOptions}
+                  selected={effectiveFilterValues.selectedUtilization}
                   onToggle={handleUtilizationToggle}
                 />
 
                 <div className="space-y-3">
                   <p className="text-[13px] font-medium text-gray7">Tanah Rizab Melayu</p>
-                  <CircleRadioGroup value={tanahRizab} onChange={handleTanahChange} options={tanahOptions} />
+                  <CircleRadioGroup value={effectiveFilterValues.tanahRizab} onChange={handleTanahChange} options={tanahOptions} />
                 </div>
 
                 <div className="space-y-0">
@@ -317,7 +467,7 @@ const FilterPanel = ({
                   <div className="flex items-center gap-3 mt-2">
                     <div className="relative flex-1 pb-7">
                       <RangeSlider
-                        value={landArea}
+                        value={currentLandArea}
                         onChange={handleRangeChange}
                         min={0}
                         max={100}
@@ -327,19 +477,19 @@ const FilterPanel = ({
                       />
                       <span
                         className="absolute top-full -mt-4  -translate-x-1/2 text-[14px] font-medium text-gray2"
-                        style={{ left: getThumbAlignedLeft(landArea[0], 0, 100) }}
+                        style={{ left: getThumbAlignedLeft(currentLandArea[0], 0, 100) }}
                       >
-                        {landArea[0]}
+                        {currentLandArea[0]}
                       </span>
                       <span
                         className="absolute top-full -mt-4  -translate-x-1/2 text-[14px] font-medium text-gray2"
-                        style={{ left: getThumbAlignedLeft(landArea[1], 0, 100) }}
+                        style={{ left: getThumbAlignedLeft(currentLandArea[1], 0, 100) }}
                       >
-                        {landArea[1]}
+                        {currentLandArea[1]}
                       </span>
                     </div>
                     <SelectDropdown
-                      value={landAreaUnit}
+                      value={effectiveFilterValues.landAreaUnit}
                       onChange={handleLandAreaUnitChange}
                       options={landAreaUnitOptions}
                       className="w-16 shrink-0 -mt-3"
@@ -355,7 +505,7 @@ const FilterPanel = ({
                   <input
                     type="number"
                     placeholder="e.g. 4500"
-                    value={pricePerSqft}
+                    value={effectiveFilterValues.pricePerSqft}
                     onChange={handlePriceChange}
                     className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
                   />
@@ -363,20 +513,20 @@ const FilterPanel = ({
 
                 <div className="space-y-3">
                   <label className="text-[13px] font-medium text-gray7">Title type</label>
-                  <input
-                    type="text"
-                    placeholder="Enter title"
-                    value={titleType}
-                    onChange={handleTitleChange}
-                    className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
+                  <SelectDropdown
+                    value={effectiveFilterValues.titleType}
+                    onChange={handleTitleTypeChange}
+                    options={resolvedTitleTypeOptions}
+                    placeholder="Select title type"
                   />
                 </div>
 
                 <Button
                   type="submit"
+                  disabled={isApplyLoading}
                   className="mt-2 w-full justify-center rounded-xl text-[14px] font-semibold"
                 >
-                  Apply filters
+                  {isApplyLoading ? "Applying..." : "Apply filters"}
                 </Button>
               </form>
             </div>

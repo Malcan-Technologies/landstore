@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Table from "@/components/common/Table";
 import UserViewModal from "@/components/adminDashboard/modals/UserViewModal";
 import Search from "@/components/svg/Search";
@@ -10,23 +10,67 @@ import Envelop from "@/components/svg/Envelop";
 import Telephone from "@/components/svg/Telephone";
 import RoundX from "@/components/svg/RoundX";
 import RoundArrow from "@/components/svg/RoundArrow";
+import { userService } from "@/services/userService";
 
-const users = Array.from({ length: 8 }, (_, index) => ({
-  id: `user-${index + 1}`,
-  userId: `#U-${String(index + 123).padStart(3, "0")}`,
-  entityType: ["Individual", "Corporate", "Koperasi"][index % 3],
-  name: ["Dato' Ridzuan Shah", "Aina Sofea", "Koperasi Makmur Jaya"][index % 3],
-  company: ["Ridzuan Holdings Sdn Bhd", "Individual Member", "Koperasi Makmur Jaya"][index % 3],
-  email: "ridzuan.shah@estate.com",
-  phone: "+60 (555) 000-0000",
-  identityNo: ["202201012345", "900315-10-2048", "KPM-778812-A"][index % 3],
-  status: index % 4 === 0 || index % 4 === 1 ? "Active" : "Suspended",
-  actionVariant: index % 4 === 0 || index % 4 === 1 ? "deactivate" : "reactivate",
-  preferences: {
-    emailNotifications: true,
-    appAlerts: true,
-  },
-}));
+const PAGE_LIMIT = 20;
+
+const extractUsers = (response) => {
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.items)) return response.items;
+  if (Array.isArray(response?.data?.items)) return response.data.items;
+  if (Array.isArray(response)) return response;
+  return [];
+};
+
+const extractPagination = (response) => {
+  if (response?.pagination) return response.pagination;
+  if (response?.data?.pagination) return response.data.pagination;
+  return null;
+};
+
+const toTitleCase = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+const mapApiUserToTableUser = (user) => {
+  const rawId = String(user?.id || user?.email || "");
+  const status = user?.emailVerified ? "Active" : "Suspended";
+
+  return {
+    id: rawId,
+    userId: rawId ? `#${rawId.slice(0, 8).toUpperCase()}` : "-",
+    entityType: toTitleCase(user?.userType || "user"),
+    name: user?.name || "-",
+    company: user?.userType === "admin" ? "Admin Account" : "Individual Member",
+    email: user?.email || "-",
+    phone: user?.phone || "-",
+    identityNo: "-",
+    status,
+    actionVariant: status === "Active" ? "deactivate" : "reactivate",
+    avatar: user?.image || null,
+    preferences: {
+      emailNotifications: true,
+      appAlerts: true,
+    },
+  };
+};
+
+const mergeUniqueUsers = (previousUsers, nextUsers) => {
+  const merged = new Map(previousUsers.map((item) => [item.id, item]));
+
+  nextUsers.forEach((item) => {
+    if (!merged.has(item.id)) {
+      merged.set(item.id, item);
+    }
+  });
+
+  return Array.from(merged.values());
+};
 
 const statusStyles = {
   Active: "bg-[#EAFBF1] text-[#1E9E57]",
@@ -37,12 +81,146 @@ const actionButtonBase =
   "inline-flex h-8 w-8 items-center justify-center rounded-[6px] transition border-0";
 
 export default function UsersPage() {
+  const [users, setUsers] = useState([]);
+  const [searchValue, setSearchValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [loadError, setLoadError] = useState("");
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const sentinelRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+
+  const fetchUsersPage = useCallback(async (page) => {
+    const response = await userService.getAllUsers({ page, limit: PAGE_LIMIT });
+    const items = extractUsers(response).map(mapApiUserToTableUser);
+    const pagination = extractPagination(response);
+    return { items, pagination };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadInitialPage = async () => {
+      try {
+        setIsLoading(true);
+        setLoadError("");
+        setCurrentPage(1);
+
+        const { items, pagination } = await fetchUsersPage(1);
+        if (!isMounted) {
+          return;
+        }
+
+        setUsers(items);
+
+        const total = Number(pagination?.total);
+        setTotalUsers(Number.isFinite(total) ? total : items.length);
+
+        const totalPages = Number(pagination?.totalPages);
+        setHasMore(Number.isFinite(totalPages) ? 1 < totalPages : items.length >= PAGE_LIMIT);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+        setUsers([]);
+        setTotalUsers(0);
+        setHasMore(false);
+        setLoadError(error?.message || "Failed to load users.");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadInitialPage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchUsersPage]);
+
+  useEffect(() => {
+    if (isLoading || isFetchingMore || !hasMore) {
+      return;
+    }
+
+    const sentinel = sentinelRef.current;
+    if (!sentinel) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      async ([entry]) => {
+        if (!entry.isIntersecting) {
+          return;
+        }
+
+        const nextPage = currentPage + 1;
+        setIsFetchingMore(true);
+
+        try {
+          const { items, pagination } = await fetchUsersPage(nextPage);
+          setUsers((previous) => mergeUniqueUsers(previous, items));
+          setCurrentPage(nextPage);
+
+          const total = Number(pagination?.total);
+          if (Number.isFinite(total)) {
+            setTotalUsers(total);
+          }
+
+          const totalPages = Number(pagination?.totalPages);
+          setHasMore(Number.isFinite(totalPages) ? nextPage < totalPages : items.length >= PAGE_LIMIT);
+        } catch {
+          setHasMore(false);
+        } finally {
+          setIsFetchingMore(false);
+        }
+      },
+      {
+        root: scrollContainerRef.current,
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [currentPage, fetchUsersPage, hasMore, isFetchingMore, isLoading]);
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
-    [selectedUserId]
+    [selectedUserId, users]
   );
+
+  const filteredUsers = useMemo(() => {
+    const query = searchValue.trim().toLowerCase();
+    if (!query) {
+      return users;
+    }
+
+    return users.filter((user) => {
+      const haystack = [
+        user.userId,
+        user.entityType,
+        user.name,
+        user.company,
+        user.email,
+        user.phone,
+        user.identityNo,
+        user.status,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(query);
+    });
+  }, [searchValue, users]);
 
   const headers = [
     { label: "User ID" },
@@ -54,16 +232,16 @@ export default function UsersPage() {
     { label: "Actions", className: "text-right", contentClassName: "text-right" },
   ];
 
-  const rows = users.map((user) => ({
+  const rows = filteredUsers.map((user) => ({
     key: user.id,
     cells: [
       {
         key: "user-id",
-        content: <span className="text-[12px] font-medium text-[#111827]">{user.userId}</span>,
+        content: <span className="font-medium text-[#111827]">{user.userId}</span>,
       },
       {
         key: "entity-type",
-        content: <span className="text-[12px] font-medium text-[#111827]">{user.entityType}</span>,
+        content: <span className="font-medium text-[#111827]">{user.entityType}</span>,
       },
       {
         key: "name-company",
@@ -73,8 +251,8 @@ export default function UsersPage() {
               <Person size={16} color="#9CA3AF" />
             </span>
             <div className="min-w-0 leading-4">
-              <div className="truncate text-[12px] font-medium text-[#111827]">{user.name}</div>
-              <div className="truncate text-[11px] text-gray5">{user.company}</div>
+              <div className="truncate font-medium text-[#111827]">{user.name}</div>
+              <div className="truncate text-gray5">{user.company}</div>
             </div>
           </div>
         ),
@@ -82,7 +260,7 @@ export default function UsersPage() {
       {
         key: "email-phone",
         content: (
-          <div className="space-y-1 text-[11px] leading-4 sm:text-[12px]">
+          <div className="space-y-1 leading-4">
             <div className="flex items-center gap-1.5 text-[#111827]">
               <Envelop size={12} color="#298064" />
               <span className="truncate">{user.email}</span>
@@ -96,12 +274,12 @@ export default function UsersPage() {
       },
       {
         key: "identity-no",
-        content: <span className="text-[12px] font-medium text-[#111827]">{user.identityNo}</span>,
+        content: <span className="font-medium text-[#111827]">{user.identityNo}</span>,
       },
       {
         key: "status",
         content: (
-          <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-medium leading-none ${statusStyles[user.status]}`}>
+          <span className={`inline-flex items-center rounded-full px-3 py-1 font-medium leading-none ${statusStyles[user.status] || statusStyles.Suspended}`}>
             {user.status}
           </span>
         ),
@@ -149,29 +327,51 @@ export default function UsersPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-[18px] font-semibold text-[#111827] sm:text-[22px]">Users Management</h1>
             <span className="inline-flex h-5 min-w-7 items-center justify-center rounded-full bg-[#EEF2FF] px-2 text-[12px] font-medium leading-none text-[#4338CA]">
-              23 members
+              {totalUsers || users.length} members
             </span>
           </div>
 
-          <label className="flex h-8 w-full max-w-[180px] items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[#9CA3AF] sm:max-w-[180px]">
+          <label className="flex h-8 w-full max-w-45 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[#9CA3AF] sm:max-w-45">
             <Search size={16} color="#111827" />
             <input
               type="text"
               placeholder="Search..."
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
               className="w-full border-0 bg-transparent text-[14px] text-[#111827] outline-none placeholder:text-[#9CA3AF]"
             />
           </label>
         </div>
 
-        <div className="mt-4 min-h-0 flex-1 overflow-hidden sm:max-h-[calc(100vh-210px)] sm:overflow-y-auto no-scrollbar">
-          <Table
-            headers={headers}
-            rows={rows}
-            className="border-none shadow-none"
-            tableClassName="min-w-[1120px]"
-            headClassName="bg-white"
-            rowClassName="hover:bg-[#FAFBFD]"
-          />
+        <div ref={scrollContainerRef} className="mt-4 min-h-0 flex-1 overflow-hidden sm:max-h-[calc(100vh-210px)] sm:overflow-y-auto no-scrollbar">
+          {isLoading ? (
+            <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 text-[14px] text-gray5">
+              Loading users...
+            </div>
+          ) : null}
+
+          {!isLoading && loadError ? (
+            <div className="rounded-xl border border-[#FFE0E0] bg-[#FFF1F2] px-4 py-3 text-[14px] text-[#B42318]">
+              {loadError}
+            </div>
+          ) : null}
+
+          {!isLoading && !loadError ? (
+            <>
+              <Table
+                headers={headers}
+                rows={rows}
+                className="border-none shadow-none"
+                tableClassName="min-w-[1120px]"
+                headClassName="bg-white"
+                rowClassName="hover:bg-[#FAFBFD]"
+              />
+              <div ref={sentinelRef} className="h-px" />
+              {isFetchingMore ? (
+                <div className="py-4 text-center text-[13px] text-gray5">Loading more...</div>
+              ) : null}
+            </>
+          ) : null}
         </div>
 
         <UserViewModal

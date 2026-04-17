@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import CreateListingLayout from "@/components/userDashboard/listings/createListing/CreateListingLayout";
 import BasicInfoStep from "@/components/userDashboard/listings/createListing/BasicInfoStep";
@@ -132,6 +132,7 @@ const stepFieldMap = {
 };
 
 const CreateListingPage = () => {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const editingListingId = searchParams.get("edit") || "";
   const isEditMode = Boolean(editingListingId);
@@ -558,17 +559,7 @@ const CreateListingPage = () => {
         setSubmitSuccess("Listing updated successfully.");
       } else {
         setSubmitSuccess("Listing submitted successfully.");
-        setCurrentStep(1);
-        setFieldErrors({});
-        setFormData((prev) => ({
-          ...initialFormData,
-          category: referenceOptions.categories[0]?.value || "",
-          ownership: referenceOptions.ownershipTypes[0]?.value || "",
-          utilization: referenceOptions.utilizations[0]?.value || "",
-          titleType: referenceOptions.titleTypes[0]?.value || "",
-          dealTypes: prev.dealTypes,
-          terrain: prev.terrain,
-        }));
+        router.replace("/user-dashboard/listings");
       }
     } catch (error) {
       setSubmitError(error.message || "Failed to save listing. Please try again.");

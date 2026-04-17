@@ -1,4 +1,5 @@
 "use client";
+import { useCallback, useEffect, useState } from "react";
 import StatCard from "@/components/adminDashboard/home/StatCard";
 import BuildingEntity from "@/components/svg/BuildingEntity";
 import GroupEntity from "@/components/svg/GroupEntity";
@@ -12,150 +13,235 @@ import ListingCard from "@/components/userDashboard/listings/ListingCard";
 import Chart from "@/components/adminDashboard/home/Chart";
 import ChartComboBox from "@/components/adminDashboard/home/ChartComboBox";
 import EntityDonutChart from "@/components/adminDashboard/home/EntityDonutChart";
-import { useState } from "react";
+import { analyticsService } from "@/services/analyticsService";
+import { landService } from "@/services/landService";
 
-const approvedListings = [
-  {
-    id: "approved-listing-1",
-    code: "LS - 000128",
-    statusKey: "active",
-    statusLabel: "Approved",
-    title: "Kuala Langat, Selangor",
-    category: "Agriculture",
-    area: "5.2 Acres",
-    dealTags: ["Buy", "Financing"],
-    updatedAt: "05/20/2025",
-    price: "RM 1.2M",
-    views: 12,
-    interests: 3,
-    image:
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "view", label: "View" }],
-  },
-  {
-    id: "approved-listing-3",
-    code: "LS - 000130",
-    statusKey: "active",
-    statusLabel: "Approved",
-    title: "Shah Alam, Selangor",
-    category: "Industrial",
-    area: "8.0 Acres",
-    dealTags: ["Financing"],
-    updatedAt: "05/15/2025",
-    price: "RM 4.8M",
-    views: 32,
-    interests: 5,
-    image:
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "view", label: "View" }],
-  },
-  {
-    id: "approved-listing-4",
-    code: "LS - 000131",
-    statusKey: "active",
-    statusLabel: "Approved",
-    title: "Klang, Selangor",
-    category: "Agriculture",
-    area: "10.5 Acres",
-    dealTags: ["Buy", "Financing", "JV"],
-    updatedAt: "05/12/2025",
-    price: "RM 3.2M",
-    views: 28,
-    interests: 6,
-    image:
-      "https://images.unsplash.com/photo-1502904550040-7534597429ae?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "view", label: "View" }],
-  },
-  {
-    id: "approved-listing-5",
-    code: "LS - 000132",
-    statusKey: "active",
-    statusLabel: "Approved",
-    title: "Subang Jaya, Selangor",
-    category: "Commercial",
-    area: "2.3 Acres",
-    dealTags: ["Buy"],
-    updatedAt: "05/10/2025",
-    price: "RM 1.8M",
-    views: 19,
-    interests: 4,
-    image:
-      "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "view", label: "View" }],
-  },
-  {
-    id: "approved-listing-6",
-    code: "LS - 000133",
-    statusKey: "active",
-    statusLabel: "Approved",
-    title: "Ampang, Selangor",
-    category: "Residential",
-    area: "1.5 Acres",
-    dealTags: ["Financing", "JV"],
-    updatedAt: "05/08/2025",
-    price: "RM 950K",
-    views: 56,
-    interests: 12,
-    image:
-      "https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "view", label: "View" }],
-  },
-  {
-    id: "approved-listing-7",
-    code: "LS - 000134",
-    statusKey: "active",
-    statusLabel: "Approved",
-    title: "Kajang, Selangor",
-    category: "Agriculture",
-    area: "7.8 Acres",
-    dealTags: ["Buy", "Financing"],
-    updatedAt: "05/05/2025",
-    price: "RM 2.1M",
-    views: 23,
-    interests: 7,
-    image:
-      "https://images.unsplash.com/photo-1439886183900-e79ec0057170?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "view", label: "View" }],
-  },
-  {
-    id: "approved-listing-8",
-    code: "LS - 000135",
-    statusKey: "active",
-    statusLabel: "Approved",
-    title: "Rawang, Selangor",
-    category: "Industrial",
-    area: "12.0 Acres",
-    dealTags: ["JV"],
-    updatedAt: "05/02/2025",
-    price: "RM 6.5M",
-    views: 41,
-    interests: 9,
-    image:
-      "https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "view", label: "View" }],
-  },
-  {
-    id: "approved-listing-9",
-    code: "LS - 000136",
-    statusKey: "active",
-    statusLabel: "Approved",
-    title: "Puchong, Selangor",
-    category: "Commercial",
-    area: "4.2 Acres",
-    dealTags: ["Buy", "JV"],
-    updatedAt: "04/28/2025",
-    price: "RM 3.8M",
-    views: 67,
-    interests: 15,
-    image:
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80",
-    actions: [{ type: "view", label: "View" }],
-  },
-];
+const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
+
+const dealTagMap = {
+  buy: "Buy",
+  jv: "JV",
+  financing: "Financing",
+};
+
+const extractListingItems = (response) => {
+  if (Array.isArray(response?.items)) return response.items;
+  if (Array.isArray(response?.data?.items)) return response.data.items;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response)) return response;
+  return [];
+};
+
+const formatDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatArea = (landArea, landAreaUnit) => {
+  const numericValue = Number(landArea);
+  const area = Number.isFinite(numericValue) ? numericValue.toLocaleString("en-US") : String(landArea || "-");
+  const unit = landAreaUnit ? ` ${landAreaUnit}` : "";
+  return `${area}${unit}`;
+};
+
+const formatPrice = (value) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return "RM 0";
+
+  const absoluteValue = Math.abs(numericValue);
+  const formatCompact = (divisor, suffix) => {
+    const compactValue = numericValue / divisor;
+    return `RM ${compactValue.toLocaleString("en-US", {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    })}${suffix}`;
+  };
+
+  if (absoluteValue >= 1_000_000_000_000) return formatCompact(1_000_000_000_000, "T");
+  if (absoluteValue >= 1_000_000_000) return formatCompact(1_000_000_000, "B");
+  if (absoluteValue >= 1_000_000) return formatCompact(1_000_000, "M");
+  if (absoluteValue >= 1_000) return formatCompact(1_000, "K");
+
+  return `RM ${numericValue.toLocaleString("en-US")}`;
+};
+
+const mapListingToCard = (item) => ({
+  id: item?.id,
+  code: item?.listingCode || "-",
+  statusKey: "active",
+  statusLabel: "Approved",
+  title: item?.title || "-",
+  category: item?.category?.name || "-",
+  area: formatArea(item?.landArea, item?.landAreaUnit),
+  dealTags: Array.isArray(item?.dealTypes)
+    ? item.dealTypes.map((tag) => dealTagMap[String(tag).toLowerCase()] || String(tag || ""))
+    : [],
+  updatedAt: formatDate(item?.updatedAt || item?.createdAt),
+  price: formatPrice(item?.estimatedValuation ?? item?.price),
+  views: Number(item?.viewsCount ?? 0),
+  interests: Number(item?.clicksCount ?? 0),
+  image: item?.media?.fileUrl || fallbackListingImage,
+  actions: [{ type: "view", label: "View" }],
+});
+
+const extractGrowthPoints = (response) => {
+  const points =
+    Array.isArray(response?.data?.dataPoints) ? response.data.dataPoints :
+    Array.isArray(response?.data) ? response.data :
+    Array.isArray(response?.result) ? response.result :
+    Array.isArray(response?.items) ? response.items :
+    [];
+  const trendPercent =
+    response?.data?.summary?.percentageIncrease ??
+    response?.data?.trendPercent ??
+    response?.trendPercent ??
+    null;
+  return {
+    series: points.map((p) => Number(p?.count ?? p?.value ?? 0)),
+    categories: points.map((p) => String(p?.date ?? p?.label ?? p?.period ?? "")),
+    trendPercent,
+  };
+};
+
+const extractBreakdown = (response) => {
+  const labelMap = { individual: "Individual", company: "Company", koperasi: "Koperasi" };
+  const colorMap = { individual: "#298064", company: "#339978", koperasi: "#3DB58E" };
+
+  const breakdownObj = response?.data?.breakdown ?? response?.breakdown ?? null;
+
+  if (breakdownObj && typeof breakdownObj === "object" && !Array.isArray(breakdownObj)) {
+    const keys = Object.keys(breakdownObj).filter((k) => labelMap[k.toLowerCase()]);
+    if (keys.length > 0) {
+      return {
+        labels: keys.map((k) => labelMap[k.toLowerCase()]),
+        series: keys.map((k) => Number(breakdownObj[k]?.count ?? breakdownObj[k]?.total ?? 0)),
+        colors: keys.map((k) => colorMap[k.toLowerCase()] ?? "#CFCFCF"),
+      };
+    }
+  }
+
+  return {
+    labels: ["Individual", "Company", "Koperasi"],
+    series: [0, 0, 0],
+    colors: ["#298064", "#339978", "#3DB58E"],
+  };
+};
 
 export default function AdminPage() {
-  const [selectedCombo, setSelectedCombo] = useState("12 months");
-  const entityBreakdown = [46, 28, 18, 8];
+  const [approvedListings, setApprovedListings] = useState([]);
+  const [isLoadingApprovedListings, setIsLoadingApprovedListings] = useState(false);
+  const [approvedListingsError, setApprovedListingsError] = useState("");
+
+  const [growthTimeRange, setGrowthTimeRange] = useState("12 months");
+  const [growthData, setGrowthData] = useState({ series: [], categories: [], trendPercent: null });
+  const [isLoadingGrowth, setIsLoadingGrowth] = useState(false);
+
+  const [activeListingsTimeRange, setActiveListingsTimeRange] = useState("12 months");
+  const [activeListingsData, setActiveListingsData] = useState({ series: [], categories: [], trendPercent: null });
+  const [isLoadingActiveListings, setIsLoadingActiveListings] = useState(false);
+
+  const [breakdownTimeRange, setBreakdownTimeRange] = useState("12 months");
+  const [breakdownData, setBreakdownData] = useState({ labels: ["Individual", "Company", "Koperasi", "Unspecified"], series: [46, 28, 18, 8], colors: ["#298064", "#339978", "#3DB58E", "#CFCFCF"] });
+  const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
+  const [breakdownEntityCards, setBreakdownEntityCards] = useState([]);
+
+  const loadUserGrowth = useCallback(async (timeRange) => {
+    setIsLoadingGrowth(true);
+    try {
+      const response = await analyticsService.getUserGrowth({ timeRange });
+      setGrowthData(extractGrowthPoints(response));
+    } catch {
+      setGrowthData({ series: [], categories: [], trendPercent: null });
+    } finally {
+      setIsLoadingGrowth(false);
+    }
+  }, []);
+
+  const loadActiveListings = useCallback(async (timeRange) => {
+    setIsLoadingActiveListings(true);
+    try {
+      const response = await analyticsService.getActiveListings({ timeRange });
+      setActiveListingsData(extractGrowthPoints(response));
+    } catch {
+      setActiveListingsData({ series: [], categories: [], trendPercent: null });
+    } finally {
+      setIsLoadingActiveListings(false);
+    }
+  }, []);
+
+  const loadUserBreakdown = useCallback(async (timeRange) => {
+    setIsLoadingBreakdown(true);
+    try {
+      const response = await analyticsService.getUserBreakdown({ timeRange });
+      const parsed = extractBreakdown(response);
+      setBreakdownData(parsed);
+      const labelMap = { individual: "Individual", company: "Company", koperasi: "Koperasi" };
+      const breakdownObj = response?.data?.breakdown ?? response?.breakdown ?? {};
+      if (breakdownObj && typeof breakdownObj === "object" && !Array.isArray(breakdownObj)) {
+        const cards = Object.keys(breakdownObj)
+          .filter((k) => labelMap[k.toLowerCase()])
+          .map((k) => ({
+            key: k,
+            label: labelMap[k.toLowerCase()],
+            count: Number(breakdownObj[k]?.count ?? breakdownObj[k]?.total ?? 0),
+            trend: breakdownObj[k]?.percentageChange ?? breakdownObj[k]?.trendPercent ?? null,
+          }));
+        setBreakdownEntityCards(cards);
+      } else {
+        setBreakdownEntityCards([]);
+      }
+    } catch {
+      setBreakdownEntityCards([]);
+    } finally {
+      setIsLoadingBreakdown(false);
+    }
+  }, []);
+
+  useEffect(() => { loadUserGrowth(growthTimeRange); }, [growthTimeRange, loadUserGrowth]);
+  useEffect(() => { loadActiveListings(activeListingsTimeRange); }, [activeListingsTimeRange, loadActiveListings]);
+  useEffect(() => { loadUserBreakdown(breakdownTimeRange); }, [breakdownTimeRange, loadUserBreakdown]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRecentlyApprovedListings = async () => {
+      try {
+        setIsLoadingApprovedListings(true);
+        setApprovedListingsError("");
+
+        const response = await landService.getAdminListings({
+          page: 1,
+          limit: 5,
+          recentlyApproved: true,
+        });
+
+        if (!isMounted) return;
+
+        const items = extractListingItems(response);
+        setApprovedListings(items.map(mapListingToCard));
+      } catch (error) {
+        if (!isMounted) return;
+        setApprovedListings([]);
+        setApprovedListingsError(error?.message || "Failed to load recently approved listings.");
+      } finally {
+        if (isMounted) {
+          setIsLoadingApprovedListings(false);
+        }
+      }
+    };
+
+    loadRecentlyApprovedListings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <main className="flex flex-col bg-background-primary px-4 py-5 sm:h-full no-scrollbar sm:min-h-0 sm:overflow-y-auto sm:px-5">
@@ -187,16 +273,27 @@ export default function AdminPage() {
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl p-4">
           <Chart
-            rangeOptions={[
-              "Last 7 days",
-              "Last 30 days",
-              "Last 3 months",
-              "Last 12 months",
-            ]}
+            title="User growth over time"
+            seriesName="Users"
+            series={growthData.series}
+            categories={growthData.categories}
+            timeRange={growthTimeRange}
+            onTimeRangeChange={setGrowthTimeRange}
+            isLoading={isLoadingGrowth}
+            trendPercent={growthData.trendPercent !== null ? `${growthData.trendPercent}%` : null}
           />
         </div>
         <div className="bg-white rounded-2xl p-4">
-          <Chart />
+          <Chart
+            title="Active listings over time"
+            seriesName="Listings"
+            series={activeListingsData.series}
+            categories={activeListingsData.categories}
+            timeRange={activeListingsTimeRange}
+            onTimeRangeChange={setActiveListingsTimeRange}
+            isLoading={isLoadingActiveListings}
+            trendPercent={activeListingsData.trendPercent !== null ? `${activeListingsData.trendPercent}%` : null}
+          />
         </div>
       </div>
       <div className="mt-6 flex flex-col bg-white rounded-2xl p-4 border border-border-input">
@@ -206,64 +303,83 @@ export default function AdminPage() {
           </h2>
           <ChartComboBox
             options={["12 months", "30 days", "7 days", "24 hours"]}
-            selectedOption={selectedCombo}
-            onSelectOption={setSelectedCombo}
+            selectedValue={breakdownTimeRange}
+            onChange={setBreakdownTimeRange}
           />
         </div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex justify-center w-full col-span-1">
-            <EntityDonutChart
-              series={entityBreakdown}
-              labels={["Individual", "Company", "Koperasi", "Unspecified"]}
-              // colors={["#298064", "#339978", "#3DB58E", "#D1D5DB"]}
-              totalLabel="Registered users"
-            />
+            {isLoadingBreakdown ? (
+              <div className="flex h-[150px] items-center justify-center text-sm text-gray5">Loading…</div>
+            ) : (
+              <EntityDonutChart
+                series={breakdownData.series}
+                labels={breakdownData.labels}
+                colors={breakdownData.colors}
+                totalLabel="Registered users"
+              />
+            )}
           </div>
-          <div className="flex flex-col justify-between gap-2 border border-border-input rounded-2xl p-4">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-chart-1">
-              <PersonEntity />
-            </div>
-            <div className="flex flex-col">
-              <div className="text-sm font-medium">Individual</div>
-              <div className="flex items-end justify-between gap-2">
-                <p className="text-3xl font-bold">680</p>
-                <span className="inline-flex items-center gap-1 border border-border-card rounded-lg px-1.5 py-0.5 text-[11px] font-semibold sm:text-[12px]">
-                  <TrendUpRight />
-                  <span>12.4%</span>
-                </span>
+
+          {breakdownEntityCards.length > 0 ? breakdownEntityCards.map((card, index) => {
+            const iconBg = ["bg-green-chart-1", "bg-green-chart-2", "bg-green-chart-3"][index] ?? "bg-green-chart-1";
+            const Icon = [PersonEntity, GroupEntity, BuildingEntity][index] ?? PersonEntity;
+            return (
+              <div key={card.key} className="flex flex-col justify-between gap-2 border border-border-input rounded-2xl p-4">
+                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
+                  <Icon />
+                </div>
+                <div className="flex flex-col">
+                  <div className="text-sm font-medium">{card.label}</div>
+                  <div className="flex items-end justify-between gap-2">
+                    <p className="text-3xl font-bold">{card.count.toLocaleString("en-US")}</p>
+                    {card.trend !== null ? (
+                      <span className="inline-flex items-center gap-1 border border-border-card rounded-lg px-1.5 py-0.5 text-[11px] font-semibold sm:text-[12px]">
+                        <TrendUpRight />
+                        <span>{card.trend}%</span>
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="flex flex-col justify-between gap-2 border border-border-input rounded-2xl p-4">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-chart-2">
-              <GroupEntity />
-            </div>
-            <div className="flex flex-col">
-              <div className="text-sm font-medium">Company</div>
-              <div className="flex items-end justify-between gap-2">
-                <p className="text-3xl font-bold">420</p>
-                <span className="inline-flex items-center gap-1 border border-border-card rounded-lg px-1.5 py-0.5 text-[11px] font-semibold sm:text-[12px]">
-                  <TrendUpRight />
-                  <span>8.6%</span>
-                </span>
+            );
+          }) : (
+            <>
+              <div className="flex flex-col justify-between gap-2 border border-border-input rounded-2xl p-4">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-chart-1">
+                  <PersonEntity />
+                </div>
+                <div className="flex flex-col">
+                  <div className="text-sm font-medium">Individual</div>
+                  <div className="flex items-end justify-between gap-2">
+                    <p className="text-3xl font-bold">{breakdownData.series[0] ?? 0}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="flex flex-col justify-between gap-2 border border-border-input rounded-2xl p-4">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-chart-3">
-              <BuildingEntity />
-            </div>
-            <div className="flex flex-col">
-              <div className="text-sm font-medium">Koperasi</div>
-              <div className="flex items-end justify-between gap-2">
-                <p className="text-3xl font-bold">235</p>
-                <span className="inline-flex items-center gap-1 border border-border-card rounded-lg px-1.5 py-0.5 text-[11px] font-semibold sm:text-[12px]">
-                  <TrendUpRight />
-                  <span>6.1%</span>
-                </span>
+              <div className="flex flex-col justify-between gap-2 border border-border-input rounded-2xl p-4">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-chart-2">
+                  <GroupEntity />
+                </div>
+                <div className="flex flex-col">
+                  <div className="text-sm font-medium">Company</div>
+                  <div className="flex items-end justify-between gap-2">
+                    <p className="text-3xl font-bold">{breakdownData.series[1] ?? 0}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+              <div className="flex flex-col justify-between gap-2 border border-border-input rounded-2xl p-4">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-chart-3">
+                  <BuildingEntity />
+                </div>
+                <div className="flex flex-col">
+                  <div className="text-sm font-medium">Koperasi</div>
+                  <div className="flex items-end justify-between gap-2">
+                    <p className="text-3xl font-bold">{breakdownData.series[2] ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
       <section className="mt-6 flex flex-1 flex-col rounded-2xl border border-border-input bg-white p-4 sm:p-5">
@@ -289,13 +405,33 @@ export default function AdminPage() {
         </div>
 
         <div className="mt-5 overflow-y-auto space-y-4 pr-1 no-scrollbar">
-          {approvedListings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              showFooter={false}
-            />
-          ))}
+          {isLoadingApprovedListings ? (
+            <div className="rounded-xl border border-border-input bg-background-primary px-4 py-3 text-[14px] text-gray5">
+              Loading recently approved listings...
+            </div>
+          ) : null}
+
+          {!isLoadingApprovedListings && approvedListingsError ? (
+            <div className="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[14px] text-[#B42318]">
+              {approvedListingsError}
+            </div>
+          ) : null}
+
+          {!isLoadingApprovedListings && !approvedListingsError && approvedListings.length === 0 ? (
+            <div className="rounded-xl border border-border-input bg-background-primary px-4 py-3 text-[14px] text-gray5">
+              No recently approved listings found.
+            </div>
+          ) : null}
+
+          {!isLoadingApprovedListings && !approvedListingsError
+            ? approvedListings.map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  showFooter={false}
+                />
+              ))
+            : null}
         </div>
       </section>
     </main>
