@@ -12,4 +12,4 @@ RUN npm run build
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["npx", "next", "start", "-p", "3000", "-H", "0.0.0.0"]
