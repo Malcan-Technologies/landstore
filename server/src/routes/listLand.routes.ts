@@ -2,6 +2,7 @@ import { Router } from "express";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import optionalApiAuth from "../middleware/optionalApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
+import authorizeListLandVisibility from "../middleware/authorizeListLandVisibility.js";
 import upload from "../middleware/multer.js";
 import {
 	createListLandController,
@@ -10,7 +11,9 @@ import {
 	getListLandsController,
 	getAllListingsController,
 	updateListLandController,
+	requestListLandChangesController,
 	searchPropertiesByRadiusController,
+	getActiveListingsOverTimeController,
 } from "../controllers/listLand.controller.js";
 
 const listLandRouter = Router();
@@ -24,11 +27,17 @@ listLandRouter.post("/search/by-radius", optionalApiAuth, searchPropertiesByRadi
 // Get all public listings (accessible to any authenticated user)
 listLandRouter.get("/all-listings", requireApiAuth, requireAdmin,getAllListingsController);
 
+// Get active listings analytics over time (admin only)
+listLandRouter.get("/analytics/active-listings", requireApiAuth, requireAdmin, getActiveListingsOverTimeController);
+
 // Get all properties (user-specific or all for admin)
 listLandRouter.get("/", requireApiAuth, getListLandsController);
 
-// Get single property (public - allows viewing property details)
-listLandRouter.get("/:id", getListLandByIdController);
+// Request changes for a property listing (admin only)
+listLandRouter.post("/:id/request-changes", requireApiAuth, requireAdmin, requestListLandChangesController);
+
+// Get single property (public active-only, owner/admin can see all statuses)
+listLandRouter.get("/:id", optionalApiAuth, authorizeListLandVisibility, getListLandByIdController);
 
 // Update property with optional image and document uploads
 listLandRouter.patch("/:id", requireApiAuth, upload.any(), updateListLandController);

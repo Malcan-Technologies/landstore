@@ -86,24 +86,6 @@
           "response": []
         },
         {
-          "name": "Get session Copy",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/my-profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "my-profile"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
           "name": "Register(Individual)",
           "request": {
             "method": "POST",
@@ -115,13 +97,60 @@
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"ahsanmaqsood786@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"basit sheikh\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"John Doe\",\r\n    \"identityNo\": \"123456789\",\r\n    \"entityTypes\": [\"1790ec04-21db-49da-860a-614f0a033042\"] \r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "ahsanmaqsood976@gmail.com",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "Test@1234567",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "basit sheikh",
+                  "type": "text"
+                },
+                {
+                  "key": "userType",
+                  "value": "user",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "60123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "profileType",
+                  "value": "individual",
+                  "type": "text"
+                },
+                {
+                  "key": "fullName",
+                  "value": "John Doe",
+                  "type": "text"
+                },
+                {
+                  "key": "identityNo",
+                  "value": "123456789",
+                  "type": "text"
+                },
+                {
+                  "key": "entityTypes",
+                  "value": "1790ec04-21db-49da-860a-614f0a033042",
+                  "type": "text"
+                },
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "uuid": "9fa21b33-1e16-4f29-93db-3d5970f9b11e",
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/author.jpeg"
                 }
-              }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/users/register",
@@ -550,7 +579,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\" : \"My shortlist\"\r\n}",
+              "raw": "{\r\n    \"name\" : \"My shortlist1\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -597,7 +626,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "d885da82-bb7c-403e-94d6-f42d89360582"
+                  "value": "a845458e-249e-451c-8b7c-361ed26f4c1f"
                 }
               ]
             }
@@ -940,37 +969,43 @@
                   "key": "title",
                   "value": "Any",
                   "type": "text",
-                  "uuid": "008976aa-243b-4cbd-8994-12e529a14ffa"
+                  "uuid": "008976aa-243b-4cbd-8994-12e529a14ffa",
+                  "disabled": true
                 },
                 {
                   "key": "categoryId",
                   "value": "99f16847-4681-4984-b0cc-e9debe0c2c64",
                   "type": "text",
-                  "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e"
+                  "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e",
+                  "disabled": true
                 },
                 {
                   "key": "ownershipTypeId",
                   "value": "a5a937da-bb18-4157-bdf6-a42c3df0b947",
                   "type": "text",
-                  "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e"
+                  "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e",
+                  "disabled": true
                 },
                 {
                   "key": "utilizationId",
                   "value": "162a0a33-7531-4e5b-b668-4992a8ba139f",
                   "type": "text",
-                  "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391"
+                  "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391",
+                  "disabled": true
                 },
                 {
                   "key": "titleTypeId",
                   "value": "2a56fa5d-781d-46e6-86ea-335fef8e1e7b",
                   "type": "text",
-                  "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad"
+                  "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad",
+                  "disabled": true
                 },
                 {
                   "key": "landAreaUnit",
                   "value": "km",
                   "type": "text",
-                  "uuid": "38a78f65-281b-4355-ae3d-cb501205a75b"
+                  "uuid": "38a78f65-281b-4355-ae3d-cb501205a75b",
+                  "disabled": true
                 },
                 {
                   "key": "listingCode",
@@ -983,19 +1018,22 @@
                   "key": "landArea",
                   "value": "5000",
                   "type": "text",
-                  "uuid": "2a4c37b1-f4ef-47b9-a8c6-abefe71ba879"
+                  "uuid": "2a4c37b1-f4ef-47b9-a8c6-abefe71ba879",
+                  "disabled": true
                 },
                 {
                   "key": "price",
                   "value": "400000",
                   "type": "text",
-                  "uuid": "eaefa9e7-2ec3-4631-8073-9ccdfc1950ab"
+                  "uuid": "eaefa9e7-2ec3-4631-8073-9ccdfc1950ab",
+                  "disabled": true
                 },
                 {
                   "key": "pricePerSqrft",
                   "value": "1250",
                   "type": "text",
-                  "uuid": "36d4ab24-5df2-4a36-8bf4-09b827255eeb"
+                  "uuid": "36d4ab24-5df2-4a36-8bf4-09b827255eeb",
+                  "disabled": true
                 },
                 {
                   "key": "images",
@@ -1019,21 +1057,24 @@
                   "value": "true",
                   "description": "true // false",
                   "type": "text",
-                  "uuid": "a8bcdfdc-b899-4044-876b-891bfe9e0409"
+                  "uuid": "a8bcdfdc-b899-4044-876b-891bfe9e0409",
+                  "disabled": true
                 },
                 {
                   "key": "dealTypes",
                   "value": "buy",
                   "description": "buy / jv/ financing",
                   "type": "text",
-                  "uuid": "9c1ec4ce-b890-4bb8-9192-e0c2d5fb3020"
+                  "uuid": "9c1ec4ce-b890-4bb8-9192-e0c2d5fb3020",
+                  "disabled": true
                 },
                 {
                   "key": "terrainChips",
                   "value": "flat",
                   "description": "flat / hilly / mix",
                   "type": "text",
-                  "uuid": "d50b4700-1009-466b-ac77-d90848749b73"
+                  "uuid": "d50b4700-1009-466b-ac77-d90848749b73",
+                  "disabled": true
                 },
                 {
                   "key": "featureTags",
@@ -1078,7 +1119,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "ad53afb9-459b-43e8-8681-0794e0bd4999"
+                  "value": "885caa6b-ff94-48bd-800a-6f267f1b4a21"
                 }
               ]
             }
@@ -1123,7 +1164,7 @@
               "formdata": []
             },
             "url": {
-              "raw": "{{baseUrl}}/list-lands/all-listings?page=1&limit=5&recentlyApproved=true",
+              "raw": "{{baseUrl}}/list-lands/all-listings?page=1&limit=5",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1143,7 +1184,13 @@
                 {
                   "key": "recentlyApproved",
                   "value": "true",
-                  "description": "ture or false"
+                  "description": "ture or false",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "disabled": true
                 }
               ]
             }
@@ -1174,7 +1221,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "aa9a1a73-0909-4aed-be85-0149577d0e78"
+                  "value": "885caa6b-ff94-48bd-800a-6f267f1b4a21"
                 }
               ]
             }
@@ -1224,7 +1271,7 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/list-lands/search/by-radius",
+              "raw": "{{baseUrl}}/list-lands/search/by-radius?myListings=true&myShortlistings=true&myEnquiries=true",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1268,7 +1315,7 @@
                 },
                 {
                   "key": "landAreaMin",
-                  "value": "5000",
+                  "value": "50000",
                   "disabled": true
                 },
                 {
@@ -1278,13 +1325,59 @@
                 },
                 {
                   "key": "pricePerSqft",
-                  "value": "400000",
+                  "value": "1200",
                   "disabled": true
                 },
                 {
                   "key": "titleTypeId",
                   "value": "2a56fa5d-781d-46e6-86ea-335fef8e1e7b",
                   "disabled": true
+                },
+                {
+                  "key": "myListings",
+                  "value": "true"
+                },
+                {
+                  "key": "myShortlistings",
+                  "value": "true"
+                },
+                {
+                  "key": "myEnquiries",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Request Changes",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"reason\" : \"{{reason}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/:id/request-changes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                ":id",
+                "request-changes"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "aa9a1a73-0909-4aed-be85-0149577d0e78"
                 }
               ]
             }
@@ -1826,13 +1919,11 @@
               "query": [
                 {
                   "key": "page",
-                  "value": "1",
-                  "type": "text"
+                  "value": "1"
                 },
                 {
                   "key": "limit",
-                  "value": "5",
-                  "type": "text"
+                  "value": "5"
                 }
               ]
             }
@@ -2547,13 +2638,16 @@
               "query": [
                 {
                   "key": "page",
-                  "value": "1",
-                  "type": "text"
+                  "value": "1"
                 },
                 {
                   "key": "limit",
-                  "value": "5",
-                  "type": "text"
+                  "value": "5"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
                 }
               ]
             }
@@ -3024,7 +3118,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/analytics/growth?timeRange=7days&profileType=individual",
+              "raw": "{{baseUrl}}/users/analytics/growth",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -3037,12 +3131,67 @@
                 {
                   "key": "timeRange",
                   "value": "7days",
-                  "description": "12months | 30days | 7days | 24hours (default: 12months)"
+                  "description": "12months | 30days | 7days | 24hours (default: 12months)",
+                  "disabled": true
                 },
                 {
                   "key": "profileType",
                   "value": "individual",
-                  "description": "individual | company | koperasi (no filter = all types)"
+                  "description": "individual | company | koperasi (no filter = all types)",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User breakdown",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/analytics/breakdown?timeRange=7days",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "analytics",
+                "breakdown"
+              ],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "7days",
+                  "description": "12months | 30days | 7days | 24hours (default: 12months)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Active listings over time",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/analytics/active-listings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "analytics",
+                "active-listings"
+              ],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "7days",
+                  "description": "12months | 30days | 7days | 24hours (default: 12months)",
+                  "disabled": true
                 }
               ]
             }

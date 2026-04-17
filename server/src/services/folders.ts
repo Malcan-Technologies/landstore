@@ -1,6 +1,16 @@
 import db from "../../config/prisma.js";
 import { transformPropertyWithSignedUrls } from "./signedUrlTransformer.js";
 
+const shortlistPropertyInclude = {
+	category: true,
+	ownershipType: true,
+	utilization: true,
+	titleType: true,
+	location: true,
+	leaseholdDetails: true,
+	media: true,
+} as const;
+
 const createHttpError = (message: string, statusCode: number) => {
 	const error = new Error(message) as Error & { statusCode?: number };
 	error.statusCode = statusCode;
@@ -56,7 +66,9 @@ export const getFoldersByUserId = async (userId: string, page: number = 1, limit
 				include: {
 					properties: {
 						include: {
-							property: true, // All property fields
+							property: {
+								include: shortlistPropertyInclude,
+							},
 						},
 					},
 				},
@@ -117,7 +129,9 @@ export const getFolderById = async (
 			include: {
 				properties: {
 					include: {
-						property: true, // All property fields and relations
+						property: {
+							include: shortlistPropertyInclude,
+						}, // All property fields and relations
 					},
 				},
 			},
@@ -306,20 +320,9 @@ export const addPropertyToFolder = async (
 			},
 		});
 
-		// Fetch the full property with relations
-		const includePropertyRelations = {
-			category: true,
-			ownershipType: true,
-			utilization: true,
-			titleType: true,
-			location: true,
-			leaseholdDetails: true,
-			media: true,
-		} as const;
-
 		const fullProperty = await db.property.findUnique({
 			where: { id: propertyId },
-			include: includePropertyRelations,
+			include: shortlistPropertyInclude,
 		});
 
 		if (!fullProperty) {

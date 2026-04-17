@@ -105,18 +105,12 @@ export const getEnquiriesController = async (
 		// Verify user is authenticated
 		getRequesterUserOrThrow(req);
 
-		const propertyId =
-			typeof req.query.propertyId === "string" ? req.query.propertyId : undefined;
-		const userId =
-			typeof req.query.userId === "string" ? req.query.userId : undefined;
 		const status =
 			typeof req.query.status === "string" ? req.query.status : undefined;
 		const page = req.query.page ? Number(req.query.page) : undefined;
 		const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
 		const result = await getEnquiries({
-			propertyId,
-			userId,
 			status,
 			page,
 			limit,

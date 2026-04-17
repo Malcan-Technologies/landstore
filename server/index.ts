@@ -91,12 +91,12 @@ app.use("/api/list-lands", listLandRoutes);
 
 // Protected routes (require authentication)
 app.use("/api/folders", requireApiAuth, folderRoutes);
-app.use("/api/categories", requireApiAuth, categoryRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/ownership-types", requireApiAuth, ownershipRoutes);
-app.use("/api/utilizations", requireApiAuth, utilizationRoutes);
-app.use("/api/title-types", requireApiAuth, titleTypeRoutes);
+app.use("/api/utilizations", utilizationRoutes);
+app.use("/api/title-types", titleTypeRoutes);
 app.use("/api/enquiries", requireApiAuth, enquiryRoutes);
-app.use("/api/interest-types", requireApiAuth, interestTypeRoutes);
+app.use("/api/interest-types", interestTypeRoutes);
 app.use("/api/entity-types", requireApiAuth, entityTypeRoutes);
 app.use("/api/notifications", requireApiAuth, notificationRoutes);
 app.use("/api/locations", requireApiAuth, locationRoutes);

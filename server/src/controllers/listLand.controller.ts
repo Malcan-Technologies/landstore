@@ -6,13 +6,16 @@ import {
 	getListLands,
 	getAllListings,
 	updateListLandById,
+	requestListLandChanges,
 	uploadPropertyImages,
 	uploadPropertyDocuments,
 	getUploadedMediaAndDocuments,
 	searchPropertiesByRadius,
+	getActiveListingsOverTime,
 	type CreateListLandPayload,
 } from "../services/listLand.js";
 import type { GetLandsQuery } from "../../types/express/land.types.js";
+import type { string } from "better-auth";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -236,19 +239,11 @@ export const getListLandsController = async (req: Request, res: Response) => {
 export const getListLandByIdController = async (req: Request, res: Response) => {
 	try {
 		const propertyId = getPropertyIdParamOrThrow(req);
-		
-		// Get user ID if authenticated (optional)
-		let userId: string | undefined;
-		try {
-			const user = getRequesterUserOrThrow(req);
-			userId = user.id;
-		} catch {
-			// User not authenticated, proceed without userId
-		}
+		const user = (req as any).user as { id?: string } | undefined;
 
 		const property = await getListLandById(
 			propertyId,
-			userId
+			user?.id
 		);
 
 		return res.status(200).json({ property });
@@ -322,6 +317,34 @@ export const updateListLandController = async (req: Request, res: Response) => {
 };
 
 /**
+ * Request changes for a property listing
+ * Admin only: moves the listing back to draft and notifies the owner
+ */
+export const requestListLandChangesController = async (req: Request, res: Response) => {
+	try {
+		const requester = getRequesterUserOrThrow(req);
+		const propertyId = getPropertyIdParamOrThrow(req);
+		const reason = typeof req.body.reason === "string" ? req.body.reason.trim() : "";
+
+		if (!reason) {
+			return res.status(400).json({
+				message: "reason is required",
+			});
+		}
+
+		const result = await requestListLandChanges(propertyId, requester.id, reason);
+
+		return res.status(200).json({
+			message: "Listing moved to draft and user notified successfully",
+			data: result,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ message });
+	}
+};
+
+/**
  * Delete property endpoint (Soft Delete)
  * Marks property as deleted by setting deletedAt timestamp
  */
@@ -347,8 +370,8 @@ export const deleteListLandController = async (req: Request, res: Response) => {
  * Get all public listings endpoint
  * Accessible by any authenticated user
  * Returns all approved listings with pagination
- * Query: { page?, limit?, recentlyApproved? }
- * - recentlyApproved: if true, returns only active listings sorted by creation date (descending)
+ * Query: { page?, limit?, status? }
+ * - status: filter by listing status (e.g., "active", "pending", etc.)
  */
 export const getAllListingsController = async (req: Request, res: Response) => {
 	try {
@@ -356,11 +379,13 @@ export const getAllListingsController = async (req: Request, res: Response) => {
 
 		const page = parseInt(req.query.page as string) || 1;
 		const limit = parseInt(req.query.limit as string) || 10;
+		const status = req.query.status as string;
 		const recentlyApproved = req.query.recentlyApproved === "true";
 
 		const query: GetLandsQuery = {
 			page,
 			limit,
+			status,
 			recentlyApproved,
 		};
 
@@ -421,6 +446,19 @@ export const searchPropertiesByRadiusController = async (
 		// Get user ID if authenticated (optional for public endpoint)
 		const user = getOptionalAuthenticatedUser(req);
 		const userId = user?.id;
+
+		// Parse boolean filters
+		const myListings = req.query.myListings === "true";
+		const myShortlistings = req.query.myShortlistings === "true";
+		const myEnquiries = req.query.myEnquiries === "true";
+
+		// If any user-specific filter is requested, user must be authenticated
+		if ((myListings || myShortlistings || myEnquiries) && !userId) {
+			return res.status(401).json({
+				success: false,
+				message: "Authentication required to use user-specific filters (myListings, myShortlistings, myEnquiries)",
+			});
+		}
 		
         // Extract optional filters from query parameters
 		const filters: {
@@ -471,13 +509,57 @@ export const searchPropertiesByRadiusController = async (
 			page,
 			limit,
 			userId,
-			filters
+			filters,
+			{
+				myListings,
+				myShortlistings,
+				myEnquiries
+			}
 		);
 
 		return res.status(200).json({
 			success: true,
 			message: "Properties found within radius",
 			data: result,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
+/**
+ * Get active listings analytics over time
+ * Supports time ranges: 12months, 30days, 7days, 24hours
+ */
+export const getActiveListingsOverTimeController = async (req: Request, res: Response) => {
+	try {
+		const { timeRange } = req.query;
+
+		// Set default timeRange to "12months" if not provided
+		const validatedTimeRange = (timeRange as string) || "12months";
+
+		// Validate timeRange
+		const validTimeRanges = ["12months", "30days", "7days", "24hours"];
+		if (!validTimeRanges.includes(validatedTimeRange)) {
+			return res.status(400).json({
+				success: false,
+				message: `Invalid timeRange. Must be one of: ${validTimeRanges.join(", ")}`,
+			});
+		}
+
+		const { getActiveListingsOverTime } = await import("../services/listLand.js");
+
+		const analyticsData = await getActiveListingsOverTime(
+			validatedTimeRange as "12months" | "30days" | "7days" | "24hours"
+		);
+
+		return res.status(200).json({
+			success: true,
+			data: analyticsData,
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);

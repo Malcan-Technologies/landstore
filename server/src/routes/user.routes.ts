@@ -15,7 +15,8 @@ import {
   verifyEmailController,
   getMyProfileController,
   loginController,
-  getUserGrowthController
+  getUserGrowthController,
+  getUserBreakdownController
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
@@ -30,7 +31,7 @@ const upload = multer({ storage: multer.memoryStorage() });
  * Body: { email, password, name, phone, userType, profileType, ... }
  * Response: Full user profile with verification email sent
  */
-userRouter.post("/register", registerAndCompleteProfileController);
+userRouter.post("/register", upload.single("profileImage"), registerAndCompleteProfileController);
 userRouter.post("/login", loginController);
 
 /**
@@ -66,5 +67,8 @@ userRouter.delete("/:id", requireApiAuth, deleteUserController);
 
 // Analytics - User growth over time (admin only)
 userRouter.get("/analytics/growth", requireApiAuth, requireAdmin, getUserGrowthController);
+
+// Analytics - User breakdown by entity type (admin only)
+userRouter.get("/analytics/breakdown", requireApiAuth, requireAdmin, getUserBreakdownController);
 
 export default userRouter;

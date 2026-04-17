@@ -33,8 +33,6 @@ export type UpdateEnquiryPayload = {
 };
 
 type GetEnquiriesQuery = {
-	propertyId?: string | undefined;
-	userId?: string | undefined;
 	status?: string | undefined;
 	page?: number | undefined;
 	limit?: number | undefined;
@@ -179,14 +177,6 @@ export const getEnquiries = async (query: GetEnquiriesQuery) => {
 		const skip = (pageNumber - 1) * pageSize;
 
 		const where: Prisma.PropertyEnquiryWhereInput = {};
-
-		if (query.propertyId) {
-			where.propertyId = query.propertyId;
-		}
-
-		if (query.userId) {
-			where.userId = query.userId;
-		}
 
 		if (query.status) {
 			where.status = query.status;

@@ -75,42 +75,71 @@ export const transformPropertyWithSignedUrls = async (property: any) => {
 		return property;
 	}
 
-	if (!property.media || !Array.isArray(property.media) || property.media.length === 0) {
+	const mediaRelation = property.media;
+
+	if (!mediaRelation) {
 		console.log(`ℹ️ Property has no media, returning as-is`);
 		return property;
 	}
 
-	console.log(`📋 Processing ${property.media.length} media items for property ${property.id}`);
+	if (Array.isArray(mediaRelation)) {
+		if (mediaRelation.length === 0) {
+			console.log(`ℹ️ Property has no media, returning as-is`);
+			return property;
+		}
 
-	const mediaWithUrls = await processConcurrently(
-		property.media,
-		async (media: any) => {
-			if (!media || !media.fileUrl) {
-				console.log(`⚠️ Media item has no fileUrl, returning as-is`);
-				return media;
-			}
+		console.log(`📋 Processing ${mediaRelation.length} media items for property ${property.id}`);
 
-			try {
-				console.log(`🔗 Generating signed URL for media ${media.id} - fileKey: ${media.fileUrl}`);
-				const signedUrl = await generateSignedUrl(media.fileUrl, AWS_BUCKET_NAME, SIGNED_URL_EXPIRY);
+		const mediaWithUrls = await processConcurrently(
+			mediaRelation,
+			async (media: any) => {
+				if (!media || !media.fileUrl) {
+					console.log(`⚠️ Media item has no fileUrl, returning as-is`);
+					return media;
+				}
 
-				return {
-					...media,
-					fileUrl: signedUrl, // Overwrite fileKey with temporary signed URL
-				};
-			} catch (error) {
-				console.error(`❌ Failed to generate signed URL for media ${media.id}`, error);
-				// Return media with original fileKey on error (graceful fallback)
-				return media;
-			}
-		},
-		MAX_CONCURRENT_REQUESTS
-	);
+				try {
+					console.log(`🔗 Generating signed URL for media ${media.id} - fileKey: ${media.fileUrl}`);
+					const signedUrl = await generateSignedUrl(media.fileUrl, AWS_BUCKET_NAME, SIGNED_URL_EXPIRY);
 
-	return {
-		...property,
-		media: mediaWithUrls,
-	};
+					return {
+						...media,
+						fileUrl: signedUrl,
+					};
+				} catch (error) {
+					console.error(`❌ Failed to generate signed URL for media ${media.id}`, error);
+					return media;
+				}
+			},
+			MAX_CONCURRENT_REQUESTS
+		);
+
+		return {
+			...property,
+			media: mediaWithUrls,
+		};
+	}
+
+	if (!mediaRelation.fileUrl) {
+		console.log(`⚠️ Media item has no fileUrl, returning as-is`);
+		return property;
+	}
+
+	try {
+		console.log(`🔗 Generating signed URL for media ${mediaRelation.id} - fileKey: ${mediaRelation.fileUrl}`);
+		const signedUrl = await generateSignedUrl(mediaRelation.fileUrl, AWS_BUCKET_NAME, SIGNED_URL_EXPIRY);
+
+		return {
+			...property,
+			media: {
+				...mediaRelation,
+				fileUrl: signedUrl,
+			},
+		};
+	} catch (error) {
+		console.error(`❌ Failed to generate signed URL for media ${mediaRelation.id}`, error);
+		return property;
+	}
 };
 
 /**

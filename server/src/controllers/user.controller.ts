@@ -38,13 +38,14 @@ import {
 	updateUserById,
 	getUserCompleteProfile,
 	signUpAndCompleteProfile,
-	getUserByEmail
+	getUserByEmail,
+	getUserGrowthOverTime,
+	getUserBreakdownByType
 } from "../services/user.js";
 import { emailService } from "../services/email.js";
 import { uploadFileToS3 } from "../services/s3Upload.js";
 import { auth } from "../../config/auth.js";
 import db from "../../config/prisma.js";
-import { getUserGrowthOverTime } from "../services/user.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -116,6 +117,18 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			});
 		}
 
+		// Normalize entityTypes to array
+		let normalizedEntityTypes: (string | undefined)[] | undefined;
+		if (entityTypes) {
+			if (Array.isArray(entityTypes)) {
+				normalizedEntityTypes = entityTypes;
+			} else if (typeof entityTypes === "string") {
+				// Handle comma-separated string
+				const parsed = entityTypes.split(",").map((id: string) => id.trim()).filter((id: string) => id.length > 0);
+				normalizedEntityTypes = parsed.length > 0 ? parsed : undefined;
+			}
+		}
+
 		// Sign up with password AND complete profile in ONE transaction
 		// Better Auth automatically hashes password before database storage
 		const result = await signUpAndCompleteProfile(email, password, {
@@ -130,8 +143,25 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			firstName,
 			lastName,
 			name,
-			entityTypes
+			...(normalizedEntityTypes !== undefined && { entityTypes: normalizedEntityTypes })
 		});
+
+		if (req.file) {
+			const fileKey = await uploadFileToS3(req.file);
+			const profileMedia = await db.media.create({
+				data: {
+					userId: result.userId,
+					fileUrl: fileKey,
+					mediaType: req.file.mimetype,
+					mediaCategory: "profileImage",
+				},
+			});
+
+			await db.user.update({
+				where: { id: result.userId },
+				data: { profileMediaId: profileMedia.id },
+			});
+		}
 
 		// Generate email verification token
 		const verificationToken = randomBytes(32).toString("hex");
@@ -350,7 +380,34 @@ export const getCurrentUserController = async (req: Request, res: Response) => {
 			});
 		}
 
-		return res.status(200).json({ user });
+		// Fetch user statistics in parallel
+		const [totalListings, totalShortlisted, totalEnquiries] = await Promise.all([
+			// Count total listings owned by this user
+			db.property.count({
+				where: { userId: user.id }
+			}),
+			// Count total shortlisted properties by this user
+			db.shortlistProperty.count({
+				where: {
+					folder: {
+						userId: user.id
+					}
+				}
+			}),
+			// Count total enquiries by this user
+			db.propertyEnquiry.count({
+				where: { userId: user.id }
+			})
+		]);
+
+		return res.status(200).json({ 
+			user,
+			statistics: {
+				totalListings,
+				totalShortlisted,
+				totalEnquiries
+			}
+		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
 		return res.status(statusCode).json({ message });
@@ -923,6 +980,44 @@ export const getUserGrowthController = async (req: Request, res: Response) => {
 		return res.status(200).json({
 			success: true,
 			data: growthData,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
+/**
+ * Get user breakdown by entity type
+ * Shows count of users by type: individual, company, koperasi
+ * Supports time ranges: 12months, 30days, 7days, 24hours
+ */
+export const getUserBreakdownController = async (req: Request, res: Response) => {
+	try {
+		const { timeRange } = req.query;
+
+		// Set default timeRange to "12months" if not provided
+		const validatedTimeRange = (timeRange as string) || "12months";
+
+		// Validate timeRange
+		const validTimeRanges = ["12months", "30days", "7days", "24hours"];
+		if (!validTimeRanges.includes(validatedTimeRange)) {
+			return res.status(400).json({
+				success: false,
+				message: `Invalid timeRange. Must be one of: ${validTimeRanges.join(", ")}`,
+			});
+		}
+
+		const breakdownData = await getUserBreakdownByType(
+			validatedTimeRange as "12months" | "30days" | "7days" | "24hours"
+		);
+
+		return res.status(200).json({
+			success: true,
+			data: breakdownData,
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);

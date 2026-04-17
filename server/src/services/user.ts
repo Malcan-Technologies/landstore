@@ -46,6 +46,22 @@ const buildDisplayName = (
   return fullName || null;
 };
 
+const transformUserMediaWithSignedUrls = async (user: any) => {
+  const profileMedia = user.profileMedia
+    ? await transformMediaWithSignedUrl(user.profileMedia)
+    : null;
+
+  const media = Array.isArray(user.media)
+    ? await Promise.all(user.media.map((item: any) => transformMediaWithSignedUrl(item)))
+    : user.media;
+
+  return {
+    ...user,
+    profileMedia,
+    media,
+  };
+};
+
 /**
  * Validate Better Auth session token and retrieve user
  * Supports both session cookies and bearer tokens
@@ -260,7 +276,8 @@ const upsertUserEntityTypes = async (
 		where: { userId },
 	});
 
-	if (!entityTypeIds || entityTypeIds.length === 0) {
+	// Ensure entityTypeIds is an array
+	if (!entityTypeIds || !Array.isArray(entityTypeIds) || entityTypeIds.length === 0) {
 		return;
 	}
 
@@ -441,6 +458,25 @@ export const signUpAndCompleteProfile = async (
 export const getUserById = async (id: string) => {
   const user = await db.user.findUnique({
     where: { id },
+    include: {
+      profileMedia: true,
+      media: true,
+      individuals: true,
+      companies: true,
+      koperasi: true,
+      notifications: true,
+      notificationPrefs: true,
+      entityTypes: {
+        include: {
+          entityType: true,
+        },
+      },
+      properties: true,
+      enquiries: true,
+      sentMessages: true,
+      receivedMessages: true,
+      shortlistFolders: true
+    },
   });
 
   if (!user) {
@@ -449,13 +485,34 @@ export const getUserById = async (id: string) => {
     throw notFoundError;
   }
 
-  return user;
+  return transformUserMediaWithSignedUrls(user);
 };
 
 export const getUserByEmail = async (email: string) => {
   const normalizedEmail = normalizeEmail(email);
   const user = await db.user.findFirst({
     where: { email: normalizedEmail },
+    include: {
+      profileMedia: true,
+      media: true,
+      individuals: true,
+      companies: true,
+      koperasi: true,
+      notifications: true,
+      notificationPrefs: true,
+      entityTypes: {
+        include: {
+          entityType: true,
+        },
+      },
+      properties: true,
+      enquiries: true,
+      sentMessages: true,
+      receivedMessages: true,
+      shortlistFolders: true,
+      accounts: true,
+      sessions: true,
+    },
   });
 
   if (!user) {
@@ -478,12 +535,35 @@ export const getAllUsers = async (page: number = 1, limit: number = 10) => {
         orderBy: { createdAt: "desc" },
         skip,
         take: validLimit,
+        include: {
+          profileMedia: true,
+          media: true,
+          individuals: true,
+          companies: true,
+          koperasi: true,
+          notifications: true,
+          notificationPrefs: true,
+          entityTypes: {
+            include: {
+              entityType: true,
+            },
+          },
+          properties: true,
+          enquiries: true,
+          sentMessages: true,
+          receivedMessages: true,
+          shortlistFolders: true,
+        },
       }),
       db.user.count(),
     ]);
 
+    const items = await Promise.all(
+      users.map((user) => transformUserMediaWithSignedUrls(user))
+    );
+
     return {
-      items: users,
+      items,
       pagination: {
         page: validPage,
         limit: validLimit,
@@ -867,6 +947,174 @@ export const getUserGrowthOverTime = async (
 				percentageIncrease: parseFloat(percentageIncrease.toFixed(3)),
 				startDate: startDate.toISOString(),
 				endDate: now.toISOString(),
+			},
+		};
+	} catch (error: unknown) {
+		throw error;
+	}
+};
+
+/**
+ * Get user breakdown by entity type with optional time range filtering
+ * Supports time ranges: 24hours, 7days, 30days, 12months
+ * Returns count of users by type: individual, company, koperasi
+ * Includes percentage change compared to previous period
+ */
+export const getUserBreakdownByType = async (
+	timeRange: "12months" | "30days" | "7days" | "24hours" = "12months"
+) => {
+	try {
+		// Calculate date ranges
+		const now = new Date();
+		let startDate = new Date();
+		let previousStartDate = new Date();
+
+		switch (timeRange) {
+			case "24hours":
+				startDate.setHours(startDate.getHours() - 24);
+				previousStartDate.setHours(previousStartDate.getHours() - 48);
+				break;
+			case "7days":
+				startDate.setDate(startDate.getDate() - 7);
+				previousStartDate.setDate(previousStartDate.getDate() - 14);
+				break;
+			case "30days":
+				startDate.setDate(startDate.getDate() - 30);
+				previousStartDate.setDate(previousStartDate.getDate() - 60);
+				break;
+			case "12months":
+				startDate.setFullYear(startDate.getFullYear() - 1);
+				previousStartDate.setFullYear(previousStartDate.getFullYear() - 2);
+				break;
+		}
+
+		// Count individual users in current period
+		const individualCountCurrent = await db.user.count({
+			where: {
+				individuals: { isNot: null },
+				createdAt: {
+					gte: startDate,
+					lte: now,
+				},
+			},
+		});
+
+		// Count individual users in previous period
+		const individualCountPrevious = await db.user.count({
+			where: {
+				individuals: { isNot: null },
+				createdAt: {
+					gte: previousStartDate,
+					lt: startDate,
+				},
+			},
+		});
+
+		// Count company users in current period
+		const companyCountCurrent = await db.user.count({
+			where: {
+				companies: { isNot: null },
+				createdAt: {
+					gte: startDate,
+					lte: now,
+				},
+			},
+		});
+
+		// Count company users in previous period
+		const companyCountPrevious = await db.user.count({
+			where: {
+				companies: { isNot: null },
+				createdAt: {
+					gte: previousStartDate,
+					lt: startDate,
+				},
+			},
+		});
+
+		// Count koperasi users in current period
+		const koperasiCountCurrent = await db.user.count({
+			where: {
+				koperasi: { isNot: null },
+				createdAt: {
+					gte: startDate,
+					lte: now,
+				},
+			},
+		});
+
+		// Count koperasi users in previous period
+		const koperasiCountPrevious = await db.user.count({
+			where: {
+				koperasi: { isNot: null },
+				createdAt: {
+					gte: previousStartDate,
+					lt: startDate,
+				},
+			},
+		});
+
+		// Calculate percentage changes
+		const calculatePercentageChange = (current: number, previous: number): number => {
+			if (previous === 0) return 0;
+			const change = ((current - previous) / previous) * 100;
+			return Math.min(parseFloat(change.toFixed(2)), 100);
+		};
+
+		const individualPercentageChange = calculatePercentageChange(individualCountCurrent, individualCountPrevious);
+		const companyPercentageChange = calculatePercentageChange(companyCountCurrent, companyCountPrevious);
+		const koperasiPercentageChange = calculatePercentageChange(koperasiCountCurrent, koperasiCountPrevious);
+
+		// Get total counts of all users
+		const totalIndividuals = await db.user.count({
+			where: {
+				individuals: { isNot: null },
+			},
+		});
+
+		const totalCompanies = await db.user.count({
+			where: {
+				companies: { isNot: null },
+			},
+		});
+
+		const totalKoperasi = await db.user.count({
+			where: {
+				koperasi: { isNot: null },
+			},
+		});
+
+		const totalUsers = totalIndividuals + totalCompanies + totalKoperasi;
+
+		return {
+			timeRange,
+			breakdown: {
+				individual: {
+					count: individualCountCurrent,
+					total: totalIndividuals,
+					percentageChange: individualPercentageChange,
+					percentage: totalUsers > 0 ? parseFloat(((totalIndividuals / totalUsers) * 100).toFixed(2)) : 0,
+				},
+				company: {
+					count: companyCountCurrent,
+					total: totalCompanies,
+					percentageChange: companyPercentageChange,
+					percentage: totalUsers > 0 ? parseFloat(((totalCompanies / totalUsers) * 100).toFixed(2)) : 0,
+				},
+				koperasi: {
+					count: koperasiCountCurrent,
+					total: totalKoperasi,
+					percentageChange: koperasiPercentageChange,
+					percentage: totalUsers > 0 ? parseFloat(((totalKoperasi / totalUsers) * 100).toFixed(2)) : 0,
+				},
+			},
+			summary: {
+				totalUsers,
+				usersInCurrentPeriod: individualCountCurrent + companyCountCurrent + koperasiCountCurrent,
+				startDate: startDate.toISOString(),
+				endDate: now.toISOString(),
+				previousPeriodStart: previousStartDate.toISOString(),
+				previousPeriodEnd: startDate.toISOString(),
 			},
 		};
 	} catch (error: unknown) {

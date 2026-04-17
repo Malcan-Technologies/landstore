@@ -364,7 +364,7 @@ export const createListLand = async (
 					listingCode: payload.listingCode,
 					price: parseDecimal(payload.price, "price"),
 					pricePerSqrft: parseDecimal(payload.pricePerSqrft, "pricePerSqrft"),
-					status: payload.status ?? null,
+					status: "pending",
 					agreementAccepted: normalizeBoolean(parseBoolean(payload.agreementAccepted)) ?? false,
 					agreementAcceptedAt: toDateOrNull(payload.agreementAcceptedAt) ?? null,
 				},
@@ -501,7 +501,7 @@ export const getListLands = async (
 
 /**
  * Get all public listings accessible to any authenticated user
- * Returns all properties with approved status
+ * Returns all properties filtered by status
  */
 export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 	const page =
@@ -514,9 +514,18 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 			: 10;
 	const skip = (page - 1) * limit;
 
-	const where: Prisma.PropertyWhereInput = query.recentlyApproved
-		? { status: "active" } // Filter for active listings only
-		: { status: { not: null } }; // Show all properties with a status set
+	let where: Prisma.PropertyWhereInput;
+
+	if (query.status) {
+		// If status filter is provided, use it
+		where = { status: query.status };
+	} else if (query.recentlyApproved) {
+		// If recentlyApproved is true, show only active properties
+		where = { status: "active" };
+	} else {
+		// Show all properties with a status set
+		where = { status: { not: null } };
+	}
 
 	const [items, total] = await Promise.all([
 		db.property.findMany({
@@ -804,6 +813,89 @@ export const updateListLandById = async (
 };
 
 /**
+ * Request changes for a property listing
+ * Moves the listing back to draft and notifies the owner.
+ */
+export const requestListLandChanges = async (
+	propertyId: string,
+	adminId: string,
+	reason: string
+) => {
+	if (!propertyId || propertyId.trim().length === 0) {
+		throw createHttpError("Property ID is required", 400);
+	}
+
+	if (!reason || reason.trim().length === 0) {
+		throw createHttpError("Reason is required", 400);
+	}
+
+	try {
+		const property = await db.property.findUnique({
+			where: { id: propertyId },
+			select: {
+				id: true,
+				title: true,
+				listingCode: true,
+				status: true,
+				userId: true,
+				user: {
+					select: {
+						id: true,
+						email: true,
+					},
+				},
+			},
+		});
+
+		if (!property) {
+			throw createHttpError("Property not found", 404);
+		}
+
+		const trimmedReason = reason.trim();
+
+		const result = await db.$transaction(async (trx) => {
+			const updatedProperty = await trx.property.update({
+				where: { id: propertyId },
+				data: {
+					status: "draft",
+				},
+				include: includePropertyRelations,
+			});
+
+			const notificationContent = [
+				`Your listing "${property.title}" (Listing Code: ${property.listingCode}) has been moved back to Draft.`,
+				`Administrative reason: ${trimmedReason}`,
+			].join(" ");
+
+			const notification = await trx.notification.create({
+				data: {
+					userId: property.userId,
+					type: "urgent",
+					content: notificationContent,
+					isRead: false,
+				},
+			});
+
+			return {
+				property: updatedProperty,
+				notification,
+				adminId,
+			};
+		});
+
+		return result;
+	} catch (error: unknown) {
+		if (error instanceof Prisma.PrismaClientKnownRequestError) {
+			if (error.code === "P2003") {
+				throw createHttpError("Invalid relation id in payload", 400);
+			}
+		}
+
+		throw error;
+	}
+};
+
+/**
  * Delete property by ID
  */
 /**
@@ -885,6 +977,11 @@ export const searchPropertiesByRadius = async (
 		landAreaMax?: number;
 		pricePerSqft?: number;
 		titleTypeId?: string;
+	},
+	userFilters?: {
+		myListings?: boolean;
+		myShortlistings?: boolean;
+		myEnquiries?: boolean;
 	}
 ) => {
 	try {
@@ -933,6 +1030,8 @@ export const searchPropertiesByRadius = async (
 			},
 		};
 
+		// Apply user-specific filters if requested (will be handled in query phase)
+
 		// Apply optional filters
 		if (filters) {
 			if (filters.state) {
@@ -974,7 +1073,9 @@ export const searchPropertiesByRadius = async (
 			}
 
 			if (filters.pricePerSqft !== undefined) {
-				whereCondition.pricePerSqrft = new Prisma.Decimal(filters.pricePerSqft);
+				whereCondition.pricePerSqrft = {
+					lte: new Prisma.Decimal(filters.pricePerSqft)
+				};
 			}
 
 			if (filters.titleTypeId) {
@@ -982,25 +1083,26 @@ export const searchPropertiesByRadius = async (
 			}
 		}
 
-		// Step 2: Query properties within the bounding box with status = "active" and filters
-		const skip = (page - 1) * limit;
+		// Determine if any user-specific filter is active
+		const hasUserFilters = userFilters?.myListings || userFilters?.myShortlistings || userFilters?.myEnquiries;
+
+		// Step 2: Query properties based on geolocation with optional filters
+		const geoSkip = (page - 1) * limit;
 
 		const boxResults = await db.property.findMany({
 			where: whereCondition,
 			include: includePropertyRelations,
-			skip,
+			skip: geoSkip,
 			take: limit,
 		});
 
 		// Step 3: Refine results using Pythagorean theorem
-		// Filter properties that are actually within the radius circle
-		const radiusSquared = radius * radius;
-
 		const results = boxResults.filter((property) => {
-			if (!property.location) return false;
+			const location = (property as any).location;
+			if (!location) return false;
 
-			const propLat = Number(property.location.latitude);
-			const propLon = Number(property.location.longitude);
+			const propLat = Number(location.latitude);
+			const propLon = Number(location.longitude);
 
 			// Calculate distance² = (lat1 - lat2)² + (lon1 - lon2)²
 			const latDiff = lat - propLat;
@@ -1014,10 +1116,128 @@ export const searchPropertiesByRadius = async (
 			return distanceSquared <= Math.pow(dY, 2);
 		});
 
-		// Get total count for pagination (approximate based on bounding box and filters)
+		// Get total count for pagination
 		const totalCount = await db.property.count({
 			where: whereCondition,
 		});
+
+		let userFilterData: {
+			myListings: { items: any[]; total: number } | null;
+			myShortlistings: { items: any[]; total: number } | null;
+			myEnquiries: { items: any[]; total: number } | null;
+		} | null = null;
+
+		if (hasUserFilters && userId) {
+			const shortlistWhere: Prisma.ShortlistPropertyWhereInput = {
+				folder: { userId },
+			};
+
+			const enquiryWhere: Prisma.PropertyEnquiryWhereInput = {
+				userId,
+			};
+
+			const [myListingsResults, myShortlistingsResults, myEnquiriesResults] = await Promise.all([
+				userFilters?.myListings
+					? db.property.findMany({
+						where: { userId },
+						include: includePropertyRelations,
+						orderBy: { createdAt: "desc" },
+					})
+					: Promise.resolve([]),
+				userFilters?.myShortlistings
+					? db.shortlistProperty.findMany({
+						where: shortlistWhere,
+						include: {
+							folder: {
+								select: {
+									id: true,
+									name: true,
+									parentFolderId: true,
+									createdAt: true,
+									updatedAt: true,
+								},
+							},
+							property: {
+								include: includePropertyRelations,
+							},
+						},
+						orderBy: { createdAt: "desc" },
+					})
+					: Promise.resolve([]),
+				userFilters?.myEnquiries
+					? db.propertyEnquiry.findMany({
+						where: enquiryWhere,
+						include: {
+							property: {
+								include: includePropertyRelations,
+							},
+							interestType: true,
+						},
+						orderBy: { createdAt: "desc" },
+					})
+					: Promise.resolve([]),
+			]);
+
+			const transformPropertyList = async (properties: any[]) => {
+				const transformed = await Promise.all(
+					properties.map((property) => transformPropertyWithSignedUrls(property))
+				);
+
+				return Promise.all(
+					transformed.map(async (item) => ({
+						...item,
+						isShortListed: !!(await db.shortlistProperty.findFirst({
+							where: {
+								propertyId: item.id,
+								folder: { userId },
+							},
+						})),
+					}))
+				);
+			};
+
+			const transformShortlistEntries = async (shortlists: any[]) => {
+				return Promise.all(
+					shortlists.map(async (shortlist) => ({
+						...shortlist,
+						property: {
+							...await transformPropertyWithSignedUrls(shortlist.property),
+							isShortListed: true,
+						},
+					}))
+				);
+			};
+
+			const transformEnquiryEntries = async (enquiries: any[]) => {
+				return Promise.all(
+					enquiries.map(async (enquiry) => ({
+						...enquiry,
+						budget: enquiry.budget?.toString() ?? null,
+						property: {
+							...await transformPropertyWithSignedUrls(enquiry.property),
+							isShortListed: !!(await db.shortlistProperty.findFirst({
+								where: {
+									propertyId: enquiry.propertyId,
+									folder: { userId },
+								},
+							})),
+						},
+					}))
+				);
+			};
+
+			const [myListings, myShortlistings, myEnquiries] = await Promise.all([
+				userFilters?.myListings ? transformPropertyList(myListingsResults as any[]) : Promise.resolve([]),
+				userFilters?.myShortlistings ? transformShortlistEntries(myShortlistingsResults as any[]) : Promise.resolve([]),
+				userFilters?.myEnquiries ? transformEnquiryEntries(myEnquiriesResults as any[]) : Promise.resolve([]),
+			]);
+
+			userFilterData = {
+				myListings: userFilters?.myListings ? { items: myListings, total: myListingsResults.length } : null,
+				myShortlistings: userFilters?.myShortlistings ? { items: myShortlistings, total: myShortlistingsResults.length } : null,
+				myEnquiries: userFilters?.myEnquiries ? { items: myEnquiries, total: myEnquiriesResults.length } : null,
+			};
+		}
 		
 		// Transform results with signed URLs and add isShortListed with error handling
 		let resultsWithSignedUrls;
@@ -1065,6 +1285,19 @@ export const searchPropertiesByRadius = async (
 				totalInBoundingBox: totalCount,
 				totalPages: Math.ceil(results.length / limit),
 			},
+			appliedFilters: {
+				state: filters?.state ?? null,
+				dealTypes: filters?.dealTypes ?? null,
+				categoryId: filters?.categoryId ?? null,
+				terrainChips: filters?.terrainChips ?? null,
+				utilizationId: filters?.utilizationId ?? null,
+				tanahRizabMelayu: filters?.tanahRizabMelayu ?? null,
+				landAreaMin: filters?.landAreaMin ?? null,
+				landAreaMax: filters?.landAreaMax ?? null,
+				pricePerSqft: filters?.pricePerSqft ?? null,
+				titleTypeId: filters?.titleTypeId ?? null,
+			},
+			userFilters: userFilterData,
 			searchParams: {
 				centerLat: lat,
 				centerLon: lon,
@@ -1084,5 +1317,136 @@ export const searchPropertiesByRadius = async (
 		}
 
 		throw createHttpError("Failed to search properties by radius", 500);
+	}
+};
+
+/**
+ * Get active listings over time with optional filtering by time range
+ * Supports time ranges: 24hours, 7days, 30days, 12months
+ * Returns data points with cumulative active listings count and percentage increase
+ */
+export const getActiveListingsOverTime = async (
+	timeRange: "12months" | "30days" | "7days" | "24hours" = "12months"
+) => {
+	try {
+		// Calculate date range
+		const now = new Date();
+		let startDate = new Date();
+
+		switch (timeRange) {
+			case "24hours":
+				startDate.setHours(startDate.getHours() - 24);
+				break;
+			case "7days":
+				startDate.setDate(startDate.getDate() - 7);
+				break;
+			case "30days":
+				startDate.setDate(startDate.getDate() - 30);
+				break;
+			case "12months":
+				startDate.setFullYear(startDate.getFullYear() - 1);
+				break;
+		}
+
+		// Build where clause for active listings within date range
+		const whereClause: any = {
+			status: "active",
+			createdAt: {
+				gte: startDate,
+				lte: now,
+			},
+		};
+
+		// Get all active listings within the date range
+		const listings = await db.property.findMany({
+			where: whereClause,
+			select: {
+				id: true,
+				createdAt: true,
+			},
+			orderBy: {
+				createdAt: "asc",
+			},
+		});
+
+		// Group listings by date and calculate cumulative count
+		const listingsByDate: Record<string, number> = {};
+		let cumulativeCount = 0;
+
+		// Get the starting cumulative count (active listings before the start date)
+		const priorCount = await db.property.count({
+			where: {
+				status: "active",
+				createdAt: { lt: startDate },
+			},
+		});
+
+		cumulativeCount = priorCount;
+
+		// Process each listing and group by date
+		listings.forEach((listing) => {
+			const dateKey = listing.createdAt.toISOString().split("T")[0] || ""; // YYYY-MM-DD format
+
+			if (dateKey) {
+				if (!listingsByDate[dateKey]) {
+					listingsByDate[dateKey] = 0;
+				}
+				listingsByDate[dateKey]++;
+			}
+		});
+
+		// Generate data points with cumulative counts
+		const dataPoints: Array<{
+			date: string;
+			count: number;
+			cumulativeCount: number;
+		}> = [];
+
+		Object.keys(listingsByDate)
+			.sort()
+			.forEach((date) => {
+				const count = listingsByDate[date];
+				if (count !== undefined) {
+					cumulativeCount += count;
+					dataPoints.push({
+						date,
+						count,
+						cumulativeCount,
+					});
+				}
+			});
+
+		// Calculate percentage increase
+		let percentageIncrease = 0;
+		if (dataPoints.length > 1) {
+			const firstDataPoint = dataPoints[0];
+			const lastDataPoint = dataPoints[dataPoints.length - 1];
+			if (firstDataPoint && lastDataPoint) {
+				const firstCount = firstDataPoint.cumulativeCount;
+				const lastCount = lastDataPoint.cumulativeCount;
+				percentageIncrease = Math.min(((lastCount - firstCount) / firstCount) * 100, 100);
+			}
+		}
+
+		// Get current total active listings
+		const currentTotal = await db.property.count({
+			where: {
+				status: "active",
+			},
+		});
+
+		return {
+			timeRange,
+			dataPoints,
+			summary: {
+				totalActiveListings: currentTotal,
+				listingsInRange: dataPoints.reduce((sum, dp) => sum + dp.count, 0),
+				percentageIncrease: parseFloat(percentageIncrease.toFixed(2)),
+				startDate: startDate.toISOString(),
+				endDate: now.toISOString(),
+			},
+		};
+	} catch (error: unknown) {
+		throw error;
 	}
 };
