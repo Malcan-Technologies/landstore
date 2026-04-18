@@ -39,7 +39,10 @@ jobs:
     - name: Build and push Docker image
       run: |
         cd Client
-        docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker build \
+          --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }} \
+          --build-arg NEXT_PUBLIC_API_URL=${{ secrets.SERVER_URL }} \
+          -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
     # ✅ Download current task definition
