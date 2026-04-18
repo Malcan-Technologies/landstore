@@ -7,6 +7,7 @@ type UpdateUserPayload = {
   email?: string;
   phone?: string | null;
   userType?: UserType;
+  profileMediaId?: string;
 };
 
 type CreateUserProfilePayload = {
@@ -577,7 +578,7 @@ export const getAllUsers = async (page: number = 1, limit: number = 10) => {
 };
 
 export const updateUserById = async (id: string, payload: UpdateUserPayload) => {
-  const updateData: { email?: string; phone?: string | null; userType?: UserType } = {};
+  const updateData: { email?: string; phone?: string | null; userType?: UserType; profileMediaId?: string } = {};
 
   if (payload.email !== undefined) {
     updateData.email = normalizeEmail(payload.email);
@@ -596,6 +597,10 @@ export const updateUserById = async (id: string, payload: UpdateUserPayload) => 
     updateData.userType = payload.userType;
   }
 
+  if (payload.profileMediaId !== undefined) {
+    updateData.profileMediaId = payload.profileMediaId;
+  }
+
   if (Object.keys(updateData).length === 0) {
     const badRequestError = new Error("No valid fields provided for update");
     (badRequestError as Error & { statusCode?: number }).statusCode = 400;
@@ -603,10 +608,16 @@ export const updateUserById = async (id: string, payload: UpdateUserPayload) => 
   }
 
   try {
-    return await db.user.update({
+    const user = await db.user.update({
       where: { id },
       data: updateData,
+      include: {
+        profileMedia: true,
+      },
     });
+
+    // Transform media with signed URLs
+    return await transformUserMediaWithSignedUrls(user);
   } catch (error: unknown) {
     const err = error as Error & { code?: string };
     if (err?.code === "P2025") {

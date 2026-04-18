@@ -14,6 +14,7 @@ import {
 	requestListLandChangesController,
 	searchPropertiesByRadiusController,
 	getActiveListingsOverTimeController,
+	getListingStatusCountsController,
 } from "../controllers/listLand.controller.js";
 
 const listLandRouter = Router();
@@ -29,6 +30,9 @@ listLandRouter.get("/all-listings", requireApiAuth, requireAdmin,getAllListingsC
 
 // Get active listings analytics over time (admin only)
 listLandRouter.get("/analytics/active-listings", requireApiAuth, requireAdmin, getActiveListingsOverTimeController);
+
+// Get total listings and counts by listing status (admin only)
+listLandRouter.get("/analytics/listing-status-counts", requireApiAuth, requireAdmin, getListingStatusCountsController);
 
 // Get all properties (user-specific or all for admin)
 listLandRouter.get("/", requireApiAuth, getListLandsController);

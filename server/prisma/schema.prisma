@@ -39,6 +39,14 @@ enum FeatureTag {
   electricity
 }
 
+enum PropertyStatus {
+  draft
+  active
+  pending
+  under_review @map("under review")
+  need_more_info @map("need more info")
+}
+
 //////////////////////////////////////////////////////
 // USERS
 //////////////////////////////////////////////////////
@@ -304,7 +312,7 @@ model Property {
   price                Decimal           @db.Decimal(12,2)
   pricePerSqrft        Decimal           @db.Decimal(12,2)
 
-  status               String?
+  status               PropertyStatus?
 
   viewsCount           Int               @default(0)
   clicksCount          Int               @default(0)

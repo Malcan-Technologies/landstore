@@ -20,6 +20,35 @@ type LeaseholdDetailPayload = {
 	leasePeriodYears: number;
 };
 
+type PropertyStatus = "draft" | "active" | "pending" | "under_review" | "need_more_info";
+
+const PROPERTY_STATUS_ALIASES: Record<string, PropertyStatus> = {
+	draft: "draft",
+	active: "active",
+	pending: "pending",
+	under_review: "under_review",
+	"under review": "under_review",
+	need_more_info: "need_more_info",
+	"need more info": "need_more_info",
+};
+
+const normalizePropertyStatus = (
+	status: string | null | undefined
+): PropertyStatus | null | undefined => {
+	if (status === undefined) return undefined;
+	if (status === null) return null;
+
+	const normalized = PROPERTY_STATUS_ALIASES[status.trim().toLowerCase()];
+	if (!normalized) {
+		throw createHttpError(
+			`Invalid property status. Allowed values are active, pending, under review, and need more info`,
+			400
+		);
+	}
+
+	return normalized;
+};
+
 export type CreateListLandPayload = {
 	title: string;
 	categoryId: string;
@@ -364,7 +393,7 @@ export const createListLand = async (
 					listingCode: payload.listingCode,
 					price: parseDecimal(payload.price, "price"),
 					pricePerSqrft: parseDecimal(payload.pricePerSqrft, "pricePerSqrft"),
-					status: "pending",
+					status: normalizePropertyStatus(payload.status) ?? "pending",
 					agreementAccepted: normalizeBoolean(parseBoolean(payload.agreementAccepted)) ?? false,
 					agreementAcceptedAt: toDateOrNull(payload.agreementAcceptedAt) ?? null,
 				},
@@ -436,10 +465,18 @@ export const getListLands = async (
 			: 10;
 	const skip = (page - 1) * limit;
 
-	const where: Prisma.PropertyWhereInput = {
-		...(userType === "admin" ? {} : { userId }),
-		...(query.status ? { status: query.status } : {}),
-	};
+	const where: Prisma.PropertyWhereInput = {};
+
+	if (userType !== "admin") {
+		where.userId = userId;
+	}
+
+	if (query.status) {
+		const normalizedStatus = normalizePropertyStatus(query.status);
+		if (normalizedStatus) {
+			where.status = normalizedStatus;
+		}
+	}
 
 	const [items, total] = await Promise.all([
 		db.property.findMany({
@@ -518,7 +555,10 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 
 	if (query.status) {
 		// If status filter is provided, use it
-		where = { status: query.status };
+		const normalizedStatus = normalizePropertyStatus(query.status);
+		where = normalizedStatus
+			? { status: normalizedStatus }
+			: { status: { not: null } };
 	} else if (query.recentlyApproved) {
 		// If recentlyApproved is true, show only active properties
 		where = { status: "active" };
@@ -711,7 +751,12 @@ export const updateListLandById = async (
 					"pricePerSqrft"
 				);
 			}
-			if (payload.status !== undefined) updateData.status = payload.status;
+			if (payload.status !== undefined) {
+				const normalizedStatus = normalizePropertyStatus(payload.status);
+				if (normalizedStatus !== undefined) {
+					updateData.status = normalizedStatus;
+				}
+			}
 			if (payload.agreementAccepted !== undefined) {
 				const normalizedValue = normalizeBoolean(parseBoolean(payload.agreementAccepted));
 				if (normalizedValue !== null) {
@@ -1445,6 +1490,51 @@ export const getActiveListingsOverTime = async (
 				startDate: startDate.toISOString(),
 				endDate: now.toISOString(),
 			},
+		};
+	} catch (error: unknown) {
+		throw error;
+	}
+};
+
+export const getListingStatusCounts = async () => {
+	try {
+		const [totalListings, groupedCounts] = await Promise.all([
+			db.property.count(),
+			db.property.groupBy({
+				by: ["status"],
+				_count: {
+					status: true,
+				},
+			}),
+		]);
+
+		const statusCounts = {
+			draft: 0,
+			active: 0,
+			pending: 0,
+			under_review: 0,
+			need_more_info: 0,
+		};
+
+		let nullStatusCount = 0;
+
+		for (const entry of groupedCounts) {
+			if (!entry.status) {
+				nullStatusCount = entry._count.status;
+				continue;
+			}
+
+			statusCounts[entry.status as keyof typeof statusCounts] = entry._count.status;
+		}
+
+		return {
+			totalListings,
+			statusCounts,
+			nullStatusCount,
+			statusGroups: groupedCounts.map((entry) => ({
+				status: entry.status,
+				count: entry._count.status,
+			})),
 		};
 	} catch (error: unknown) {
 		throw error;
