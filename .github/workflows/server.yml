@@ -3,8 +3,8 @@ name: Deploy server to ECS
 on:
   push:
     branches: [ "main" ]
-    # paths:
-    #  - 'server'
+    paths:
+     - 'server'
   workflow_dispatch:
 
 jobs:
