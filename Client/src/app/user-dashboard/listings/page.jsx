@@ -305,7 +305,7 @@ const ListingsPage = () => {
         </header>
 
         <section className="mt-8 flex flex-col lg:flex-row justify-between xl:gap-3 gap-2">
-          <div className="flex flex-col sm:flex-row justify-between gap-3 lg:w-[50%]">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 lg:w-full">
           {listingStats.map((stat) => {
             const Icon = stat.icon;
 
@@ -334,7 +334,7 @@ const ListingsPage = () => {
 
           </div>
 
-          <div className="relative lg:w-[50%] mt-2 lg:mt-0 overflow-hidden rounded-2xl bg-font2-green px-6 py-5 text-white shadow-[0px_10px_24px_rgba(6,36,26,0.18)]">
+          {/* <div className="relative lg:w-[50%] mt-2 lg:mt-0 overflow-hidden rounded-2xl bg-font2-green px-6 py-5 text-white shadow-[0px_10px_24px_rgba(6,36,26,0.18)]">
             <div className="absolute -right-14 -top-5 opacity-20 z-1">
               <Star size={150} color="white" />
             </div>
@@ -351,7 +351,7 @@ const ListingsPage = () => {
                 Promote listing today
               </button>
             </div>
-          </div>
+          </div> */}
         </section>
 
         {actionError ? (
@@ -375,8 +375,8 @@ const ListingsPage = () => {
               aria-pressed={activeTab === tab.id}
               className={`relative shrink-0 whitespace-nowrap pb-3 transition sm:pb-3.5 md:pb-4 ${activeTab === tab.id ? "text-green-secondary" : "hover:text-gray2"}`}
             >
-              <span className="mr-1.5 font-semibold">{tab.count}</span>
-              <span>{tab.label}</span>
+                <span>{tab.label}</span>
+                <span className="ml-1.5 font-semibold">({tab.count})</span>
               {activeTab === tab.id ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-green-secondary" /> : null}
             </button>
           ))}

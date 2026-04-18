@@ -93,8 +93,8 @@ const buildListingCode = () => {
 };
 
 const initialFormData = {
-  photos: [],
-  existingPhotos: [],
+  images: [],
+  existingImages: [],
   documents: [],
   existingDocuments: [],
   dealTypes: ["Buy", "JV"],
@@ -126,7 +126,7 @@ const initialFormData = {
 };
 
 const stepFieldMap = {
-  1: ["photos", "ownership", "utilization", "category", "landArea", "pricePerSqft"],
+  1: ["images", "ownership", "utilization", "category", "landArea", "pricePerSqft"],
   2: ["negeri", "daerah", "mukim", "seksyen", "titleType", "leaseStartDate", "leasePeriod"],
   3: ["documents", "acceptedTerms"],
 };
@@ -196,8 +196,8 @@ const CreateListingPage = () => {
     const stepErrors = {};
 
     if (step === 1) {
-      if (!isEditMode && (!Array.isArray(values.photos) || values.photos.length < 1)) {
-        stepErrors.photos = "Please upload at least one photo.";
+      if (!isEditMode && (!Array.isArray(values.images) || values.images.length < 1)) {
+        stepErrors.images = "Please upload at least one image.";
       }
       if (!values.category) stepErrors.category = "Please select a category.";
       if (!values.ownership) stepErrors.ownership = "Please select ownership relationship.";
@@ -358,7 +358,7 @@ const CreateListingPage = () => {
         const fallbackDistrict = titleParts[0] || "";
         const fallbackState = titleParts[1] || "";
 
-        const existingPhotos = property?.media?.fileUrl ? [property.media.fileUrl] : [];
+        const existingImages = property?.media?.fileUrl ? [property.media.fileUrl] : [];
         const existingDocuments = Array.isArray(property?.documents)
           ? property.documents
               .map((doc, index) => ({
@@ -408,9 +408,9 @@ const CreateListingPage = () => {
           features: mappedFeatures,
           status: property.status || prev.status,
           acceptedTerms: Boolean(property.agreementAccepted),
-          existingPhotos,
+          existingImages,
           existingDocuments,
-          photos: [],
+          images: [],
           documents: [],
         }));
 
@@ -501,7 +501,7 @@ const CreateListingPage = () => {
       payload.append("leaseholdDetails.leasePeriodYears", String(leasePeriodYears));
     }
 
-    (formData.photos || []).forEach((file) => {
+    (formData.images || []).forEach((file) => {
       payload.append("images", file);
     });
 
@@ -551,7 +551,7 @@ const CreateListingPage = () => {
         await landService.createListing(payload, requestConfig);
       }
 
-      (formData.photos || []).forEach((file) => {
+      (formData.images || []).forEach((file) => {
         revokeFilePreviewUrl(file);
       });
 

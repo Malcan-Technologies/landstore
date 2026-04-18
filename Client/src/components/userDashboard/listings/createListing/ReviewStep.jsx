@@ -45,7 +45,7 @@ const ReviewStep = ({ formData, updateField, errors = {} }) => {
           className={`flex min-h-35 w-full flex-col items-center justify-center rounded-2xl border border-dashed px-4 text-center sm:min-h-40 sm:px-5 md:min-h-43.75 md:px-6 ${
             errors.documents
               ? "border-red-400 bg-red-50"
-              : "border-green-secondary/50 bg-[#F4FBF7]"
+              : "border-green-secondary/50 bg-green-secondary/10"
           }`.trim()}
         >
           <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border-input bg-white text-gray7 sm:mb-4 sm:h-9 sm:w-9 sm:rounded-xl md:h-10 md:w-10">
@@ -113,10 +113,7 @@ const ReviewStep = ({ formData, updateField, errors = {} }) => {
             <p className="mt-1 max-w-180 text-[10px] leading-4 text-white/70 sm:text-[11px] sm:leading-5 md:text-[12px]">
               By submitting this listing, you agree to Landstore.my acting as the professional mediator. Any attempt to circumvent the platform with direct buyers will lead to account termination and legal action as per Section 4.2 of our Terms.
             </p>
-          </div>
-        </div>
-
-        <div className="relative mt-4 sm:mt-5">
+               <div className="relative mt-4 sm:mt-5">
           <label className="flex items-start gap-2.5 text-[11px] font-medium text-white sm:items-center sm:gap-3 sm:text-[12px] md:text-[13px]">
             <input
               type="checkbox"
@@ -132,6 +129,10 @@ const ReviewStep = ({ formData, updateField, errors = {} }) => {
             </p>
           ) : null}
         </div>
+          </div>
+        </div>
+
+     
       </div>
     </div>
   );
