@@ -550,21 +550,17 @@ export const updateUserController = async (req: Request, res: Response) => {
 			});
 		}
 
-		let profileMediaId = undefined;
+		// Build update payload
+		const updatePayload: any = {
+			email: req.body.email,
+			phone: req.body.phone,
+		};
 
 		// Handle profile image upload
 		if (req.file) {
-			console.log(`📁 File received - Name: ${req.file.originalname}, Size: ${req.file.size} bytes, Type: ${req.file.mimetype}`);
-			console.log(`🪣 AWS Bucket: ${process.env.AWS_BUCKET_NAME || "NOT DEFINED"}`);
-			
 			try {
-				// Upload file to S3
-				console.log(`⏳ Starting S3 upload...`);
 				const fileKey = await uploadFileToS3(req.file);
-				console.log(`✅ Profile image uploaded successfully with fileKey: ${fileKey}`);
-
-				// Create or update Media record for profile image
-				const media = await db.media.create({
+				const profileMedia = await db.media.create({
 					data: {
 						userId: targetUserId,
 						fileUrl: fileKey,
@@ -573,8 +569,7 @@ export const updateUserController = async (req: Request, res: Response) => {
 					},
 				});
 
-				profileMediaId = media.id;
-				console.log(`💾 Profile media record created: ${media.id}`);
+				updatePayload.profileMediaId = profileMedia.id;
 			} catch (uploadError) {
 				console.error(`❌ Failed to upload profile image:`, uploadError);
 				return res.status(500).json({
@@ -582,19 +577,6 @@ export const updateUserController = async (req: Request, res: Response) => {
 					message: "Failed to upload profile image. Please try again.",
 				});
 			}
-		} else {
-			console.log(`⚠️ No file received in request`);
-		}
-
-		// Build update payload
-		const updatePayload: any = {
-			email: req.body.email,
-			phone: req.body.phone,
-		};
-
-		// Only add profileMediaId if a file was uploaded
-		if (profileMediaId) {
-			updatePayload.profileMediaId = profileMediaId;
 		}
 
 		const user = await updateUserById(targetUserId, updatePayload);
