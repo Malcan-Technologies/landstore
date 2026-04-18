@@ -30,17 +30,17 @@ const ResetPasswordSuccessModal = ({ open, onClose, onBackToLogin }) => {
           onClick={onBackToLogin || onClose}
           className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-green-primary px-4 text-[14px] font-medium text-white transition hover:opacity-95"
         >
-          Reset password
+          Back to log in
         </button>
 
-        <button
+        {/* <button
           type="button"
           onClick={onBackToLogin || onClose}
           className="mt-3 inline-flex w-full items-center justify-center gap-2 text-[14px] font-medium text-gray5"
         >
           <span className="text-[16px] leading-none">←</span>
           <span>Back to log in</span>
-        </button>
+        </button> */}
       </div>
     </Modal>
   );

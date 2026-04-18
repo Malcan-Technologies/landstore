@@ -715,7 +715,7 @@ const PropertyPage = () => {
 
   return (
     <main className="bg-background-primary py-20">
-      <div className="flex mx-3 flex-col gap-8 px-2 lg:px-6 xl:px-10 lg:flex-row lg:items-start">
+      <div className="flex mx-3 flex-col gap-4 px-2 lg:px-6 xl:px-10 lg:flex-row lg:items-start">
         <section className={`w-full space-y-6 ${showMatchmakingAside ? "lg:w-[67%] lg:max-w-[87%] lg:flex-none" : ""}`}>
           <button type="button" onClick={() => router.push(backRoute)} className="inline-flex items-center absolute top-22 gap-2 text-sm font-medium text-gray5">
             <ArrowLeftIcon />
@@ -737,7 +737,7 @@ const PropertyPage = () => {
           <PropertyGallery images={propertyDetails.images} moreImagesLabel="+15 more" />
 
           <header className="flex flex-col gap-4 border-b w-full border-border-input pb-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2 w-full">
+            <div className=" w-full">
               <div className="flex items-center justify-between sm:gap-6 gap-2">
                 <div className="flex items-center justify-start sm:gap-3 gap-1 sm:-mt-6 -mt-4">
                   <Pointer size={24} color="currentColor" className="text-green-secondary shrink-0 sm:w-6 sm:h-6 w-4 h-4" />
@@ -750,21 +750,21 @@ const PropertyPage = () => {
                   <p className="sm:text-sm text-[10px]  text-gray5">Est. Valuation</p>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-1 sm:gap-2 lg:gap-4 text-[10px] sm:text-xs lg:text-sm xl:text-lg text-gray5">
-                <span className="flex items-center gap-1.5 text-gray2 font-bold">
-                  <Person size={14} color="black" className="sm:w-4 sm:h-4 w-2.5 h-2.5" />
+              <div className="flex flex-wrap items-center gap-1 sm:gap-3 text-[10px] sm:text-xs lg:text-sm xl:text-[16px] text-gray5">
+                <span className="flex items-center gap-1.5 text-gray2 font-bold border-r border-border-card pr-1 sm:pr-3">
+                  <Person size={14} color="black" filled className="sm:w-4 sm:h-4 w-2.5 h-2.5" />
                   {propertyDetails.ownerType}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Building size={14} color="currentColor" className="text-gray5 sm:w-4 sm:h-4 w-2.5 h-2.5" />
+                  <Bag size={14} color="currentColor" className="text-gray5 sm:w-4 sm:h-4 w-2.5 h-2.5" />
                   {propertyDetails.category}
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <Bag size={14} color="currentColor" className="text-gray5 sm:w-4 sm:h-4 w-2.5 h-2.5" />
+                <span className="flex items-center gap-1.5 border-r border-border-card pr-1 sm:pr-3">
+                  <Building size={14} color="currentColor" className="text-gray5 sm:w-4 sm:h-4 w-2.5 h-2.5 " />
                   {propertyDetails.area}
                 </span>
-                <span className="rounded-md border border-border-card px-2 py-1  font-medium text-gray7">{propertyDetails.code}</span>
-                <span className="flex items-center gap-1.5">
+                <span className="rounded-md px-2 py-1 bg-text-gray-1 font-medium text-gray7 ">{propertyDetails.code}</span>
+                <span className="flex items-center gap-1.5 border-l border-border-card pl-1 sm:pl-3">
                   <Calendar size={14} color="currentColor" className="text-gray5 sm:w-4 sm:h-4 w-2.5 h-2.5" />
                   Updated {propertyDetails.updatedAt}
                 </span>
@@ -773,18 +773,18 @@ const PropertyPage = () => {
            
           </header>
 
-          <div className="flex md:justify-between gap-4 border-b border-border-input pb-5 flex-wrap lg:gap-0">
+          <div className="flex sm:justify-between justify-around sm:gap-0 gap-1 border-b border-border-input pb-5 flex-wrap sm:flex-nowrap lg:gap-0">
             {stats.map((item, index) => (
-              <div key={item.label} className={`space-y-2 lg:flex-1 lg:px-6 ${index !== 0 ? "lg:border-l lg:border-border-input" : ""}`}>
-                <p className="text-[12px] font-medium text-gray7">{item.label}</p>
+              <div key={item.label} className={`w-fit shrink-0 space-y-2 lg:px-6 ${index !== 0 ? "lg:border-l lg:border-border-input" : ""}`}>
+                <p className="text-[12px] font-medium text-gray2 w-fit">{item.label}</p>
                 <div className="flex flex-nowrap gap-2">
                   {item.values.map((value) => (
                     <span
                       key={`${item.label}-${value.text}`}
-                      className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                      className={`rounded-full  px-3 py-1 text-xs font-medium ${
                         value.active
-                          ? "border-border-green bg-activebg text-green-primary"
-                          : "border-border-input text-gray5"
+                          ? " bg-activebg text-active"
+                          : "border border-border-card text-gray7"
                       }`}
                     >
                       {value.text}

@@ -316,7 +316,7 @@ const PropertyCard = ({
             {area}
           </span>
           </div>
-          <span className="rounded-sm bg-[#f1f1f1] px-2 py-1 text-gray7 font-semibold">{code}</span>
+          <span className="rounded-sm bg-text-gray-1 px-2 py-1 text-gray7 font-semibold">{code}</span>
         </div>
 
         <h3 className="flex min-w-0 items-center gap-2 sm:text-[18px] text-[15px] font-bold text-gray2">

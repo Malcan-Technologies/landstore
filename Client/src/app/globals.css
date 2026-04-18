@@ -27,6 +27,7 @@ body {
 
 
 @theme {
+  --breakpoint-xsm: 425px;
   --color-green-logo: #0f3d2e;
   --color-green-primary: #1f7a5a;
   --color-green-secondary: #298064;
@@ -42,10 +43,12 @@ body {
   --color-border-input: #E2E8F0;
   --color-border-card: #DBDBDB;
   --color-cardborder:#E9EAEB;
+  --color-text-gray-1:#f1f1f1;
   --color-gray1: #767676;
   --color-gray3: #BABABA;
   --color-gray4: #9D9D9D;
   --color-gray2: #1a1a1a;
+  --color-gray6: #6B6B6B;
   --color-gray5: #838383;
   --color-gray7: #545454;
   --color-activebg: #ECFDF2;

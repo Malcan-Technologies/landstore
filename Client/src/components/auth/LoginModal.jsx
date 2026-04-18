@@ -45,6 +45,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const [forgotPasswordError, setForgotPasswordError] = useState("");
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [resetPasswordError, setResetPasswordError] = useState("");
+  const [modalTransitionStep, setModalTransitionStep] = useState(0); // 0 = no transition, 1 = closing password modal, 2 = opening success modal
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -72,8 +73,14 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
       setForgotPasswordError("");
       setResetPasswordLoading(false);
       setResetPasswordError("");
+      setModalTransitionStep(0);
     }
   }, [open, initialTab]);
+
+  // Monitor setNewPasswordOpen state changes
+  useEffect(() => {
+    console.log("STATE CHANGED: setNewPasswordOpen is now:", setNewPasswordOpen);
+  }, [setNewPasswordOpen]);
 
   const handleToken = (tokenFromUrl) => {
     setResetToken(tokenFromUrl);
@@ -120,24 +127,51 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   };
 
   const handleSetNewPasswordSuccess = async ({ password: newPassword, token }) => {
+    console.log("Step 1: handleSetNewPasswordSuccess called in LoginModal");
+    console.log("Step 1.5: Current state - setNewPasswordOpen:", setNewPasswordOpen, "resetPasswordSuccessOpen:", resetPasswordSuccessOpen);
+    console.log("Step 2: Received data - token:", token, "newPassword length:", newPassword?.length);
+    
     if (!token) {
+      console.log("Step 3: ERROR - Missing reset token");
       setResetPasswordError("Missing reset token");
       return;
     }
 
     setResetPasswordLoading(true);
     setResetPasswordError("");
+    console.log("Step 4: Loading state set to true, error cleared - resetPasswordLoading will be true in next render");
 
     try {
+      console.log("Step 5: Making API call - authService.resetPassword");
       await authService.resetPassword(token, newPassword);
+      console.log("Step 6: API call successful");
+      
+      console.log("Step 7: Checking pathname for router replace");
       if (pathname) {
+        console.log("Step 8: pathname exists -", pathname);
         router.replace(pathname);
       }
+      
+      console.log("Step 9: Current states before closing - setNewPasswordOpen:", setNewPasswordOpen, "resetPasswordSuccessOpen:", resetPasswordSuccessOpen);
+      console.log("Step 9: Closing SetNewPasswordModal");
       setSetNewPasswordOpen(false);
-      setResetPasswordSuccessOpen(true);
+      console.log("Step 10: SetNewPasswordModal close triggered");
+      console.log("Step 9: Current states before closing - setNewPasswordOpen:", setNewPasswordOpen, "resetPasswordSuccessOpen:", resetPasswordSuccessOpen);
+      
+      // Use setTimeout to ensure modal animation completes before opening success modal
+      setTimeout(() => {
+        console.log("Step 11: Timeout reached - Forcefully ensuring SetNewPasswordModal is closed");
+        setSetNewPasswordOpen(false); // Force close again
+        console.log("Step 12: Opening ResetPasswordSuccessModal");
+        setResetPasswordSuccessOpen(true);
+        console.log("Step 13: ResetPasswordSuccessModal opened - PASSWORD RESET COMPLETE");
+      }, 400);
     } catch (error) {
+      console.log("Step ERROR: Exception caught -", error?.response?.data?.message || error?.message);
       setResetPasswordError(error?.response?.data?.message || error?.message || "Failed to reset password");
     } finally {
+      console.log("Step 13: Finally block - setting loading to false");
+      console.log("Step 13.5: Final states before finally completes - resetPasswordLoading will be false in next render");
       setResetPasswordLoading(false);
     }
   };

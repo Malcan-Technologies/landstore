@@ -315,10 +315,10 @@ const ShortlistsPage = () => {
               onClick={() => setCreateFolderOpen(true)}
               className="inline-flex items-center justify-center rounded-lg bg-background-primary px-3 py-2 text-xs font-semibold border border-border-green text-green-secondary transition hover:opacity-90 sm:text-sm"
             >
-              + Create new folder
+              + New Folder
             </button>
 
-            <div ref={folderMenuRef} className="relative lg:hidden">
+            <div ref={folderMenuRef} className="relative hidden sm:block lg:hidden">
               <button
                 type="button"
                 onClick={() => setIsFolderMenuOpen((prev) => !prev)}
@@ -329,7 +329,7 @@ const ShortlistsPage = () => {
               </button>
 
               {isFolderMenuOpen ? (
-                <div className="absolute right-0 top-12 z-40 w-[min(92vw,380px)] overflow-visible rounded-xl bg-transparent">
+                <div className="absolute right-0 top-12 z-40 w-[min(92vw,380px)] overflow-visible rounded-xl bg-white">
                   <div className="overflow-visible p-4">
                     <FolderSection
                       folders={folders}
@@ -350,6 +350,21 @@ const ShortlistsPage = () => {
               ) : null}
             </div>
           </div>
+        </div>
+
+        {/* Folders section for screens below sm */}
+        <div className="sm:hidden mb-6" ref={folderMenuRef}>
+          <FolderSection
+            folders={folders}
+            activeFolderId={activeFolderId}
+            onFolderSelect={setActiveFolderId}
+            activeFolderMenuId={activeFolderMenuId}
+            onFolderMenuToggle={handleFolderMenuToggle}
+            onRenameFolder={handleRenameFolderClick}
+            renamingFolderId={renamingFolderId}
+            onRenameFolderSave={handleRenameFolderSave}
+            onDeleteFolder={handleDeleteFolderClick}
+          />
         </div>
 
         <div className="flex gap-6">
