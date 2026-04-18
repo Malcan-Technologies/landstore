@@ -49,6 +49,19 @@ const normalizePropertyStatus = (
 	return normalized;
 };
 
+/**
+ * Generate unique listing code in format: LS-XXXXXX
+ * Where XXXXXX is 6 random alphanumeric characters
+ */
+const generateListingCode = (): string => {
+	const characters = "0123456789";
+	let code = "";
+	for (let i = 0; i < 6; i++) {
+		code += characters.charAt(Math.floor(Math.random() * characters.length));
+	}
+	return `LS-${code}`;
+};
+
 export type CreateListLandPayload = {
 	title: string;
 	categoryId: string;
@@ -65,7 +78,6 @@ export type CreateListLandPayload = {
 	landAreaUnit: string;
 	estimatedValuation?: number | string | null;
 	description?: string | null;
-	listingCode: string;
 	price: number | string;
 	pricePerSqrft: number | string;
 	status?: string | null;
@@ -337,7 +349,6 @@ export const createListLand = async (
 			"utilizationId",
 			"titleTypeId",
 			"landAreaUnit",
-			"listingCode",
 		];
 
 		for (const field of requiredFields) {
@@ -354,6 +365,9 @@ export const createListLand = async (
 		) {
 			throw createHttpError("landArea, price, and pricePerSqrft are required", 400);
 		}
+
+		// Auto-generate unique listing code
+		const listingCode = generateListingCode();
 
 		const created = await db.$transaction(async (trx) => {
 			// Create property
@@ -389,7 +403,7 @@ export const createListLand = async (
 							? null
 							: parseDecimal(payload.estimatedValuation, "estimatedValuation"),
 					description: payload.description ?? null,
-					listingCode: payload.listingCode,
+					listingCode: listingCode,
 					price: parseDecimal(payload.price, "price"),
 					pricePerSqrft: parseDecimal(payload.pricePerSqrft, "pricePerSqrft"),
 					status: normalizePropertyStatus(payload.status) ?? "pending",
@@ -753,8 +767,6 @@ export const updateListLandById = async (
 			}
 			if (payload.description !== undefined)
 				updateData.description = payload.description;
-			if (payload.listingCode !== undefined)
-				updateData.listingCode = payload.listingCode;
 			if (payload.price !== undefined)
 				updateData.price = parseDecimal(payload.price, "price");
 			if (payload.pricePerSqrft !== undefined) {
