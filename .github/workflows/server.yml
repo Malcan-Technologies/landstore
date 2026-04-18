@@ -53,14 +53,35 @@ jobs:
     - name: Update task definition with image + env vars
       run: |
         jq --arg IMAGE "$REGISTRY/$REPOSITORY:$IMAGE_TAG" \
-           --arg MAP_KEY "${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
-           --arg API_URL "${{ secrets.SERVER_URL }}" \
+           --arg PORT_SERVER "${{ secrets.PORT_SERVER }}" \
+           --arg ACCESS_TOKEN_SECRET_SERVER "${{ secrets.ACCESS_TOKEN_SECRET_SERVER }}" \
+           --arg BETTER_AUTH_API_KEY_SERVER "${{ secrets.BETTER_AUTH_API_KEY_SERVER }}" \
+           --arg DATABASE_URL_SERVER "${{ secrets.DATABASE_URL_SERVER }}" \
+           --arg RESEND_API_KEY_SERVER "${{ secrets.RESEND_API_KEY_SERVER }}" \
+           --arg SALT_ROUNDS_SERVER "${{ secrets.SALT_ROUNDS_SERVER }}" \
+           --arg REFRESH_TOKEN_SECRET_SERVER "${{ secrets.REFRESH_TOKEN_SECRET_SERVER }}" \
+           --arg AWS_ACCESS_KEY_ID "${{ secrets.AWS_ACCESS_KEY_ID }}" \
+           --arg AWS_BUCKET_NAME "${{ secrets.AWS_BUCKET_NAME }}" \
+           --arg AWS_REGION "${{ secrets.AWS_REGION }}" \
+           --arg AWS_SECRET_ACCESS_KEY "${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+           --arg AWS_SECRET_ARN "${{ secrets.AWS_SECRET_ARN }}" \
+           
         '
         (.containerDefinitions[] | select(.name=="landstore-server") | .image) = $IMAGE
         |
         (.containerDefinitions[] | select(.name=="landstore-server") | .environment) += [
-          {"name":"NEXT_PUBLIC_GOOGLE_MAPS_API_KEY","value":$MAP_KEY},
-          {"name":"NEXT_PUBLIC_API_URL","value":$API_URL}
+          {"name":"PORT","value":$PORT_SERVER},
+          {"name":"ACCESS_TOKEN_SECRET","value":$ACCESS_TOKEN_SECRET_SERVER},
+          {"name":"BETTER_AUTH_API_KEY","value":$BETTER_AUTH_API_KEY_SERVER},
+          {"name":"DATABASE_URL ","value":$DATABASE_URL_SERVER},
+          {"name":"RESEND_API_KEY ","value":$RESEND_API_KEY_SERVER},
+          {"name":"SALT_ROUNDS","value":$SALT_ROUNDS_SERVER},
+          {"name":"REFRESH_TOKEN_SECRET","value":$REFRESH_TOKEN_SECRET_SERVER},
+          {"name":"AWS_ACCESS_KEY","value":$AWS_ACCESS_KEY_ID},
+          {"name":"AWS_BUCKET_NAME","value":$AWS_BUCKET_NAME},
+          {"name":"AWS_REGION","value":$AWS_REGION},
+          {"name":"AWS_SECRET_KEY","value":$AWS_SECRET_ACCESS_KEY},
+          {"name":"AWS_SECRET_ARN","value":$AWS_SECRET_ARN},
         ]
         |
         del(.taskDefinitionArn)
