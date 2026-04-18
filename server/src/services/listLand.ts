@@ -365,7 +365,6 @@ export const createListLand = async (
 					ownershipTypeId: payload.ownershipTypeId,
 					utilizationId: payload.utilizationId,
 					titleTypeId: payload.titleTypeId,
-					landMediaId: payload.landMediaIds?.[0] ?? null,
 					tanahRizabMelayu: normalizeBoolean(parseBoolean(payload.tanahRizabMelayu)),
 					dealTypes: parseEnumArray(
 						payload.dealTypes,
@@ -398,6 +397,14 @@ export const createListLand = async (
 					agreementAcceptedAt: toDateOrNull(payload.agreementAcceptedAt) ?? null,
 				},
 			});
+
+			// Link all media files to the property
+			if (payload.landMediaIds && payload.landMediaIds.length > 0) {
+				await trx.media.updateMany({
+					where: { id: { in: payload.landMediaIds } },
+					data: { propertyId: property.id },
+				});
+			}
 
 			// Create location if provided
 			if (payload.location) {
@@ -700,8 +707,13 @@ export const updateListLandById = async (
 				updateData.utilizationId = payload.utilizationId;
 			if (payload.titleTypeId !== undefined)
 				updateData.titleTypeId = payload.titleTypeId;
-			if (payload.landMediaIds !== undefined)
-				updateData.landMediaId = payload.landMediaIds[0] ?? null;
+			if (payload.landMediaIds !== undefined) {
+				// Update all media files to be associated with this property
+				await trx.media.updateMany({
+					where: { id: { in: payload.landMediaIds } },
+					data: { propertyId: propertyId },
+				});
+			}
 			if (payload.tanahRizabMelayu !== undefined) {
 				const normalizedValue = normalizeBoolean(parseBoolean(payload.tanahRizabMelayu));
 				if (normalizedValue !== null) {

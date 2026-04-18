@@ -221,20 +221,22 @@ model UserEntityType {
 model Media {
   id            String     @id @default(uuid())
   userId        String     // Changed to String
+  propertyId    String?    // Property this media is associated with (for listing images)
   fileUrl       String
   mediaType     String
   mediaCategory String
 
   user          User       @relation("UserMedia", fields: [userId], references: [id], onDelete: Cascade)
   profileUsers  User[]     @relation("UserProfileMedia")
+  property      Property?  @relation("PropertyMedia", fields: [propertyId], references: [id], onDelete: Cascade)
 
-  properties    Property[]
   documents     Document[]
 
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
   @@index([userId])
+  @@index([propertyId])
 }
 
 model Document {
@@ -321,7 +323,7 @@ model Property {
   agreementAcceptedAt  DateTime?
 
   user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media                Media?            @relation(fields: [landMediaId], references: [id], onDelete: SetNull)
+  media                Media[]           @relation("PropertyMedia")  // All media for this property
 
   category             PropertyCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   ownershipType        PropertyOwnershipType @relation(fields: [ownershipTypeId], references: [id], onDelete: Restrict)

@@ -86,6 +86,15 @@ app.use("/api/auth", toNodeHandler(auth));
 app.use(express.json());
 app.use(cookieParser());
 
+// Health check endpoint
+app.get("/", (req: express.Request, res: express.Response) => {
+	res.status(200).json({
+		status: "ok",
+		message: "Server is running",
+		timestamp: new Date().toISOString(),
+	});
+});
+
 // User routes (protected and unprotected)
 app.use("/api/users", userRoutes);
 
