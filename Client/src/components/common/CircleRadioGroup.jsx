@@ -26,10 +26,10 @@ const CircleRadioGroup = ({
             className={`flex cursor-pointer items-center gap-2 text-[14px] font-medium transition ${checked ? "text-gray2" : "text-gray2"} ${optionClassName}`.trim()}
           >
             <span
-              className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${checked ? "border-green-secondary bg-green-secondary/10" : "border-border-input bg-white"}`}
+              className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${checked ? "border-green-secondary bg-green-secondary" : "border-border-input bg-white"}`}
             >
               <span
-                className={`h-2.5 w-2.5 rounded-full transition ${checked ? "bg-green-secondary" : "bg-transparent"}`}
+                className={`h-2 w-2 rounded-full transition ${checked ? "bg-white" : "bg-transparent"}`}
               />
             </span>
             <span>{option.label}</span>

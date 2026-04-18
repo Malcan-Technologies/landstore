@@ -1,15 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
+import { defaultCountries, parseCountry, usePhoneInput } from "react-international-phone";
 
 import DualNote from "@/components/svg/DualNote";
 import Verify from "@/components/svg/Verify";
 import Edit from "@/components/svg/Edit";
 import Sheild from "@/components/svg/Sheild";
 import ProfileCheck from "@/components/svg/ProfileCheck";
+import ArrowDown from "@/components/svg/ArrowDown";
 
 const lockIcon = (
   <svg
@@ -49,18 +51,41 @@ const ProfilePage = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profile, setProfile] = useState(null);
   const [email, setEmail] = useState("");
-  const [countryCode, setCountryCode] = useState("MY");
-  const [phone, setPhone] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [appAlerts, setAppAlerts] = useState(false);
   const [selectedProfileImage, setSelectedProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState("");
   const [saveError, setSaveError] = useState("");
+  const phoneFieldRef = useRef(null);
+
+  const countryOptions = useMemo(
+    () => defaultCountries.map((countryData) => parseCountry(countryData)).filter(Boolean),
+    []
+  );
+
+  const {
+    phone: fullPhoneNumber,
+    inputValue: phoneInputValue,
+    country: selectedCountry,
+    setCountry,
+    handlePhoneValueChange,
+  } = usePhoneInput({
+    defaultCountry: "my",
+    value: phoneNumber,
+    countries: defaultCountries,
+    disableDialCodeAndPrefix: true,
+    onChange: ({ phone }) => {
+      setPhoneNumber(phone || "");
+    },
+  });
 
   const profileImageSrc =
     profileImagePreview ||
     profile?.profilePicture?.url ||
-    profile?.profilePicture ||
+    profile?.profilePicture?.fileUrl ||
+    (typeof profile?.profilePicture === "string" ? profile.profilePicture : "") ||
     profile?.profileMedia?.fileUrl ||
     profile?.profileImage ||
     profile?.image ||
@@ -85,7 +110,7 @@ const ProfilePage = () => {
         if (profileData) {
           setProfile(profileData);
           setEmail(profileData.email || "");
-          setPhone(profileData.phone || "");
+          setPhoneNumber(profileData.phone || "");
 
           const notificationPreferences = profileData.notificationPreferences;
           setEmailNotifications(Boolean(notificationPreferences?.emailEnabled));
@@ -108,6 +133,35 @@ const ProfilePage = () => {
       }
     };
   }, [profileImagePreview]);
+
+  useEffect(() => {
+    if (!isCountryDropdownOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (phoneFieldRef.current && !phoneFieldRef.current.contains(event.target)) {
+        setIsCountryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [isCountryDropdownOpen]);
+
+  const normalizeProfilePhone = (value, visibleInputValue) => {
+    const normalizedValue = String(value || "").trim();
+    const visibleDigits = String(visibleInputValue || "").replace(/\D/g, "");
+
+    if (!normalizedValue || !visibleDigits) {
+      return "";
+    }
+
+    return normalizedValue;
+  };
 
   const handleProfileImageChange = (event) => {
     const selectedFile = event.target.files?.[0];
@@ -146,7 +200,7 @@ const ProfilePage = () => {
 
       const payload = new FormData();
       payload.append("email", email);
-      payload.append("phone", phone);
+      payload.append("phone", normalizeProfilePhone(fullPhoneNumber, phoneInputValue));
 
       if (selectedProfileImage) {
         payload.append("profileImage", selectedProfileImage);
@@ -257,9 +311,9 @@ const ProfilePage = () => {
                 <span className="inline-flex items-center rounded-full bg-[#1F1F1F] px-2.5 py-1 text-[12px] font-medium text-white">
                   Member ID: {memberId}
                 </span>
-                <span className="inline-flex items-center rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[12px] font-medium text-[#3538CD]">
+                {/* <span className="inline-flex items-center rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[12px] font-medium text-[#3538CD]">
                   User Type: {profile?.userType || "-"}
-                </span>
+                </span> */}
               </div>
               <p className="mt-4 max-w-140 text-[14px] leading-6 text-gray5 md:text-[15px] text-center sm:text-left">
                 Registered as a{" "}
@@ -340,29 +394,62 @@ const ProfilePage = () => {
               >
                 Phone number
               </label>
-              <div className="relative flex rounded-lg border border-border-input bg-white">
-                <select
-                  value={countryCode}
-                  onChange={(event) => setCountryCode(event.target.value)}
-                  className="h-11 rounded-l-lg border-r border-border-input bg-transparent px-3 text-[14px] text-gray2 outline-none disabled:text-gray5"
-                  disabled={!isEditing}
-                  aria-label="Country code"
-                >
-                  <option value="MY">MY</option>
-                  <option value="SG">SG</option>
-                  <option value="ID">ID</option>
-                </select>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className="h-11 w-full rounded-r-lg bg-transparent px-4 pr-10 text-[14px] text-gray2 outline-none disabled:text-gray5"
-                  disabled={!isEditing}
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-                  <ProfileCheck size={16} />{" "}
-                </span>
+              <div ref={phoneFieldRef} className="relative">
+                <div className="flex h-11 w-full items-center rounded-lg border border-border-input bg-white text-[14px] text-gray2 focus-within:border-green-secondary focus-within:ring-1 focus-within:ring-border-green">
+                  <button
+                    type="button"
+                    onClick={() => setIsCountryDropdownOpen((prev) => !prev)}
+                    disabled={!isEditing}
+                    className="ml-1 flex h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-[14px] font-medium text-gray2 hover:bg-background-primary disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <span className="uppercase">{String(selectedCountry?.iso2 || "my").toUpperCase()}</span>
+                    <ArrowDown
+                      size={12}
+                      color="#9AA3AF"
+                      className={`${isCountryDropdownOpen ? "rotate-180" : "rotate-0"} transition-transform`}
+                    />
+                  </button>
+                  <span className="mx-1 h-5 w-px bg-border-input" />
+                  <span className="mr-2 shrink-0 text-[14px] text-gray5">+{selectedCountry?.dialCode || "60"}</span>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={phoneInputValue}
+                    onChange={handlePhoneValueChange}
+                    disabled={!isEditing}
+                    className="h-full w-full min-w-0 bg-transparent pr-10 text-[14px] text-gray2 outline-none placeholder:text-gray5 disabled:text-gray5"
+                    placeholder="Enter phone number"
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                    <ProfileCheck size={16} />
+                  </span>
+                </div>
+
+                {isCountryDropdownOpen && isEditing ? (
+                  <div className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border-input bg-white py-1 shadow-[0px_12px_24px_rgba(15,61,46,0.08)]">
+                    {countryOptions.map((option) => {
+                      const isSelected = option.iso2 === selectedCountry?.iso2;
+
+                      return (
+                        <button
+                          key={option.iso2}
+                          type="button"
+                          onClick={() => {
+                            setCountry(option.iso2, { focusOnInput: false });
+                            setIsCountryDropdownOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] ${
+                            isSelected ? "bg-[#F4F7F5] text-gray2" : "text-gray5 hover:bg-[#F8FAF9]"
+                          }`}
+                        >
+                          <span className="w-7 shrink-0 font-medium uppercase text-gray2">{option.iso2}</span>
+                          <span className="w-12 shrink-0 text-gray5">+{option.dialCode}</span>
+                          <span className="truncate">{option.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

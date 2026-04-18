@@ -24,7 +24,8 @@
     "react-dom": "19.2.3",
     "react-international-phone": "^4.8.0",
     "react-range-slider-input": "^3.3.2",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

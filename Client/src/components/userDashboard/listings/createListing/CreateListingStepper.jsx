@@ -19,7 +19,7 @@ const CreateListingStepper = ({ currentStep }) => {
             <div className="relative flex h-7 w-full items-center justify-center sm:h-8 md:h-11">
               {isCompleted ? (
                 <div className="relative z-[1] flex h-5 w-5 items-center justify-center rounded-full bg-green-secondary shadow-[0px_4px_10px_rgba(38,143,109,0.18)] sm:h-6 sm:w-6 md:h-9 md:w-9">
-                  <StepperTick width={10} height={8} color="white" className="sm:h-3 sm:w-3 md:h-auto md:w-auto" />
+                  <StepperTick width={16} height={16} color="white" className="sm:h-3 sm:w-3 md:h-auto md:w-auto" />
                 </div>
               ) : isActive ? (
                 <div className="relative z-[1] flex h-7 w-7 items-center justify-center rounded-full border-2 border-green-secondary bg-white sm:h-8 sm:w-8 md:h-11 md:w-11 md:border-[3px]">

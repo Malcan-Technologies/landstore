@@ -35,8 +35,9 @@ const areaUnitOptions = [
   { value: "sqft", label: "sqft" },
 ];
 
-const maxPhotos = 4;
-const chipClassName = "border-green-secondary/30 bg-activebg text-green-secondary";
+const initialVisiblePhotoSlots = 4;
+const maxPhotos = 20;
+const chipClassName = "border-green-secondary/30 text-green-secondary";
 
 const BasicInfoStep = ({
   formData,
@@ -48,47 +49,48 @@ const BasicInfoStep = ({
   errors = {},
 }) => {
   const fileInputRef = useRef(null);
-  const previousPhotosRef = useRef([]);
-  const photos = useMemo(() => formData.photos ?? [], [formData.photos]);
-  const existingPhotoUrls = useMemo(() => formData.existingPhotos ?? [], [formData.existingPhotos]);
-  const previewUrls = useMemo(() => photos.map((file) => getFilePreviewUrl(file)), [photos]);
+  const previousImagesRef = useRef([]);
+  const images = useMemo(() => formData.images ?? [], [formData.images]);
+  const existingImageUrls = useMemo(() => formData.existingImages ?? [], [formData.existingImages]);
+  const previewUrls = useMemo(() => images.map((file) => getFilePreviewUrl(file)), [images]);
 
   const photoItems = useMemo(
     () => [
-      ...existingPhotoUrls.map((url) => ({ url, isExisting: true })),
+      ...existingImageUrls.map((url) => ({ url, isExisting: true })),
       ...previewUrls.map((url, newIndex) => ({ url, isExisting: false, newIndex })),
     ],
-    [existingPhotoUrls, previewUrls]
+    [existingImageUrls, previewUrls]
   );
 
   useEffect(() => {
-    const previousPhotos = previousPhotosRef.current;
+    const previousImages = previousImagesRef.current;
 
-    previousPhotos.forEach((file) => {
-      if (!photos.includes(file)) {
+    previousImages.forEach((file) => {
+      if (!images.includes(file)) {
         revokeFilePreviewUrl(file);
       }
     });
 
-    previousPhotosRef.current = photos;
-  }, [photos]);
+    previousImagesRef.current = images;
+  }, [images]);
 
   const photoSlots = useMemo(() => {
-    return Array.from({ length: maxPhotos }, (_, index) => photoItems[index] ?? null);
+    const slotsCount = Math.max(initialVisiblePhotoSlots, photoItems.length + 1);
+    return Array.from({ length: slotsCount }, (_, index) => photoItems[index] ?? null);
   }, [photoItems]);
 
   const handlePhotoUpload = (event) => {
     const selectedFiles = Array.from(event.target.files ?? []);
-    const remainingSlots = Math.max(maxPhotos - existingPhotoUrls.length - photos.length, 0);
-    const nextPhotos = [...photos, ...selectedFiles.slice(0, remainingSlots)].slice(0, maxPhotos);
-    updateField("photos", nextPhotos);
+    const remainingSlots = Math.max(maxPhotos - existingImageUrls.length - images.length, 0);
+    const nextImages = [...images, ...selectedFiles.slice(0, remainingSlots)];
+    updateField("images", nextImages);
     event.target.value = "";
   };
 
   const handleRemovePhoto = (indexToRemove) => {
     updateField(
-      "photos",
-      photos.filter((_, index) => index !== indexToRemove)
+      "images",
+      images.filter((_, index) => index !== indexToRemove)
     );
   };
 
@@ -100,10 +102,11 @@ const BasicInfoStep = ({
           Photo upload
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-        <div className={`grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 ${errors.photos ? "rounded-lg ring-1 ring-red-300" : ""}`.trim()}>
-          {photoSlots.map((photoItem, index) =>
+        <div className={`w-full overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${errors.images ? "rounded-lg ring-1 ring-red-300" : ""}`.trim()}>
+          <div className="grid w-full grid-flow-col auto-cols-[calc((100%-24px)/4)] gap-2 sm:auto-cols-[calc((100%-36px)/4)] sm:gap-3">
+            {photoSlots.map((photoItem, index) =>
             photoItem ? (
-              <div key={index} className="relative h-30 overflow-hidden rounded-md bg-background-primary sm:h-40 sm:rounded-lg md:h-44">
+              <div key={index} className="relative h-30 w-full overflow-hidden rounded-md bg-background-primary sm:h-40 sm:rounded-lg md:h-44">
                 {!photoItem.isExisting ? (
                   <button
                     type="button"
@@ -126,7 +129,7 @@ const BasicInfoStep = ({
                 key={index}
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex h-30 flex-col items-center justify-center rounded-md border border-dashed border-border-card bg-white text-center transition hover:border-green-secondary/60 sm:h-40 sm:rounded-lg md:h-44"
+                className="flex h-30 w-full flex-col items-center justify-center rounded-md border border-dashed border-border-card bg-white text-center transition hover:border-green-secondary/60 sm:h-40 sm:rounded-lg md:h-44"
               >
                 <span className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-border-input bg-white text-gray7 sm:mb-3 sm:h-9 sm:w-9 sm:rounded-md">
                   <Upload size={16} color="var(--color-gray7)" />
@@ -134,12 +137,13 @@ const BasicInfoStep = ({
                 <span className="text-[10px] font-medium text-gray2 sm:text-[12px] md:text-[13px]">Add photo <span className="text-gray5">(max. 5MB)</span></span>
               </button>
             ) : (
-              <div key={index} className="h-30 rounded-md bg-[#F1F1F1] sm:h-40 sm:rounded-lg md:h-44" />
+              <div key={index} className="h-30 w-full rounded-md bg-[#F1F1F1] sm:h-40 sm:rounded-lg md:h-44" />
             )
-          )}
+            )}
+          </div>
         </div>
-        {errors.photos ? (
-          <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.photos}</p>
+        {errors.images ? (
+          <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.images}</p>
         ) : null}
       </div>
 

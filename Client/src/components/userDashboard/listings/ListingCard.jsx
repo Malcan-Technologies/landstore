@@ -48,7 +48,7 @@ const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
       aria-label={onCardClick ? `Open ${listing.title} details` : undefined}
     >
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="relative h-auto sm:w-54  lg:w-60 xl:w-60 w-auto overflow-hidden rounded-xl">
+        <div className="relative h-auto sm:w-54  lg:w-60 xl:w-60 w-auto overflow-hidden rounded-lg">
           <img
             src={listing.image || fallbackImage}
             alt={listing.title}
@@ -65,7 +65,7 @@ const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
           </span>
         </div>
 
-        <div className={`flex min-w-0 flex-1 flex-col ${showFooter ? "" : "justify-center"}`}>
+        <div className={`flex min-w-0 flex-1 flex-col sm:justify-between sm:gap-3 ${showFooter ? "" : "justify-center"}`}>
           <div className="flex items-start w-full gap-2 ">
             <div className="w-full flex flex-col min-w-0 ">
               <div className="flex w-full justify-between gap-2 ">
@@ -97,7 +97,7 @@ const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
                   <p className="text-[18px] font-bold text-gray2 xl:text-[26px] lg:text-[22px]">
                     {listing.price}
                   </p>
-                  <p className="text-[9px] lg:text-[12px] text-gray5 font-medium lg:mt-3">
+                  <p className="text-[9px] lg:text-[12px] text-gray5 font-medium ">
                     Estimated Valuation
                   </p>
                 </div>
@@ -108,28 +108,28 @@ const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
                 <span className="truncate">{listing.title}</span>
               </h2>
 
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 sm:gap-y-0.5 xl:text-[16px] sm:text-[12px] text-[10px] font-medium text-gray5">
+              <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-x-2 sm:gap-y-0.5 xl:text-[16px] sm:text-[12px] text-[10px] font-medium text-gray5">
                 <span className="rounded-md bg-background-primary px-2 py-1 text-[9px] font-medium uppercase tracking-[0.08em] text-gray5 sm:hidden">
                   {listing.code}
                 </span>
-                <span className="hidden items-center gap-1.5 sm:inline-flex">
-                  <Bag size={14} color="var(--color-gray5)" />
+                <span className="hidden items-center gap-1.5 sm:inline-flex ">
+                  <Bag size={20} color="var(--color-gray5)" />
                   <span>{listing.category}</span>
                 </span>
-                <span className="hidden items-center gap-1.5 sm:inline-flex">
-                  <Building size={14} color="var(--color-gray5)" />
+                <span className="hidden items-center gap-1.5 sm:inline-flex border-r border-border-card pr-2">
+                  <Building size={20} color="var(--color-gray5)" />
                   {listing.area}
                 </span>
                 {listing.dealTags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-2xl border border-border-input px-2 py-1 xl:text-[14px] lg:text-[12px] text-[10px] font-semibold text-gray5"
+                    className="rounded-2xl border border-border-input px-2 py-0.5 xl:text-[14px] lg:text-[12px] text-[10px] font-semibold text-gray5"
                   >
                     {tag}
                   </span>
                 ))}
-                <span className="hidden items-center gap-1.5 sm:inline-flex">
-                  <Calendar size={14} color="var(--color-gray5)" />
+                <span className="hidden items-center gap-1.5 sm:inline-flex border-l border-border-card pl-2">
+                  <Calendar size={20} color="var(--color-gray5)" />
                   <span>Updated {listing.updatedAt}</span>
                 </span>
               </div>
@@ -137,9 +137,10 @@ const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
           </div>
 
           {showFooter ? (
-            <div className="sm:mt-4 sm:border-t border-border-card sm:pt-4 pt-2">
-              <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-2 sm:gap-4">
-                <div className="flex sm:flex-row flex-col sm:w-auto w-full items-start gap-2">
+            <div className=" sm:border-t border-border-card sm:pt-2 pt-2 ">
+              <div className="flex flex-col-reverse sm:flex-row justify-between items-center sm:items-end gap-2 sm:gap-4">
+                <div className="flex sm:flex-row flex-col sm:w-auto w-full items-start sm:items-end gap-2">
+                  <div className="flex gap-2 h-full items-end">
                   {listing.actions.map((action) => {
                     if (action.type === "delete") {
                       return (
@@ -196,6 +197,8 @@ const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
                       </button>
                     );
                   })}
+
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between w-full gap-3 text-right sm:w-auto sm:justify-start sm:gap-8">
@@ -209,13 +212,13 @@ const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
                 </div>
                   <div className="flex gap-3">
 
-                  <div className="flex sm:flex-col gap-1 items-center ">
+                  <div className="flex sm:flex-col gap-1 sm:gap-0 items-center ">
                     <p className="sm:text-[16px] text-[13px] font-bold text-gray2">
                       {listing.views}
                     </p>
                     <p className="sm:text-[14px] text-[11px] text-gray5">Views</p>
                   </div>
-                  <div className="flex sm:flex-col gap-1 items-center ">
+                  <div className="flex sm:flex-col gap-1 sm:gap-0 items-center ">
                     <p className="sm:text-[16px] text-[13px] font-bold text-gray2">
                       {listing.interests}
                     </p>

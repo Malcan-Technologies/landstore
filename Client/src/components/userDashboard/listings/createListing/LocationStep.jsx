@@ -299,7 +299,7 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
 
   const locationMarker = {
     id: "listing-location-marker",
-    image: formData.photos?.[0] ? getFilePreviewUrl(formData.photos[0]) : null,
+    image: formData.images?.[0] ? getFilePreviewUrl(formData.images[0]) : null,
     price: formData.pricePerSqft ? `RM ${formData.pricePerSqft}` : "Price pending",
     area: formData.landArea ? `${formData.landArea} ${formData.areaUnit}` : "Area pending",
     category: formData.category || "Land listing",
@@ -412,7 +412,7 @@ const LocationStep = ({ formData, updateField, titleTypeOptions = defaultTitleTy
           <p className="pointer-events-none absolute left-0 top-full mt-1 text-[11px] text-red-500">{errors.titleType}</p>
         ) : null}
         <div className="flex flex-col sm:flex-row sm:gap-3 gap-1">
-          {!isLeasehold && (
+          {isLeasehold && (
             <>
               <div className="relative mt-3 flex-1">
                 <LeaseholdCalendarInput
