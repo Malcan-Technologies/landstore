@@ -57,13 +57,13 @@ const FolderSection = memo(
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
+      <div className="sm:space-y-3 sm:flex sm:flex-col justify-between gap-2 sm:gap-0 sm:flex-nowrap grid xsm:grid-cols-2 grid-cols-1 ">
         {orderedFolders.map((folder) => {
           const active = folder.id === activeFolderId;
           const menuOpen = activeFolderMenuId === folder.id;
           const isRenaming = renamingFolderId === folder.id;
           return (
-            <div key={folder.id} className="relative">
+            <div key={folder.id} className="relative sm:w-auto w-full">
               <div
                 className={`flex w-full items-center justify-between gap-10 rounded-xl border px-3 py-2.5 transition ${
                   active ? "border-gray2 bg-gray2 text-white" : "border-border-input bg-white text-gray7"

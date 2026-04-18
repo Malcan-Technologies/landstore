@@ -4,8 +4,8 @@ import CreateListingStepper from "@/components/userDashboard/listings/createList
 
 const CreateListingLayout = ({ currentStep, children, onBack, onNext, isLastStep = false, nextLabel = "Next step" }) => {
   return (
-    <main className="min-h-screen bg-background-primary pt-10 sm:pt-8 md:pt-10">
-      <div className="mx-2 w-auto px-3 mb-16 sm:px-4 md:px-6 lg:mx-10">
+    <main className="min-h-screen mx-auto max-w-7xl bg-background-primary pt-10 sm:pt-8 md:pt-10">
+      <div className="mx-auto w-full px-3 mb-16 sm:px-4 md:px-6 lg:px-10">
         <header className="text-center">
           <h1 className="text-[24px] font-semibold tracking-tight text-gray2 sm:text-[30px] md:text-[40px]">List your land</h1>
           <p className="mx-auto mt-2 max-w-[500px] text-[12px] leading-5 text-gray5 sm:mt-3 sm:text-[13px] md:text-[14px] md:leading-6">

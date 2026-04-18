@@ -1,6 +1,14 @@
 import React from "react";
 
-const RoundCheck = ({ size = 18, className, ...props }) => (
+const RoundCheck = ({
+  size = 18,
+  className,
+  color = "#298064",
+  tickColor,
+  filled = false,
+  strokeWidth = 1.5,
+  ...props
+}) => (
   <svg
     width={size}
     height={size}
@@ -10,8 +18,29 @@ const RoundCheck = ({ size = 18, className, ...props }) => (
     className={className}
     {...props}
   >
-    <circle cx="9" cy="11" r="7.5" stroke="#298064" strokeWidth="1.5" />
-    <path d="M6.375 11.375L7.875 12.875L11.625 9.125" stroke="#298064" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    {filled ? (
+      <>
+        <circle cx="9" cy="11" r="7.5" fill={color} />
+        <path
+          d="M6.375 11.375L7.875 12.875L11.625 9.125"
+          stroke={tickColor || "#FFFFFF"}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </>
+    ) : (
+      <>
+        <circle cx="9" cy="11" r="7.5" stroke={color} strokeWidth={strokeWidth} />
+        <path
+          d="M6.375 11.375L7.875 12.875L11.625 9.125"
+          stroke={tickColor || color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </>
+    )}
   </svg>
 );
 

@@ -634,7 +634,7 @@ const CreateListingPage = () => {
           : "Next step"
       }
     >
-      <div className="space-y-3">
+      <div className="mx-auto max-w-5xl space-y-3">
         {isReferenceLoading ? (
           <div className="rounded-lg border border-border-card bg-white px-3 py-2 text-[12px] text-gray5">
             Loading listing reference data...

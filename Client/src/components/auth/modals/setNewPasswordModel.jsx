@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Modal from "@/components/common/Modal";
-import Lock from "@/components/svg/Lock";
 import EyeClose from "@/components/svg/EyeClose";
 import EyeOpen from "@/components/svg/EyeOpen";
+import Lock from "@/components/svg/Lock";
+import RoundCheck from "@/components/svg/RoundCheck";
 
 const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoading = false, apiError = "", token = "" }) => {
   const passwordRef = useRef(null);
@@ -25,10 +26,16 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoadin
   const meetsMinLength = password.length >= 8;
   const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
+  const showPasswordMismatchError = confirmPassword.length > 0 && !passwordsMatch;
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    console.log("Step 1: Form submitted");
+    console.log("Step 2: Password =", password);
+    console.log("Step 3: Token =", token);
+    console.log("Step 4: Calling onSuccess callback with:", { password, confirmPassword, token });
     onSuccess?.({ password, confirmPassword, token });
+    console.log("Step 5: onSuccess callback completed");
   };
 
   return (
@@ -69,17 +76,17 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoadin
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray5"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray6"
               aria-label="Toggle password visibility"
             >
-              {showPassword ? <EyeOpen size={16} /> : <EyeClose size={16} />}
+              {showPassword ? <EyeOpen size={16} color="var(--color-gray6)" /> : <EyeClose size={16} color="var(--color-gray6)" />}
             </button>
           </div>
 
           <label htmlFor="confirm-password" className="mt-4 mb-2 block text-[14px] font-medium text-gray7">
             Confirm password
           </label>
-          <div className="relative">
+          <div className={`relative ${showPasswordMismatchError ? "mb-5" : ""}`}>
             <input
               id="confirm-password"
               type={showConfirmPassword ? "text" : "password"}
@@ -92,22 +99,38 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoadin
             <button
               type="button"
               onClick={() => setShowConfirmPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray5"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray6"
               aria-label="Toggle confirm password visibility"
             >
-              {showConfirmPassword ? <EyeOpen size={16} /> : <EyeClose size={16} />}
+              {showConfirmPassword ? <EyeOpen size={16} color="var(--color-gray6)" /> : <EyeClose size={16} color="var(--color-gray6)" />}
             </button>
+            {showPasswordMismatchError ? (
+              <p className="pointer-events-none absolute right-0 top-full mt-1 text-[11px] text-red-500">
+                Password and confirm password must match
+              </p>
+            ) : null}
           </div>
 
           <div className="mt-4 space-y-2 text-[12px] text-gray5">
             <div className="flex items-center gap-2">
-              <span className={`${meetsMinLength ? "text-green-secondary" : "text-gray5"}`}>●</span>
+              <RoundCheck
+                size={18}
+                filled
+                color={meetsMinLength ? "var(--color-green-secondary)" : "var(--color-gray3)"}
+                tickColor="white"
+              />
               <span>Must be at least 8 characters</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`${hasSpecialChar ? "text-green-secondary" : "text-gray5"}`}>●</span>
+              <RoundCheck
+                size={18}
+                filled
+                color={hasSpecialChar ? "var(--color-green-secondary)" : "var(--color-gray3)"}
+                tickColor="white"
+              />
               <span>Must contain one special character</span>
             </div>
+          
           </div>
 
           <button

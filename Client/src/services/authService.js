@@ -1,33 +1,13 @@
 import api from '@/utils/axios';
 
-const getOrigin = () => {
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
-  }
-
-  return 'http://localhost:3000';
-};
-
-const withOriginHeader = (config = {}) => ({
-  ...config,
-  headers: {
-    ...(config.headers || {}),
-    Origin: getOrigin(),
-  },
-});
-
-const withOriginAndNo401Redirect = (config = {}) =>
-  withOriginHeader({
-    ...config,
-    skipAuthRedirectOn401: true,
-  });
-
 // Authentication service
 export const authService = {
   // Login user
   login: async (credentials) => {
     try {
-      const response = await api.post('/users/login', credentials, withOriginAndNo401Redirect());
+      const response = await api.post('/users/login', credentials, {
+        skipAuthRedirectOn401: true,
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -37,7 +17,9 @@ export const authService = {
   // Register and complete profile in one request (new Postman flow)
   register: async (userData) => {
     try {
-      const response = await api.post('/users/register', userData, withOriginAndNo401Redirect());
+      const response = await api.post('/users/register', userData, {
+        skipAuthRedirectOn401: true,
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -47,7 +29,9 @@ export const authService = {
   // Explicit alias for the same endpoint
   registerComplete: async (userData) => {
     try {
-      const response = await api.post('/users/register-complete', userData, withOriginAndNo401Redirect());
+      const response = await api.post('/users/register-complete', userData, {
+        skipAuthRedirectOn401: true,
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -57,7 +41,7 @@ export const authService = {
   // Complete user profile (kept for compatibility with existing UI flow)
   completeProfile: async (profileData) => {
     try {
-      const response = await api.post('/users/complete-profile', profileData, withOriginHeader());
+      const response = await api.post('/users/complete-profile', profileData);
       return response.data;
     } catch (error) {
       throw error;
@@ -67,7 +51,7 @@ export const authService = {
   // Logout user
   logout: async () => {
     try {
-      const response = await api.post('/auth/sign-out', null, withOriginHeader());
+      const response = await api.post('/auth/sign-out', null);
       return response.data;
     } catch (error) {
       throw error;
@@ -77,7 +61,7 @@ export const authService = {
   // Get current session
   getCurrentUser: async () => {
     try {
-      const response = await api.get('/auth/get-session', withOriginHeader());
+      const response = await api.get('/auth/get-session');
       return response.data;
     } catch (error) {
       throw error;
@@ -87,7 +71,7 @@ export const authService = {
   // Get my profile
   myProfile: async () => {
     try {
-      const response = await api.get('/users/my-profile', withOriginHeader());
+      const response = await api.get('/users/my-profile');
       return response.data;
     } catch (error) {
       throw error;
@@ -97,7 +81,7 @@ export const authService = {
   // Change password
   changePassword: async (passwordData) => {
     try {
-      const response = await api.post('/auth/change-password', passwordData, withOriginHeader());
+      const response = await api.post('/auth/change-password', passwordData);
       return response.data;
     } catch (error) {
       throw error;
@@ -107,7 +91,7 @@ export const authService = {
   // Request password reset
   forgotPassword: async (email) => {
     try {
-      const response = await api.post('/users/forgot-password', { email }, withOriginHeader());
+      const response = await api.post('/users/forgot-password', { email });
       return response.data;
     } catch (error) {
       throw error;
@@ -117,7 +101,7 @@ export const authService = {
   // Reset password
   resetPassword: async (token, newPassword) => {
     try {
-      const response = await api.post('/users/reset-password', { token, newPassword }, withOriginHeader());
+      const response = await api.post('/users/reset-password', { token, newPassword });
       return response.data;
     } catch (error) {
       throw error;
@@ -127,10 +111,7 @@ export const authService = {
   // Verify email
   verifyEmail: async (token) => {
     try {
-      const response = await api.get(
-        '/auth/verify-email',
-        withOriginHeader(token ? { params: { token } } : {})
-      );
+      const response = await api.get('/auth/verify-email', token ? { params: { token } } : {});
       return response.data;
     } catch (error) {
       throw error;
@@ -140,7 +121,7 @@ export const authService = {
   // Refresh access token
   refreshToken: async () => {
     try {
-      const response = await api.post('/auth/refresh-token', null, withOriginHeader());
+      const response = await api.post('/auth/refresh-token', null);
       return response.data;
     } catch (error) {
       throw error;

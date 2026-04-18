@@ -527,8 +527,12 @@ const Register = ({ onRegisterSuccess }) => {
           >
             {showConfirmPassword ? <EyeOpen size={14} /> : <EyeClose size={14} />}
           </button>
+          {errors.confirmPassword && (
+            <p className="absolute right-0 top-full mt-1 text-[11px] text-red-500">
+              {errors.confirmPassword}
+            </p>
+          )}
         </div>
-        {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
       </div>
 
       <div>
