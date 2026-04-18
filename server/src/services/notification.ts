@@ -1,5 +1,11 @@
 import db from "../../config/prisma.js";
 import type { NotificationType } from "@prisma/client";
+import {
+	emitNotificationCreated,
+	emitNotificationDeleted,
+	emitNotificationUpdated,
+	emitUnreadNotificationCount,
+} from "../socket/emitters/notification.emitter.js";
 
 const createHttpError = (message: string, statusCode: number) => {
 	const error = new Error(message) as Error & { statusCode?: number };
@@ -8,6 +14,26 @@ const createHttpError = (message: string, statusCode: number) => {
 };
 
 const validNotificationTypes: readonly NotificationType[] = ["welcome", "urgent"];
+
+const toRealtimePayload = (notification: {
+	id: string;
+	userId: string;
+	type: string;
+	content: string;
+	isRead: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+}) => {
+	return {
+		id: notification.id,
+		userId: notification.userId,
+		type: notification.type,
+		content: notification.content,
+		isRead: notification.isRead,
+		createdAt: notification.createdAt.toISOString(),
+		updatedAt: notification.updatedAt.toISOString(),
+	};
+};
 
 export type CreateNotificationPayload = {
 	userId: string;
@@ -88,6 +114,16 @@ export const createNotification = async (payload: CreateNotificationPayload) => 
 			},
 			include: includeNotificationRelations,
 		});
+
+		const unreadCount = await db.notification.count({
+			where: {
+				userId: notification.userId,
+				isRead: false,
+			},
+		});
+
+		emitNotificationCreated(toRealtimePayload(notification));
+		emitUnreadNotificationCount(notification.userId, unreadCount);
 
 		return {
 			id: notification.id,
@@ -335,6 +371,16 @@ export const updateNotification = async (
 			include: includeNotificationRelations,
 		});
 
+		const unreadCount = await db.notification.count({
+			where: {
+				userId: updatedNotification.userId,
+				isRead: false,
+			},
+		});
+
+		emitNotificationUpdated(toRealtimePayload(updatedNotification));
+		emitUnreadNotificationCount(updatedNotification.userId, unreadCount);
+
 		return {
 			id: updatedNotification.id,
 			userId: updatedNotification.userId,
@@ -368,12 +414,22 @@ export const markAsRead = async (notificationId: string): Promise<void> => {
 			throw createHttpError("Notification not found", 404);
 		}
 
-		await db.notification.update({
+		const updated = await db.notification.update({
 			where: { id: notificationId },
 			data: {
 				isRead: true,
 			},
 		});
+
+		const unreadCount = await db.notification.count({
+			where: {
+				userId: updated.userId,
+				isRead: false,
+			},
+		});
+
+		emitNotificationUpdated(toRealtimePayload(updated));
+		emitUnreadNotificationCount(updated.userId, unreadCount);
 	} catch (error: unknown) {
 		throw error;
 	}
@@ -408,6 +464,15 @@ export const markAllAsRead = async (userId: string): Promise<number> => {
 			},
 		});
 
+		const unreadCount = await db.notification.count({
+			where: {
+				userId,
+				isRead: false,
+			},
+		});
+
+		emitUnreadNotificationCount(userId, unreadCount);
+
 		return result.count;
 	} catch (error: unknown) {
 		throw error;
@@ -432,9 +497,19 @@ export const deleteNotification = async (notificationId: string): Promise<void> 
 			throw createHttpError("Notification not found", 404);
 		}
 
-		await db.notification.delete({
+		const deleted = await db.notification.delete({
 			where: { id: notificationId },
 		});
+
+		const unreadCount = await db.notification.count({
+			where: {
+				userId: deleted.userId,
+				isRead: false,
+			},
+		});
+
+		emitNotificationDeleted(deleted.userId, deleted.id);
+		emitUnreadNotificationCount(deleted.userId, unreadCount);
 	} catch (error: unknown) {
 		throw error;
 	}
@@ -462,6 +537,8 @@ export const deleteAllNotificationsByUserId = async (userId: string): Promise<nu
 		const result = await db.notification.deleteMany({
 			where: { userId },
 		});
+
+		emitUnreadNotificationCount(userId, 0);
 
 		return result.count;
 	} catch (error: unknown) {

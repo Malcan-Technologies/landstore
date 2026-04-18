@@ -1,10 +1,12 @@
 import express from "express";
 import type { Application } from "express";
+import { createServer } from "http";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import db from "./config/prisma.js";
 import { auth } from "./config/auth.js";
+import { attachSocketServer } from "./src/socket/server.js";
 import requireApiAuth from "./src/middleware/requireApiAuth.js";
 import userRoutes from "./src/routes/user.routes.js";
 import listLandRoutes from "./src/routes/listLand.routes.js";
@@ -22,6 +24,7 @@ import leaseholdRoutes from "./src/routes/leasehold.routes.js";
 import notificationPreference from "./src/routes/notificationPreference.routes.js"
 
 const app: Application = express();
+const httpServer = createServer(app);
 
 /**
  * AUTHENTICATION ARCHITECTURE:
@@ -118,6 +121,8 @@ db.$connect()
   .then(() => console.log("Connected to the database"))
   .catch((err: unknown) => console.error("Database connection error:", err));
 
-app.listen(PORT, () => {
+attachSocketServer(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
 });
