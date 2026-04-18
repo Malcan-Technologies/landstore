@@ -160,7 +160,7 @@ const PropertyCard = ({
         className={`w-auto cursor-pointer rounded-lg border border-white/70 bg-white px-2 py-1.5 transition ${className}`.trim()}
       >
         <div className="flex items-stretch gap-3">
-          <div className="relative h-24 w-28 shrink-0 self-stretch overflow-hidden rounded-md bg-[#F8E5DD]">
+          <div className="relative h-auto w-28 shrink-0 self-stretch overflow-hidden rounded-md bg-[#F8E5DD]">
             <Image
               src={resolvedImageSrc}
               alt={title}
@@ -316,7 +316,7 @@ const PropertyCard = ({
             {area}
           </span>
           </div>
-          <span className="rounded-sm bg-[#f1f1f1] px-2 py-1 text-gray5">{code}</span>
+          <span className="rounded-sm bg-[#f1f1f1] px-2 py-1 text-gray7 font-semibold">{code}</span>
         </div>
 
         <h3 className="flex min-w-0 items-center gap-2 sm:text-[18px] text-[15px] font-bold text-gray2">

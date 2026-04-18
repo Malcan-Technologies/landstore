@@ -1,9 +1,10 @@
-name: Deploy via SSH
+name: Deploy Client to ECS
 
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'Client'
   workflow_dispatch:
 
 jobs:
@@ -11,66 +12,81 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # 2️⃣ Validate SSH secrets and project path
-      - name: Validate SSH and Project Path
-        run: |
-          if [ -z "${{ secrets.SSH_HOST }}" ] || [ -z "${{ secrets.SSH_USER }}" ] || [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ] || [ -z "${{ secrets.PROJECT_PATH }}" ]; then
-            echo "❌ Missing required secrets"
-            exit 1
-          fi
-          echo "✅ SSH and project path secrets are set."
+    # ✅ AWS Login
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-southeast-5
 
-      # 3️⃣ Install packages and build frontend
-      - name: Install dependencies and build Client
-        run: |
-          cd Client
-          echo "📦 Installing dependencies..."
-          npm ci
+    # ✅ Login to ECR
+    - name: Login to ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
 
-          echo "🏗 Building frontend..."
-          npm run build
+    # ✅ Set global variables
+    - name: Set environment variables
+      run: |
+        echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+        echo "REPOSITORY=landstore-client" >> $GITHUB_ENV
+        echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
-          echo "✅ Frontend build successful"
+    # ✅ Build & Push Docker Image
+    - name: Build and push Docker image
+      run: |
+        cd Client
+        docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
-      # 4️⃣ Sync only frontend to VPS
-      - name: Sync Client to VPS
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+    # ✅ Download current task definition
+    - name: Download task definition
+      run: |
+        aws ecs describe-task-definition \
+          --task-definition landstore-client \
+          --query taskDefinition > task-definition.json
 
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ${{ secrets.PROJECT_PATH }}"
+    # ✅ Update image + ADD env vars (SAFE: append, not overwrite)
+    - name: Update task definition with image + env vars
+      run: |
+        jq --arg IMAGE "$REGISTRY/$REPOSITORY:$IMAGE_TAG" \
+           --arg MAP_KEY "${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
+           --arg API_URL "${{ secrets.SERVER_URL }}" \
+        '
+        (.containerDefinitions[] | select(.name=="landstore-client") | .image) = $IMAGE
+        |
+        (.containerDefinitions[] | select(.name=="landstore-client") | .environment) += [
+          {"name":"NEXT_PUBLIC_GOOGLE_MAPS_API_KEY","value":$MAP_KEY},
+          {"name":"NEXT_PUBLIC_API_URL","value":$API_URL}
+        ]
+        |
+        del(.taskDefinitionArn)
+        | del(.revision)
+        | del(.status)
+        | del(.requiresAttributes)
+        | del(.compatibilities)
+        | del(.registeredAt)
+        | del(.registeredBy)
+        ' task-definition.json > new-task-def.json
 
-          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" ./Client/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PROJECT_PATH }}
+    # ✅ Register new revision
+    - name: Register new task definition
+      id: register-task
+      run: |
+        TASK_DEF_ARN=$(aws ecs register-task-definition \
+          --cli-input-json file://new-task-def.json \
+          --query 'taskDefinition.taskDefinitionArn' \
+          --output text)
 
-      # 5️⃣ Deploy frontend
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            export PATH="$HOME/.nvm/versions/node/v22.22.1/bin:$PATH"
+        echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
-            cd ${{ secrets.PROJECT_PATH }}
-
-            echo "📦 Installing dependencies..."
-            npm ci
-            echo "📍 Current directory:"
-            echo pwd
-            ls ..
-
-            echo "🏗 Building..."
-            npm run build
-
-            echo "♻️ Reloading PM2 process..."
-            pm2 reload app || pm2 start npm --name "app" -- start
-            pm2 save
-
-            echo "✅ Frontend deployment completed successfully!"
+    # ✅ Deploy to ECS
+    - name: Deploy to ECS
+      run: |
+        aws ecs update-service \
+          --cluster ${{ secrets.ECS_CLUSTER }} \
+          --service ${{ secrets.ECS_SERVICE }} \
+          --task-definition $TASK_DEF_ARN

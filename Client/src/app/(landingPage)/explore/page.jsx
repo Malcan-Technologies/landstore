@@ -9,6 +9,7 @@ import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
 import PropertyCard from "@/components/userDashboard/explore/PropertyCard";
 import MapView from "@/components/userDashboard/explore/MapView";
 import Funnel from "@/components/svg/Funnel";
+import { adminService } from "@/services/adminService";
 import { folderService } from "@/services/folderService";
 import { landService } from "@/services/landService";
 import { checkAuth } from "@/utils/auth";
@@ -21,6 +22,250 @@ const dealTagMap = {
   buy: "Buy",
   jv: "JV",
   financing: "Financing",
+};
+
+const defaultDealTypeFilterOptions = [
+  { value: "buy", label: "Buy" },
+  { value: "jv", label: "JV" },
+  { value: "financing", label: "Financing" },
+];
+
+const defaultTerrainFilterOptions = [
+  { value: "flat", label: "Flat" },
+  { value: "hilly", label: "Hilly" },
+  { value: "mix", label: "Mixed" },
+];
+
+const exploreNegeriDaerahMap = {
+  Johor: ["Johor Bahru", "Pontian", "Kota Tinggi", "Kluang", "Batu Pahat", "Muar", "Segamat", "Mersing", "Tangkak", "Kulai"],
+  Kedah: ["Kota Setar", "Kubang Pasu", "Padang Terap", "Langkawi", "Kedah Selatan", "Yan", "Kuala Muda", "Sik", "Baling", "Bandar Baharu"],
+  Kelantan: ["Kota Bharu", "Pasir Mas", "Tumpat", "Bachok", "Tanah Merah", "Pasir Puteh", "Kuala Krai", "Machang", "Jeli", "Gua Musang"],
+  Malacca: ["Malacca City", "Melaka Tengah", "Alor Gajah", "Jasin"],
+  "Negeri Sembilan": ["Seremban", "Port Dickson", "Rembau", "Jempol", "Kuala Pilah", "Jelebu", "Tampin"],
+  Pahang: ["Kuantan", "Bentong", "Bera", "Cameron Highlands", "Jerantut", "Lipis", "Maran", "Pekan", "Raub", "Rompin", "Temerloh"],
+  Penang: ["George Town", "Timur Laut", "Barat Daya", "Seberang Perai Utara", "Seberang Perai Tengah", "Seberang Perai Selatan"],
+  Perak: ["Kinta", "Larut & Matang", "Manjung", "Hilir Perak", "Batang Padang", "Kerian", "Kuala Kangsar", "Perak Tengah", "Hulu Perak", "Kampar", "Bagan Datuk", "Muallim"],
+  Perlis: ["Kangar", "Arau", "Padang Besar"],
+  Selangor: ["Petaling", "Hulu Langat", "Gombak", "Klang", "Kuala Langat", "Sepang", "Hulu Selangor", "Kuala Selangor", "Sabak Bernam"],
+  Terengganu: ["Kuala Terengganu", "Besut", "Setiu", "Kuala Nerus", "Hulu Terengganu", "Marang", "Dungun", "Kemaman"],
+  Sabah: ["Kota Kinabalu", "Kudat", "West Coast", "Interior", "Sandakan", "Tawau", "Tuaran", "Keningau"],
+  Sarawak: ["Kuching", "Samarahan", "Serian", "Sri Aman", "Betong", "Sarikei", "Sibu", "Mukah", "Kapit", "Bintulu", "Miri", "Limbang"],
+};
+
+const defaultStateFilterOptions = Object.keys(exploreNegeriDaerahMap).map((label) => ({
+  value: label,
+  label,
+}));
+
+const allDaerahSuggestions = Array.from(new Set(Object.values(exploreNegeriDaerahMap).flat()));
+
+const normalizeLocationToken = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+const negeriLabelByToken = {
+  ...Object.keys(exploreNegeriDaerahMap).reduce((collection, negeriLabel) => {
+    collection[normalizeLocationToken(negeriLabel)] = negeriLabel;
+    return collection;
+  }, {}),
+  melaka: "Malacca",
+  malacca: "Malacca",
+  "pulau-pinang": "Penang",
+};
+
+const resolveNegeriLabel = (value) => {
+  const normalized = normalizeLocationToken(value);
+
+  if (!normalized) {
+    return "";
+  }
+
+  return negeriLabelByToken[normalized] || String(value || "").trim();
+};
+
+const defaultExploreFilters = {
+  locationSearch: "",
+  selectedState: "",
+  selectedDealTypes: [],
+  selectedCategories: [],
+  selectedTerrain: [],
+  selectedUtilization: [],
+  tanahRizab: "both",
+  landArea: [0, 100],
+  landAreaUnit: "acres",
+  pricePerSqft: "",
+  titleType: "",
+  myListings: false,
+  myShortlistings: false,
+  myEnquiries: false,
+};
+
+const normalizeSelectOptions = (items) => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .map((item) => {
+      const value = item?.id ?? item?.value ?? item?._id;
+      const label = item?.name ?? item?.label ?? item?.title ?? item?.value;
+
+      if (!value || !label) {
+        return null;
+      }
+
+      return { value: String(value), label: String(label) };
+    })
+    .filter(Boolean);
+};
+
+const extractItemsFromPayload = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+};
+
+const normalizeDealTypeValue = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return "";
+  if (normalized === "buy" || normalized === "purchase") return "buy";
+  if (normalized === "jv" || normalized === "joint venture" || normalized === "joint_venture") return "jv";
+  if (normalized === "financing" || normalized === "finance") return "financing";
+  return "";
+};
+
+const normalizeTerrainValue = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return "";
+  if (normalized === "flat") return "flat";
+  if (normalized === "hilly") return "hilly";
+  if (normalized === "mix" || normalized === "mixed") return "mix";
+  return "";
+};
+
+const buildExploreFilterQuery = (filters) => {
+  const query = {};
+
+  const state = resolveNegeriLabel(filters?.selectedState || filters?.locationSearch?.trim());
+  if (state) {
+    query.location = state;
+  }
+
+  if (Array.isArray(filters?.selectedDealTypes) && filters.selectedDealTypes.length > 0) {
+    const dealTypes = filters.selectedDealTypes
+      .map((item) => normalizeDealTypeValue(item))
+      .filter(Boolean);
+
+    if (dealTypes.length > 0) {
+      query.dealTypes = dealTypes;
+    }
+  }
+
+  if (Array.isArray(filters?.selectedCategories) && filters.selectedCategories.length > 0) {
+    query.categoryId = filters.selectedCategories[0];
+  }
+
+  if (Array.isArray(filters?.selectedTerrain) && filters.selectedTerrain.length > 0) {
+    const terrainChips = filters.selectedTerrain
+      .map((item) => normalizeTerrainValue(item))
+      .filter(Boolean);
+
+    if (terrainChips.length > 0) {
+      query.terrainChips = terrainChips;
+    }
+  }
+
+  if (Array.isArray(filters?.selectedUtilization) && filters.selectedUtilization.length > 0) {
+    query.utilizationId = filters.selectedUtilization[0];
+  }
+
+  if (filters?.tanahRizab === "yes") {
+    query.tanahRizabMelayu = true;
+  } else if (filters?.tanahRizab === "no") {
+    query.tanahRizabMelayu = false;
+  }
+
+  if (Array.isArray(filters?.landArea) && filters.landArea.length === 2) {
+    const [minimum, maximum] = filters.landArea;
+    const parsedMinimum = Number(minimum);
+    const parsedMaximum = Number(maximum);
+    const isDefaultRange = parsedMinimum === 0 && parsedMaximum === 100;
+
+    if (!isDefaultRange && Number.isFinite(parsedMinimum)) {
+      query.landAreaMin = parsedMinimum;
+    }
+
+    if (!isDefaultRange && Number.isFinite(parsedMaximum)) {
+      query.landAreaMax = parsedMaximum;
+    }
+  }
+
+  const parsedPricePerSqft = Number(filters?.pricePerSqft);
+  if (Number.isFinite(parsedPricePerSqft) && parsedPricePerSqft > 0) {
+    query.pricePerSqft = parsedPricePerSqft;
+  }
+
+  if (filters?.titleType) {
+    query.titleTypeId = filters.titleType;
+  }
+
+  if (filters?.myListings === true) {
+    query.myListings = true;
+  }
+
+  if (filters?.myShortlistings === true) {
+    query.myShortlistings = true;
+  }
+
+  if (filters?.myEnquiries === true) {
+    query.myEnquiries = true;
+  }
+
+  return query;
+};
+
+const isLikelyUuid = (value) =>
+  typeof value === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const extractFolderItems = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+};
+
+const extractFolderIdsContainingProperty = (payload, propertyId) => {
+  const targetId = String(propertyId || "");
+  if (!targetId) {
+    return [];
+  }
+
+  return extractFolderItems(payload)
+    .flatMap((folder) => {
+      const folderId = folder?.id ?? folder?._id;
+      if (!folderId) {
+        return [];
+      }
+
+      const properties = Array.isArray(folder?.properties) ? folder.properties : [];
+      const hasProperty = properties.some((entry) => {
+        const property = entry?.property ?? entry;
+        const entryId = property?.id ?? entry?.propertyId;
+        return String(entryId || "") === targetId;
+      });
+
+      return hasProperty ? [folderId] : [];
+    })
+    .filter((folderId, index, collection) => collection.indexOf(folderId) === index);
 };
 
 const toRadians = (value) => (value * Math.PI) / 180;
@@ -130,6 +375,7 @@ const mapListingToExploreCard = (listing) => {
       : formatPrice(listing?.estimatedValuation),
     lat,
     lng,
+    isShortListed: Boolean(listing?.isShortListed),
   };
 };
 
@@ -152,6 +398,17 @@ const ExplorePage = () => {
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
   const [isSavingToFolder, setIsSavingToFolder] = useState(false);
   const [fetchError, setFetchError] = useState("");
+  const [isApplyingFilters, setIsApplyingFilters] = useState(false);
+  const [pendingFilters, setPendingFilters] = useState(defaultExploreFilters);
+  const [activeFilters, setActiveFilters] = useState(defaultExploreFilters);
+  const [filterOptions, setFilterOptions] = useState({
+    states: defaultStateFilterOptions,
+    dealTypes: defaultDealTypeFilterOptions,
+    categories: [],
+    terrain: defaultTerrainFilterOptions,
+    utilizations: [],
+    titleTypes: [],
+  });
 
   const filterMenuRef = useRef(null);
   const lastRequestKeyRef = useRef("");
@@ -164,6 +421,100 @@ const ExplorePage = () => {
 
     return checkAuth();
   }, [hydrated, isAuth]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadFilterOptions = async () => {
+      const [categoriesResult, utilizationsResult, titleTypesResult, interestTypesResult] = await Promise.allSettled([
+        adminService.getCategories({ page: 1, limit: 200 }),
+        adminService.getUtilizations({ page: 1, limit: 200 }),
+        adminService.getTitleTypes({ page: 1, limit: 200 }),
+        adminService.getInterestTypes({ page: 1, limit: 200 }),
+      ]);
+
+      if (isCancelled) {
+        return;
+      }
+
+      const categories = categoriesResult.status === "fulfilled"
+        ? normalizeSelectOptions(extractItemsFromPayload(categoriesResult.value))
+        : [];
+
+      const utilizations = utilizationsResult.status === "fulfilled"
+        ? normalizeSelectOptions(extractItemsFromPayload(utilizationsResult.value))
+        : [];
+
+      const titleTypes = titleTypesResult.status === "fulfilled"
+        ? normalizeSelectOptions(extractItemsFromPayload(titleTypesResult.value))
+        : [];
+
+      const fetchedDealTypes = interestTypesResult.status === "fulfilled"
+        ? extractItemsFromPayload(interestTypesResult.value)
+            .map((item) => {
+              const label = item?.name ?? item?.label;
+              const value = normalizeDealTypeValue(label);
+
+              if (!value) {
+                return null;
+              }
+
+              return {
+                value,
+                label: dealTagMap[value] || String(label),
+              };
+            })
+            .filter(Boolean)
+        : [];
+
+      const mergedDealTypesMap = new Map();
+      [...fetchedDealTypes, ...defaultDealTypeFilterOptions].forEach((item) => {
+        mergedDealTypesMap.set(item.value, item);
+      });
+
+      setFilterOptions((previous) => ({
+        ...previous,
+        categories,
+        utilizations,
+        titleTypes,
+        dealTypes: Array.from(mergedDealTypesMap.values()),
+      }));
+    };
+
+    loadFilterOptions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const handleFiltersChange = useCallback((nextFilters) => {
+    setPendingFilters(nextFilters);
+  }, []);
+
+  const handleApplyFilters = useCallback((nextFilters) => {
+    setIsApplyingFilters(true);
+    setPendingFilters(nextFilters);
+    setActiveFilters(nextFilters);
+    setIsFilterModalOpen(false);
+  }, []);
+
+  const handleSummarySelect = useCallback((nextFilters) => {
+    setPendingFilters(nextFilters);
+    setActiveFilters(nextFilters);
+  }, []);
+
+  const activeFilterQuery = useMemo(() => buildExploreFilterQuery(activeFilters), [activeFilters]);
+
+  const locationSuggestions = useMemo(() => {
+    const selectedNegeri = resolveNegeriLabel(pendingFilters?.selectedState);
+
+    if (selectedNegeri && exploreNegeriDaerahMap[selectedNegeri]) {
+      return [selectedNegeri, ...exploreNegeriDaerahMap[selectedNegeri]];
+    }
+
+    return [...Object.keys(exploreNegeriDaerahMap), ...allDaerahSuggestions];
+  }, [pendingFilters?.selectedState]);
 
   useEffect(() => {
     if (!isFilterModalOpen) {
@@ -221,8 +572,9 @@ const ExplorePage = () => {
       return;
     }
 
-    const requestKey = `${latitude}:${longitude}:${radiusKm}`;
+    const requestKey = `${latitude}:${longitude}:${radiusKm}:${JSON.stringify(activeFilterQuery)}`;
     if (requestKey === lastRequestKeyRef.current) {
+      setIsApplyingFilters(false);
       return;
     }
 
@@ -239,8 +591,7 @@ const ExplorePage = () => {
           latitude,
           longitude,
           radiusKm,
-          page: 1,
-          limit: 80,
+          filters: activeFilterQuery,
         });
 
         if (requestId !== requestIdRef.current) {
@@ -253,6 +604,7 @@ const ExplorePage = () => {
           .filter((item) => item !== null);
 
         setListings(mappedListings);
+        setSavedPropertyIds(new Set(mappedListings.filter((item) => item.isShortListed).map((item) => item.id)));
       } catch (error) {
         if (requestId !== requestIdRef.current) {
           return;
@@ -263,6 +615,7 @@ const ExplorePage = () => {
       } finally {
         if (requestId === requestIdRef.current) {
           setIsLoadingListings(false);
+          setIsApplyingFilters(false);
         }
       }
     }, 350);
@@ -270,7 +623,7 @@ const ExplorePage = () => {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [mapViewport.center.lat, mapViewport.center.lng, mapViewport.radiusKm]);
+  }, [activeFilterQuery, mapViewport.center.lat, mapViewport.center.lng, mapViewport.radiusKm]);
 
   const listingsNearCenter = useMemo(() => {
     return [...listings].sort((first, second) => {
@@ -360,6 +713,19 @@ const ExplorePage = () => {
         next.delete(propertyId);
         return next;
       });
+
+      try {
+        const foldersResponse = await folderService.getFolders({ page: 1, limit: 200 });
+        const folderIds = extractFolderIdsContainingProperty(foldersResponse, propertyId)
+          .filter((folderId) => isLikelyUuid(folderId));
+
+        await Promise.allSettled(
+          folderIds.map((folderId) => folderService.removeFromFolder(folderId, propertyId))
+        );
+      } catch {
+        // Keep optimistic UI update; server sync will be reflected on next fetch.
+      }
+
       return;
     }
 
@@ -420,7 +786,17 @@ const ExplorePage = () => {
       <div className="sm:mx-10 mx-1 flex w-auto gap-6 px-2 lg:items-start lg:px-2 ">
         {!isDesktopFilterHidden ? (
           <div className="hidden md:block h-[calc(100vh-6rem)] xl:h-[calc(100vh-6rem)]">
-            <FilterPanel collapseBehavior="external" onToggleRequest={() => setIsDesktopFilterHidden(true)} />
+            <FilterPanel
+              collapseBehavior="external"
+              onToggleRequest={() => setIsDesktopFilterHidden(true)}
+              filterOptions={filterOptions}
+              locationSuggestions={locationSuggestions}
+              filterValues={pendingFilters}
+              onFilterValuesChange={handleFiltersChange}
+              onApplyFilters={handleApplyFilters}
+              onSummarySelect={handleSummarySelect}
+              isApplyLoading={isApplyingFilters}
+            />
           </div>
         ) : null}
 
@@ -453,6 +829,7 @@ const ExplorePage = () => {
                     onLoginRequired={handleLoginRequired}
                     onLikeClick={handleLikeClick}
                     isSaved={savedPropertyIds.has(land.id)}
+                    heartStyle="shortlist"
                   />
                 ))}
               </div>
@@ -477,7 +854,16 @@ const ExplorePage = () => {
 
                 {isFilterModalOpen && !isDesktopFilterHidden ? (
                   <div className="absolute right-0 top-12 z-40 flex max-h-[calc(100vh-30rem)] sm:max-h-[calc(100vh-11rem)] sm:w-80 flex-col overflow-hidden rounded-xl bg-white shadow-lg">
-                    <FilterPanel variant="modal" />
+                    <FilterPanel
+                      variant="modal"
+                      filterOptions={filterOptions}
+                      locationSuggestions={locationSuggestions}
+                      filterValues={pendingFilters}
+                      onFilterValuesChange={handleFiltersChange}
+                      onApplyFilters={handleApplyFilters}
+                      onSummarySelect={handleSummarySelect}
+                      isApplyLoading={isApplyingFilters}
+                    />
                   </div>
                 ) : null}
               </div>
@@ -502,6 +888,7 @@ const ExplorePage = () => {
                       onLoginRequired={handleLoginRequired}
                       onLikeClick={handleLikeClick}
                       isSaved={savedPropertyIds.has(land.id)}
+                      heartStyle="shortlist"
                     />
                   ))}
                 </div>

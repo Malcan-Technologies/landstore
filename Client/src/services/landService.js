@@ -22,6 +22,16 @@ export const landService = {
     }
   },
 
+  // Get admin/public listings feed (supports recentlyApproved query)
+  getAdminListings: async (params = {}) => {
+    try {
+      const response = await api.get('/list-lands/all-listings', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Get listing by ID
   getListingById: async (id) => {
     try {
@@ -67,12 +77,36 @@ export const landService = {
   },
 
   // Search properties around a map center using visible map radius
-  exploreMap: async ({ latitude, longitude, radiusKm, page = 1, limit = 50 }) => {
+  exploreMap: async ({ latitude, longitude, radiusKm, page, limit, filters = {} }) => {
     try {
+      const params = new URLSearchParams();
+      if (Number.isFinite(page) && page > 0) {
+        params.set('page', String(page));
+      }
+
+      if (Number.isFinite(limit) && limit > 0) {
+        params.set('limit', String(limit));
+      }
+
+      Object.entries(filters || {}).forEach(([key, rawValue]) => {
+        if (rawValue === undefined || rawValue === null || rawValue === '') {
+          return;
+        }
+
+        if (Array.isArray(rawValue)) {
+          rawValue
+            .filter((item) => item !== undefined && item !== null && item !== '')
+            .forEach((item) => params.append(key, String(item)));
+          return;
+        }
+
+        params.append(key, String(rawValue));
+      });
+
       const response = await api.post(
         '/list-lands/search/by-radius',
         { latitude, longitude, radiusKm },
-        { params: { page, limit } }
+        { params }
       );
       return response.data;
     } catch (error) {

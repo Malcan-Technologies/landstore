@@ -135,7 +135,7 @@ const Table = ({
                         >
                           <div
                             className={joinClasses(
-                              "min-w-0",
+                              "min-w-0 whitespace-nowrap",
                               normalizedCell.contentClassName
                             )}
                           >
