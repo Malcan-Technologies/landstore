@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'Client'
+      - 'Client/**'
   workflow_dispatch:
 
 jobs:
@@ -35,11 +35,14 @@ jobs:
         echo "REPOSITORY=landstore-client" >> $GITHUB_ENV
         echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
 
-    # ✅ Build & Push Docker Image
+    # ✅ Build & Push Docker Image (FIXED)
     - name: Build and push Docker image
       run: |
         cd Client
-        docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker build --no-cache \
+          --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }} \
+          --build-arg NEXT_PUBLIC_API_URL=${{ secrets.SERVER_URL }} \
+          -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
         docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
     # ✅ Download current task definition
@@ -49,19 +52,11 @@ jobs:
           --task-definition landstore-client \
           --query taskDefinition > task-definition.json
 
-    # ✅ Update image + ADD env vars (SAFE: append, not overwrite)
-    - name: Update task definition with image + env vars
+    # ✅ ONLY update image (NO env here!)
+    - name: Update task definition
       run: |
-        jq --arg IMAGE "$REGISTRY/$REPOSITORY:$IMAGE_TAG" \
-           --arg MAP_KEY "${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
-           --arg API_URL "${{ secrets.SERVER_URL }}" \
-        '
+        jq --arg IMAGE "$REGISTRY/$REPOSITORY:$IMAGE_TAG" '
         (.containerDefinitions[] | select(.name=="landstore-client") | .image) = $IMAGE
-        |
-        (.containerDefinitions[] | select(.name=="landstore-client") | .environment) += [
-          {"name":"NEXT_PUBLIC_GOOGLE_MAPS_API_KEY","value":$MAP_KEY},
-          {"name":"NEXT_PUBLIC_API_URL","value":$API_URL}
-        ]
         |
         del(.taskDefinitionArn)
         | del(.revision)

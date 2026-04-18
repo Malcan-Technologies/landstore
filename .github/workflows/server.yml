@@ -1,0 +1,112 @@
+name: Deploy server to ECS
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+     - 'server'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # ✅ AWS Login
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-southeast-5
+
+    # ✅ Login to ECR
+    - name: Login to ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    # ✅ Set global variables
+    - name: Set environment variables
+      run: |
+        echo "REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+        echo "REPOSITORY=landstore-server" >> $GITHUB_ENV
+        echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+
+    # ✅ Build & Push Docker Image
+    - name: Build and push Docker image
+      run: |
+        cd server
+        docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+
+    # ✅ Download current task definition
+    - name: Download task definition
+      run: |
+        aws ecs describe-task-definition \
+          --task-definition landstore-server \
+          --query taskDefinition > task-definition.json
+
+    # ✅ Update image + ADD env vars (SAFE: append, not overwrite)
+    - name: Update task definition with image + env vars
+      run: |
+        jq --arg IMAGE "$REGISTRY/$REPOSITORY:$IMAGE_TAG" \
+           --arg PORT_SERVER "${{ secrets.PORT_SERVER }}" \
+           --arg ACCESS_TOKEN_SECRET_SERVER "${{ secrets.ACCESS_TOKEN_SECRET_SERVER }}" \
+           --arg BETTER_AUTH_API_KEY_SERVER "${{ secrets.BETTER_AUTH_API_KEY_SERVER }}" \
+           --arg DATABASE_URL_SERVER "${{ secrets.DATABASE_URL_SERVER }}" \
+           --arg RESEND_API_KEY_SERVER "${{ secrets.RESEND_API_KEY_SERVER }}" \
+           --arg SALT_ROUNDS_SERVER "${{ secrets.SALT_ROUNDS_SERVER }}" \
+           --arg REFRESH_TOKEN_SECRET_SERVER "${{ secrets.REFRESH_TOKEN_SECRET_SERVER }}" \
+           --arg AWS_ACCESS_KEY_ID "${{ secrets.AWS_ACCESS_KEY_ID }}" \
+           --arg AWS_BUCKET_NAME "${{ secrets.AWS_BUCKET_NAME }}" \
+           --arg AWS_REGION "${{ secrets.AWS_REGION }}" \
+           --arg AWS_SECRET_ACCESS_KEY "${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+           --arg AWS_SECRET_ARN "${{ secrets.AWS_SECRET_ARN }}" \
+        '
+        (.containerDefinitions[] | select(.name=="landstore-server") | .image) = $IMAGE
+        |
+        (.containerDefinitions[] | select(.name=="landstore-server") | .environment) += [
+          {"name":"PORT","value":$PORT_SERVER},
+          {"name":"ACCESS_TOKEN_SECRET","value":$ACCESS_TOKEN_SECRET_SERVER},
+          {"name":"BETTER_AUTH_API_KEY","value":$BETTER_AUTH_API_KEY_SERVER},
+          {"name":"DATABASE_URL ","value":$DATABASE_URL_SERVER},
+          {"name":"RESEND_API_KEY ","value":$RESEND_API_KEY_SERVER},
+          {"name":"SALT_ROUNDS","value":$SALT_ROUNDS_SERVER},
+          {"name":"REFRESH_TOKEN_SECRET","value":$REFRESH_TOKEN_SECRET_SERVER},
+          {"name":"AWS_ACCESS_KEY","value":$AWS_ACCESS_KEY_ID},
+          {"name":"AWS_BUCKET_NAME","value":$AWS_BUCKET_NAME},
+          {"name":"AWS_REGION","value":$AWS_REGION},
+          {"name":"AWS_SECRET_KEY","value":$AWS_SECRET_ACCESS_KEY},
+          {"name":"AWS_SECRET_ARN","value":$AWS_SECRET_ARN}
+        ]
+        |
+        del(.taskDefinitionArn)
+        | del(.revision)
+        | del(.status)
+        | del(.requiresAttributes)
+        | del(.compatibilities)
+        | del(.registeredAt)
+        | del(.registeredBy)
+        ' task-definition.json > new-task-def.json
+
+    # ✅ Register new revision
+    - name: Register new task definition
+      id: register-task
+      run: |
+        TASK_DEF_ARN=$(aws ecs register-task-definition \
+          --cli-input-json file://new-task-def.json \
+          --query 'taskDefinition.taskDefinitionArn' \
+          --output text)
+
+        echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+    # ✅ Deploy to ECS
+    - name: Deploy to ECS
+      run: |
+        aws ecs update-service \
+          --cluster ${{ secrets.ECS_CLUSTER }} \
+          --service ${{ secrets.ECS_SERVICE_SERVER }} \
+          --task-definition $TASK_DEF_ARN
