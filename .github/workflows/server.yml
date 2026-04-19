@@ -54,6 +54,7 @@ jobs:
       run: |
         jq --arg IMAGE "$REGISTRY/$REPOSITORY:$IMAGE_TAG" \
            --arg PORT_SERVER "${{ secrets.PORT_SERVER }}" \
+           --arg FRONTEND_URL_SERVER "${{ secrets.FRONTEND_URL_SERVER }}" \
            --arg ACCESS_TOKEN_SECRET_SERVER "${{ secrets.ACCESS_TOKEN_SECRET_SERVER }}" \
            --arg BETTER_AUTH_API_KEY_SERVER "${{ secrets.BETTER_AUTH_API_KEY_SERVER }}" \
            --arg DATABASE_URL_SERVER "${{ secrets.DATABASE_URL_SERVER }}" \
@@ -70,6 +71,7 @@ jobs:
         |
         (.containerDefinitions[] | select(.name=="landstore-server") | .environment) += [
           {"name":"PORT","value":$PORT_SERVER},
+          {"name":"FRONTEND_URL","value":$FRONTEND_URL_SERVER},
           {"name":"ACCESS_TOKEN_SECRET","value":$ACCESS_TOKEN_SECRET_SERVER},
           {"name":"BETTER_AUTH_API_KEY","value":$BETTER_AUTH_API_KEY_SERVER},
           {"name":"DATABASE_URL ","value":$DATABASE_URL_SERVER},
