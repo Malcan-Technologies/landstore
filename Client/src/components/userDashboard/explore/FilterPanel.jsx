@@ -192,6 +192,7 @@ const CheckboxSection = memo(({ label, options, selected, onToggle }) => (
 
 const FilterPanel = ({
   showFilters = true,
+  showAccountSummary = true,
   variant = "sidebar",
   collapseBehavior = "internal",
   onToggleRequest,
@@ -355,48 +356,55 @@ const FilterPanel = ({
 
   return (
     <aside
-      className={`relative w-full${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "max-w-fit bg-transparent p-0 shadow-none" : "max-w-84 rounded-xl bg-white p-5 shadow-[0_20px_40px_rgba(15,61,46,0.05)]"} ${isModalVariant || usesExternalCollapse ? "flex h-full flex-col overflow-hidden" : ""}`}
+      className={`relative w-full${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "max-w-fit bg-transparent p-0 shadow-none" : "max-w-84 rounded-xl bg-white p-5 px-3 shadow-[0_20px_40px_rgba(15,61,46,0.05)]"} ${isModalVariant || usesExternalCollapse ? "flex h-full flex-col overflow-hidden" : ""}`}
     >
-      <div className={`${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "absolute -right-20 top-0 z-10" : "mb-4 flex items-center justify-between gap-2"}`}>
-        {!(!isModalVariant && !usesExternalCollapse && isPanelCollapsed) ? (
+      <div className={`${!isModalVariant && !usesExternalCollapse && isPanelCollapsed ? "absolute -right-20 top-0 z-10" : showAccountSummary ? "mb-4 flex items-center justify-between gap-2" : "mb-2"}`}>
+        {showAccountSummary && !(!isModalVariant && !usesExternalCollapse && isPanelCollapsed) ? (
           <p className="flex items-center gap-2 text-[16px] font-semibold text-gray2">
             <DualNote size={16} color="var(--color-green-logo)" aria-hidden /> Account summary
           </p>
         ) : null}
-        {!isModalVariant ? <ViewToggle options={viewModeOptions} activeKey={viewMode} onChange={handleViewModeChange} /> : null}
+        {!isModalVariant && showAccountSummary ? <ViewToggle options={viewModeOptions} activeKey={viewMode} onChange={handleViewModeChange} /> : null}
       </div>
 
       {isModalVariant || usesExternalCollapse || !isPanelCollapsed ? (
-        <div className={`space-y-5 ${isModalVariant || usesExternalCollapse ? "min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1" : ""}`}>
-          <div>
-            <SummaryList
-            summary={summaryStats}
-            activeKeys={new Set(summaryStats.filter((s) => effectiveFilterValues[s.filterKey]).map((s) => s.filterKey))}
-            onSelect={(filterKey) => {
-              const isCurrentlyActive = effectiveFilterValues[filterKey];
-              const patch = {
-                myListings: false,
-                myShortlistings: false,
-                myEnquiries: false,
-                [filterKey]: !isCurrentlyActive,
-              };
-              const nextValues = { ...effectiveFilterValues, ...patch };
-              if (isFilterControlled) {
-                onFilterValuesChange(nextValues);
-              } else {
-                setInternalFilterValues(nextValues);
-              }
-              onSummarySelect?.(nextValues);
-            }}
-          />
-            <div className="my-5 border-t border-border-input" />
-          </div>
+        <div className={`space-y-5 ${isModalVariant || usesExternalCollapse ? "min-h-0 flex-1 overflow-y-auto no-scrollbar px-2" : ""}`}>
+          {showAccountSummary ? (
+            <div>
+              <SummaryList
+              summary={summaryStats}
+              activeKeys={new Set(summaryStats.filter((s) => effectiveFilterValues[s.filterKey]).map((s) => s.filterKey))}
+              onSelect={(filterKey) => {
+                const isCurrentlyActive = effectiveFilterValues[filterKey];
+                const patch = {
+                  myListings: false,
+                  myShortlistings: false,
+                  myEnquiries: false,
+                  [filterKey]: !isCurrentlyActive,
+                };
+                const nextValues = { ...effectiveFilterValues, ...patch };
+                if (isFilterControlled) {
+                  onFilterValuesChange(nextValues);
+                } else {
+                  setInternalFilterValues(nextValues);
+                }
+                onSummarySelect?.(nextValues);
+              }}
+            />
+              <div className="my-5 border-t border-border-input" />
+            </div>
+          ) : null}
 
           {showFilters ? (
             <div className="space-y-5">
-              <p className="flex items-center gap-2 text-[15px] font-semibold text-gray2">
-                <Funnel size={16} color="var(--color-green-logo)" /> Filters
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-[15px] font-semibold text-gray2">
+                  <Funnel size={16} color="var(--color-green-logo)" /> Filters
+                </p>
+                {!isModalVariant && !showAccountSummary ? (
+                  <ViewToggle options={viewModeOptions} activeKey={viewMode} onChange={handleViewModeChange} />
+                ) : null}
+              </div>
 
               <form className="space-y-5" onSubmit={handleSubmit}>
                 <div className="space-y-3">
