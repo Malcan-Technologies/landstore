@@ -788,6 +788,7 @@ const ExplorePage = () => {
           <div className="hidden md:block h-[calc(100vh-6rem)] xl:h-[calc(100vh-6rem)]">
             <FilterPanel
               collapseBehavior="external"
+              showAccountSummary={isLoggedIn}
               onToggleRequest={() => setIsDesktopFilterHidden(true)}
               filterOptions={filterOptions}
               locationSuggestions={locationSuggestions}
@@ -856,6 +857,7 @@ const ExplorePage = () => {
                   <div className="absolute right-0 top-12 z-40 flex max-h-[calc(100vh-30rem)] sm:max-h-[calc(100vh-11rem)] sm:w-80 flex-col overflow-hidden rounded-xl bg-white shadow-lg">
                     <FilterPanel
                       variant="modal"
+                      showAccountSummary={isLoggedIn}
                       filterOptions={filterOptions}
                       locationSuggestions={locationSuggestions}
                       filterValues={pendingFilters}
