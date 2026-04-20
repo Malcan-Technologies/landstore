@@ -99,11 +99,6 @@ const PropertyCard = ({
     event?.preventDefault?.();
     event?.stopPropagation?.();
 
-    if (!isAuthenticated) {
-      onLoginRequired?.();
-      return;
-    }
-
     if (propertyDetailsHref) {
       router.push(propertyDetailsHref);
     }

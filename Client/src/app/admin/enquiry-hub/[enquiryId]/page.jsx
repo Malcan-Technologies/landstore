@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Image from "next/image";
+import Loading from "@/components/common/Loading";
 import Person from "@/components/svg/Person";
 import Sheild from "@/components/svg/Sheild";
 import Pointer from "@/components/svg/Pointer";
@@ -10,9 +11,7 @@ import Bag from "@/components/svg/Bag";
 import Telephone from "@/components/svg/Telephone";
 import Envelop from "@/components/svg/Envelop";
 import Calendar from "@/components/svg/Calendar";
-import Clock from "@/components/svg/Clock";
 import Send from "@/components/svg/Send";
-import Chat from "@/components/svg/Chat";
 import Controls from "@/components/svg/Controls";
 import Mic from "@/components/svg/Mic";
 import Plus from "@/components/svg/Plus";
@@ -25,95 +24,222 @@ import Bag2 from "@/components/svg/Bag2";
 import Bag3 from "@/components/svg/Bag3";
 import Clock2 from "@/components/svg/Clock2";
 import Profile from "@/components/svg/Profile";
-import ProfileCheck from "@/components/svg/ProfileCheck";
 import Verify from "@/components/svg/Verify";
+import { enquiryService } from "@/services/enquiryService";
 
-const enquiryRecords = [
-  {
-    id: "enquiry-1",
-    enquiryId: "ENQ - 000128",
-    listingCode: "ID - 000128",
-    listingTitle: "Kuala Langat, Selangor",
-    listingCategory: "Agriculture",
-    listingArea: "5.2 Acres",
-    requester: "Dato' Ridzuan",
-    verificationStatus: "Identity Verified",
-    requesterType: "Individual",
-    memberId: "U123",
-    ownerName: "Tan Sri Dr. Lim Chong",
-    ownerType: "Corporate identity",
-    phone: "+60 12-345 6789",
-    email: "lim.chong@holdings.my",
-    quote: "I would like to purchase this land for a family retreat. Is the title transfer process straightforward?",
-    estimatedBudget: "RM 1.5M - 2.0M",
-    acquisitionTimeline: "Next 6 months",
-    mediationMode: "Corporate buy",
-    location: "Kuala Langat, Selangor",
-    mediationStatus: "Pending matching",
-    originalDate: "05/20/2025",
-    originalMessage: "Interested in purchasing the full lot for agricultural development. Please provide matching details.",
-    adminDate: "05/20/2025",
-    adminMessage: "Interested in purchasing the full lot for agricultural development. Please provide matching details.",
-    image:
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "enquiry-2",
-    enquiryId: "ENQ - 000129",
-    listingCode: "ID - 000129",
-    listingTitle: "Sepang, Selangor",
-    listingCategory: "Industrial",
-    listingArea: "4.1 Acres",
-    requester: "Dato' Ridzuan",
-    verificationStatus: "Identity Verified",
-    requesterType: "Corporate Entity",
-    memberId: "U124",
-    ownerName: "Apex Horizon Holdings",
-    ownerType: "Corporate identity",
-    phone: "+60 13-998 1122",
-    email: "director@apexhorizon.my",
-    quote: "We are exploring land parcels suitable for a logistics expansion. Please confirm access road conditions.",
-    estimatedBudget: "RM 2.5M - 3.0M",
-    acquisitionTimeline: "Next 3 months",
-    mediationMode: "Corporate buy",
-    location: "Sepang, Selangor",
-    mediationStatus: "Need more info",
-    originalDate: "05/22/2025",
-    originalMessage: "Need a logistics-ready parcel with direct highway access. Please share due diligence requirements.",
-    adminDate: "05/23/2025",
-    adminMessage: "Admin has requested further intended-use documentation before the match can proceed.",
-    image:
-      "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    id: "enquiry-3",
-    enquiryId: "ENQ - 000130",
-    listingCode: "ID - 000130",
-    listingTitle: "Cyberjaya, Selangor",
-    listingCategory: "Commercial",
-    listingArea: "3.8 Acres",
-    requester: "Dato' Ridzuan",
-    verificationStatus: "Identity Verified",
-    requesterType: "Individual",
-    memberId: "U125",
-    ownerName: "Midanah Estates",
-    ownerType: "Corporate identity",
-    phone: "+60 17-221 8899",
-    email: "owner@midanah.com",
-    quote: "I am comparing several commercial plots. Could you advise whether partial acquisition is possible?",
-    estimatedBudget: "RM 4.0M - 4.8M",
-    acquisitionTimeline: "Next 12 months",
-    mediationMode: "Joint venture",
-    location: "Cyberjaya, Selangor",
-    mediationStatus: "Scheduled",
-    originalDate: "05/24/2025",
-    originalMessage: "Interested in a commercial parcel with phased acquisition terms and governance clarity.",
-    adminDate: "05/24/2025",
-    adminMessage: "A site visit proposal has been prepared for internal matching review.",
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
-  },
-];
+const fallbackEnquiryImage = "/Land.jpg";
+
+const normalizeEnquiryPayload = (payload) => {
+  const resolved = payload?.data ?? payload?.result?.data ?? payload ?? null;
+
+  if (Array.isArray(resolved)) {
+    return resolved[0] ?? null;
+  }
+
+  return resolved;
+};
+
+const toTrimmedImageUrl = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue || null;
+};
+
+const resolvePropertyImage = (property) => {
+  const mediaItems = Array.isArray(property?.media)
+    ? property.media
+    : property?.media
+      ? [property.media]
+      : [];
+
+  for (const mediaItem of mediaItems) {
+    const mediaImage =
+      toTrimmedImageUrl(mediaItem?.fileUrl) ||
+      toTrimmedImageUrl(mediaItem?.url) ||
+      toTrimmedImageUrl(mediaItem?.signedUrl);
+
+    if (mediaImage) {
+      return mediaImage;
+    }
+  }
+
+  return (
+    toTrimmedImageUrl(property?.images?.[0]?.fileUrl) ||
+    toTrimmedImageUrl(property?.images?.[0]?.url) ||
+    toTrimmedImageUrl(property?.image) ||
+    fallbackEnquiryImage
+  );
+};
+
+const formatDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "-";
+  }
+
+  return parsedDate.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatEnquiryCode = (id) => {
+  if (!id || typeof id !== "string") {
+    return "ENQ - 000000";
+  }
+
+  return `ENQ - ${id.replace(/-/g, "").toUpperCase().slice(0, 6)}`;
+};
+
+const formatArea = (landArea, landAreaUnit) => {
+  const numericValue = Number(landArea);
+
+  if (Number.isFinite(numericValue)) {
+    return `${numericValue.toLocaleString("en-US")}${landAreaUnit ? ` ${landAreaUnit}` : ""}`;
+  }
+
+  return "-";
+};
+
+const formatBudget = (value) => {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return "-";
+  }
+
+  return `RM ${numericValue.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const toStatusLabel = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "pending") {
+    return "Pending matching";
+  }
+  if (normalized === "under_review" || normalized === "under review") {
+    return "Under review";
+  }
+  if (normalized === "need_more_info" || normalized === "need more info") {
+    return "Need more info";
+  }
+  if (normalized === "in_progress" || normalized === "in progress") {
+    return "In progress";
+  }
+  if (normalized === "scheduled") {
+    return "Scheduled";
+  }
+
+  return "Pending matching";
+};
+
+const getRequesterProfile = (user) => {
+  const companyProfiles = Array.isArray(user?.companies)
+    ? user.companies
+    : user?.companies
+      ? [user.companies]
+      : [];
+
+  const companyName = companyProfiles.find((item) => item?.companyName)?.companyName;
+  const individualName = user?.individuals?.fullName;
+
+  if (individualName) {
+    return { name: individualName, type: "Individual" };
+  }
+
+  if (companyName) {
+    return { name: companyName, type: "Corporate Entity" };
+  }
+
+  return {
+    name: user?.email || "Unknown requester",
+    type: "User",
+  };
+};
+
+const getVerificationLabel = (user) => {
+  const isVerified = user?.emailVerified ?? user?.isVerified;
+
+  if (isVerified === true) {
+    return "Verified";
+  }
+
+  if (isVerified === false) {
+    return "Unverified";
+  }
+
+  return "Verification unavailable";
+};
+
+const extractLatestAdminMessage = (messages, requesterId) => {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return null;
+  }
+
+  const requesterMessages = messages.filter((item) => String(item?.senderId || "") === String(requesterId || ""));
+  const adminMessages = messages.filter((item) => String(item?.senderId || "") !== String(requesterId || ""));
+
+  if (adminMessages.length > 0) {
+    return adminMessages[adminMessages.length - 1];
+  }
+
+  return requesterMessages[requesterMessages.length - 1] || messages[messages.length - 1];
+};
+
+const buildEnquiryDetailModel = (item) => {
+  const requesterProfile = getRequesterProfile(item?.user);
+  const latestAdminMessage = extractLatestAdminMessage(item?.messages, item?.userId || item?.user?.id);
+  const roleNames = Array.isArray(item?.roles)
+    ? item.roles
+        .map((roleItem) => roleItem?.role?.name)
+        .filter(Boolean)
+        .join(", ")
+    : "";
+
+  const locationLabel =
+    [item?.property?.location?.district, item?.property?.location?.state].filter(Boolean).join(", ") ||
+    item?.property?.title ||
+    "-";
+
+  return {
+    id: item?.id || "",
+    enquiryId: formatEnquiryCode(item?.id),
+    listingCode: item?.property?.listingCode || item?.propertyId || "-",
+    listingTitle: item?.property?.title || "Property details pending",
+    listingCategory: item?.property?.category?.name || item?.property?.category || "-",
+    listingArea: formatArea(item?.property?.landArea ?? item?.property?.size, item?.property?.landAreaUnit),
+    requester: requesterProfile.name,
+    verificationStatus: getVerificationLabel(item?.user),
+    requesterType: requesterProfile.type,
+    memberId: item?.user?.id || item?.userId || "-",
+    ownerName: "-",
+    ownerType: roleNames || "-",
+    phone: item?.user?.phone || "-",
+    email: item?.user?.email || "-",
+    quote: item?.message?.trim() || "No message provided.",
+    estimatedBudget: formatBudget(item?.budget),
+    acquisitionTimeline: item?.timeline || "-",
+    mediationMode: item?.interestType?.name || "-",
+    location: locationLabel,
+    mediationStatus: toStatusLabel(item?.status),
+    originalDate: formatDate(item?.createdAt),
+    originalMessage: item?.message?.trim() || "No message provided.",
+    adminDate: formatDate(latestAdminMessage?.createdAt || item?.updatedAt || item?.createdAt),
+    adminMessage: latestAdminMessage?.content || "No admin message yet.",
+    image: resolvePropertyImage(item?.property),
+  };
+};
 
 const mediationStatusOptions = ["Pending matching", "Need more info", "Scheduled", "In progress"];
 const mediationStatusDropdownOptions = mediationStatusOptions.map((option) => ({
@@ -125,14 +251,91 @@ const mediationStatusDropdownOptions = mediationStatusOptions.map((option) => ({
 export default function EnquiryHubDetailPage({ params }) {
   const resolvedParams = use(params);
   const routeId = resolvedParams?.enquiryId;
+  const normalizedRouteId = Array.isArray(routeId) ? routeId[0] : routeId;
 
-  const enquiryDetail = useMemo(() => {
-    return enquiryRecords.find((item) => item.id === routeId) || enquiryRecords[0];
-  }, [routeId]);
-
-  const [mediationStatus, setMediationStatus] = useState(enquiryDetail.mediationStatus);
+  const [enquiryDetail, setEnquiryDetail] = useState(null);
+  const [isLoadingEnquiry, setIsLoadingEnquiry] = useState(true);
+  const [enquiryLoadError, setEnquiryLoadError] = useState("");
+  const [mediationStatus, setMediationStatus] = useState("");
   const [adminNote, setAdminNote] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!normalizedRouteId) {
+      setIsLoadingEnquiry(false);
+      setEnquiryLoadError("Enquiry ID is missing.");
+      setEnquiryDetail(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadEnquiryDetail = async () => {
+      try {
+        setIsLoadingEnquiry(true);
+        setEnquiryLoadError("");
+
+        const response = await enquiryService.getEnquiryById(normalizedRouteId);
+        const normalizedEnquiry = normalizeEnquiryPayload(response);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (!normalizedEnquiry) {
+          setEnquiryDetail(null);
+          setEnquiryLoadError("Enquiry details are unavailable.");
+          return;
+        }
+
+        const mappedEnquiry = buildEnquiryDetailModel(normalizedEnquiry);
+        setEnquiryDetail(mappedEnquiry);
+        setMediationStatus(mappedEnquiry.mediationStatus);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const errorMessage = error?.response?.data?.message || error?.message || "Failed to load enquiry details.";
+        setEnquiryLoadError(errorMessage);
+        setEnquiryDetail(null);
+      } finally {
+        if (isMounted) {
+          setIsLoadingEnquiry(false);
+        }
+      }
+    };
+
+    loadEnquiryDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [normalizedRouteId]);
+
+  if (isLoadingEnquiry) {
+    return <Loading />;
+  }
+
+  if (enquiryLoadError) {
+    return (
+      <main className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto bg-background-primary px-4 py-5 no-scrollbar sm:px-5">
+        <div className="flex min-h-[70vh] items-center justify-center">
+          <p className="text-[14px] text-red-500">{enquiryLoadError}</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!enquiryDetail) {
+    return (
+      <main className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto bg-background-primary px-4 py-5 no-scrollbar sm:px-5">
+        <div className="flex min-h-[70vh] items-center justify-center">
+          <p className="text-[14px] text-gray5">Enquiry not found.</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex h-full min-h-0 flex-1 flex-col overflow-y-auto bg-background-primary px-4 py-5 no-scrollbar sm:px-5">
@@ -151,7 +354,7 @@ export default function EnquiryHubDetailPage({ params }) {
               </div>
               <div className="min-w-0 flex h-full flex-col justify-between gap-2.5">
                 <h1 className="text-[14px] sm:text-[20px] lg:text-[18px] xl:text-[20px] font-semibold leading-none text-[#111827]">{enquiryDetail.requester}</h1>
-                <div className=" inline-flex items-center gap-1.5 rounded-full bg-[#EAFBF1] px-1.5 py-1 text-[7px] sm:text-[11px] lg:text-[9px] xl:text-[11px] font-medium text-[#15803D]">
+                <div className=" inline-flex items-center gap-1.5 rounded-full bg-[#EAFBF1] px-1.5 py-1 text-[7px] sm:text-[11px] lg:text-[9px] xl:text-[11px] font-medium text-active">
                   <Sheild size={14} color="#298064" />
                   {enquiryDetail.verificationStatus}
                 </div>
@@ -214,12 +417,12 @@ export default function EnquiryHubDetailPage({ params }) {
               </div>
             </div>
 
-            <div className="mt-5 rounded-[18px] bg-[#FAFAFA] p-5 md:h-[500px] xl:h-auto">
+            <div className="mt-5 rounded-[18px] bg-[#FAFAFA] p-5 md:h-125 xl:h-auto">
               <div className="flex gap-4">
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#18181B] text-white">
                   <Person size={14} color="#FFFFFF" />
                 </span>
-                <div className="flex-1 rounded-[16px] border border-[#E5E7EB] bg-white">
+                <div className="flex-1 rounded-2xl border border-[#E5E7EB] bg-white">
                   <div className="flex items-start justify-between gap-3 px-4 py-4">
                     <div>
                       <div className="flex justify-between">
@@ -227,7 +430,7 @@ export default function EnquiryHubDetailPage({ params }) {
                     <span className="text-[11px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">{enquiryDetail.originalDate}</span>
 
                       </div>
-                      <p className="mt-3 max-w-[430px] text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] italic leading-6 text-[#71717A]">“{enquiryDetail.originalMessage}”</p>
+                      <p className="mt-3 max-w-107.5 text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] italic leading-6 text-[#71717A]">“{enquiryDetail.originalMessage}”</p>
                     </div>
                   </div>
                   <div className="mx-4 border-t border-[#E5E7EB]" />
@@ -244,12 +447,12 @@ export default function EnquiryHubDetailPage({ params }) {
               </div>
 
               <div className="mt-5 mb-7 flex items-start gap-4">
-                <div className="flex-1 rounded-[16px] border border-[#C9F7E8] bg-[#F1FFFA] px-4 py-3">
+                <div className="flex-1 rounded-2xl border border-[#C9F7E8] bg-[#F1FFFA] px-4 py-3">
                   <div className="flex items-start justify-between gap-3 text-[9px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#2F855A]">
                     <span>{enquiryDetail.adminDate}</span>
                     <span className="font-semibold text-end">Admin notification</span>
                   </div>
-                  <p className="mt-2 max-w-[420px] text-right text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] italic leading-6 text-[#2F855A]">“{enquiryDetail.adminMessage}”</p>
+                  <p className="mt-2 max-w-105 text-right text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] italic leading-6 text-[#2F855A]">“{enquiryDetail.adminMessage}”</p>
                 </div>
                 <button
                   type="button"
@@ -263,12 +466,12 @@ export default function EnquiryHubDetailPage({ params }) {
           </div>
 
           <div className="">
-            <div className="rounded-[16px] border border-border-card bg-background-primary p-4">
+            <div className="rounded-2xl border border-border-card bg-background-primary p-4">
               <textarea
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder="Type a follow-up note to LandStore admin..."
-                className="h-[96px] w-full resize-none border-0 bg-transparent text-[11px] sm:text-[15px] lg:text-[13px] xl:text-[15px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
+                className="h-24 w-full resize-none border-0 bg-transparent text-[11px] sm:text-[15px] lg:text-[13px] xl:text-[15px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
               />
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button
@@ -322,18 +525,22 @@ export default function EnquiryHubDetailPage({ params }) {
 
             <div className=" py-4">
               <div className="flex xl:flex-row lg:flex-col gap-1.5 sm:gap-4 border-b border-white/10 pb-5 px-4">
-                <div className="relative h-[88px] w-[88px] xl:h-[88px] xl:w-[88px] lg:h-[150px] lg:w-auto shrink-0 overflow-hidden rounded-[12px]">
+                <div className="relative h-22 w-22 lg:h-37.5 lg:w-auto shrink-0 overflow-hidden rounded-xl xl:h-22 xl:w-22">
                   <Image
-                    src={enquiryDetail.image}
+                    src={enquiryDetail.image || fallbackEnquiryImage}
                     alt={enquiryDetail.listingTitle}
                     fill
                     sizes="88px"
                     className="object-cover"
                     unoptimized
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = fallbackEnquiryImage;
+                    }}
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="inline-flex items-center rounded-[4px] bg-[#0F5132] px-2.5 py-1 text-[7px] sm:text-[11px] lg:text-[9px] xl:text-[11px] font-medium text-[#A7F3D0]">
+                  <span className="inline-flex items-center rounded-sm bg-[#0F5132] px-2.5 py-1 text-[7px] sm:text-[11px] lg:text-[9px] xl:text-[11px] font-medium text-[#A7F3D0]">
                     {enquiryDetail.listingCode}
                   </span>
                   <div className="mt-3 flex items-center justify-start gap-0.5 sm:gap-2 ">
@@ -357,7 +564,7 @@ export default function EnquiryHubDetailPage({ params }) {
 
               <div className="border-b border-white/10 py-5 px-4">
                 <p className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] text-white/55">Confidential Owner Data</p>
-                <div className="mt-4 rounded-[16px] border border-white/8 bg-[#123628] p-4">
+                <div className="mt-4 rounded-2xl border border-white/8 bg-[#123628] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-semibold text-white">{enquiryDetail.ownerName}</h3>
@@ -436,7 +643,7 @@ export default function EnquiryHubDetailPage({ params }) {
                 value={adminNote}
                 onChange={(event) => setAdminNote(event.target.value)}
                 placeholder="Record buyer sentiment, owner’s stance or next mediation steps here..."
-                className="h-[130px] w-full resize-none border-0 bg-transparent text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
+                className="h-32.5 w-full resize-none border-0 bg-transparent text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
               />
             </div>
             <div className="mt-3 flex items-center justify-between text-[10px] sm:text-[12px] lg:text-[10px] xl:text-[12px] text-[#A1A1AA]">

@@ -18,6 +18,8 @@ const statusStyles = {
   "Matched (In Progress)": "bg-[#E7F0FF] text-[#386BF6]",
 };
 
+const fallbackImageSrc = "/Land.jpg";
+
 const EnquiryCard = ({ enquiry }) => {
   const router = useRouter();
   const {
@@ -40,18 +42,22 @@ const EnquiryCard = ({ enquiry }) => {
     <button
       type="button"
       onClick={() => router.push(`/user-dashboard/enquiries/${id}`)}
-      className="block w-full rounded-xl border border-border-card bg-white px-3 sm:!pr-5 py-3 shadow-[0px_6px_18px_rgba(15,61,46,0.04)] transition hover:border-[#67DCC3] md:px-2 md:py-2"
+      className="block w-full rounded-xl border border-border-card bg-white px-3 py-3 shadow-[0px_6px_18px_rgba(15,61,46,0.04)] transition hover:border-[#67DCC3] sm:pr-5! md:px-2 md:py-2"
     >
       <article className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-col gap-4 sm:flex-row md:items-center">
           <div className="relative h-40 sm:w-60 w-full overflow-hidden rounded-lg ">
             <Image
-              src={image}
+              src={image || fallbackImageSrc}
               alt={title}
               fill
               unoptimized
               className="object-cover"
               sizes="198px"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = fallbackImageSrc;
+              }}
             />
           </div>
 

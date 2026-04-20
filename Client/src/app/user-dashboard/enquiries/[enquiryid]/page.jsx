@@ -4,6 +4,7 @@ import Image from "next/image";
 import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import Loading from "@/components/common/Loading";
 import Bag from "@/components/svg/Bag";
 import Calendar from "@/components/svg/Calendar";
 import Chat2 from "@/components/svg/Chat2";
@@ -21,6 +22,41 @@ import { enquiryService } from "@/services/enquiryService";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
 const progressSteps = ["Submitted", "Verification", "Under negotiation", "Matched", "Completed"];
+
+const toTrimmedImageUrl = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue || null;
+};
+
+const resolvePropertyImage = (property) => {
+  const mediaItems = Array.isArray(property?.media)
+    ? property.media
+    : property?.media
+      ? [property.media]
+      : [];
+
+  for (const mediaItem of mediaItems) {
+    const mediaImage =
+      toTrimmedImageUrl(mediaItem?.fileUrl) ||
+      toTrimmedImageUrl(mediaItem?.url) ||
+      toTrimmedImageUrl(mediaItem?.signedUrl);
+
+    if (mediaImage) {
+      return mediaImage;
+    }
+  }
+
+  return (
+    toTrimmedImageUrl(property?.images?.[0]?.fileUrl) ||
+    toTrimmedImageUrl(property?.images?.[0]?.url) ||
+    toTrimmedImageUrl(property?.image) ||
+    FALLBACK_IMAGE
+  );
+};
 
 const normalizeEnquiryPayload = (payload) => {
   const resolved = payload?.data ?? payload?.result?.data ?? payload ?? null;
@@ -129,7 +165,7 @@ const buildEnquiryViewModel = (item) => {
     area: formatArea(item?.property?.landArea ?? item?.property?.size, item?.property?.landAreaUnit),
     dealTags: [item?.interestType?.name || "General"],
     submittedAt: formatDate(item?.createdAt),
-    image: item?.property?.images?.[0]?.url || item?.property?.image || FALLBACK_IMAGE,
+    image: resolvePropertyImage(item?.property),
     originalMessage: item?.message?.trim() || "No message provided.",
     entityLabel: hasCompanyProfile ? "Company" : "Individual",
     adminDate: formatDate(item?.updatedAt || item?.createdAt),
@@ -163,6 +199,12 @@ const EnquiryDetailPage = ({ params }) => {
         const normalized = normalizeEnquiryPayload(response);
 
         if (mounted) {
+          if (!normalized) {
+            setEnquiryData(null);
+            setError("Enquiry details are unavailable.");
+            return;
+          }
+
           setEnquiryData(buildEnquiryViewModel(normalized));
         }
       } catch (apiError) {
@@ -183,26 +225,31 @@ const EnquiryDetailPage = ({ params }) => {
     };
   }, [enquiryid]);
 
-  const enquiry = useMemo(
-    () =>
-      enquiryData || {
-        id: enquiryid || "",
-        code: "ENQ - 000000",
-        status: "Pending Matching",
-        statusValue: "pending",
-        title: "Property details pending",
-        category: "N/A",
-        area: "N/A",
-        dealTags: ["General"],
-        submittedAt: "-",
-        image: FALLBACK_IMAGE,
-        originalMessage: "No message provided.",
-        entityLabel: "Individual",
-        adminDate: "-",
-        adminMessage: "Our team is reviewing your enquiry.",
-      },
-    [enquiryData, enquiryid]
-  );
+  const enquiry = enquiryData;
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (error) {
+    return (
+      <main className="bg-background-primary py-12 md:py-14">
+        <div className="mx-auto w-full  px-4 md:px-16 xl:px-24">
+          <p className="mb-4 text-[14px] text-red-500">{error}</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!enquiry) {
+    return (
+      <main className="bg-background-primary py-12 md:py-14">
+        <div className="mx-auto w-full  px-4 md:px-16 xl:px-24">
+          <p className="mb-4 text-[14px] text-gray5">Enquiry not found.</p>
+        </div>
+      </main>
+    );
+  }
 
   const currentStep = useMemo(() => getProgressStep(enquiry.statusValue), [enquiry.statusValue]);
 
@@ -214,14 +261,22 @@ const EnquiryDetailPage = ({ params }) => {
           Back to marketplace
         </button>
 
-        {isLoading ? <p className="mb-4 text-[14px] text-gray5">Loading enquiry details...</p> : null}
-        {!isLoading && error ? <p className="mb-4 text-[14px] text-red-500">{error}</p> : null}
-
         <section className="rounded-lg border border-border-card bg-white p-3 shadow-[0px_6px_24px_rgba(15,61,46,0.04)] md:px-4 md:py-4">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-4 md:flex-row md:items-center">
               <div className="relative h-25 w-25 shrink-0 overflow-hidden rounded-lg">
-                <Image src={enquiry.image} alt={enquiry.title} fill unoptimized className="object-cover" sizes="100px" />
+                <Image
+                  src={enquiry.image || FALLBACK_IMAGE}
+                  alt={enquiry.title}
+                  fill
+                  unoptimized
+                  className="object-cover"
+                  sizes="100px"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = FALLBACK_IMAGE;
+                  }}
+                />
               </div>
 
               <div className="min-w-0 flex-1">

@@ -3,27 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import Loading from "@/components/common/Loading";
 import EyeOpen from "@/components/svg/EyeOpen";
-import Star from "@/components/svg/Star";
-import UpRight from "@/components/svg/UpRight";
 import DeleteListingModal from "@/components/userDashboard/listings/DeleteListingModal";
 import ListingCard from "@/components/userDashboard/listings/ListingCard";
 import { landService } from "@/services/landService";
 
-const listingStats = [
+const listingStatsConfig = [
   {
     id: "views",
     label: "Listings views",
-    value: "12,440",
     icon: EyeOpen,
-    delta: "6.2%",
   },
   {
     id: "clicks",
     label: "Listings clicks",
-    value: "12,440",
     icon: EyeOpen,
-    delta: "6.2%",
   },
 ];
 
@@ -109,8 +104,47 @@ const formatArea = (landArea, landAreaUnit) => {
   return `${area}${unit}`;
 };
 
+const toTrimmedImageUrl = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue || null;
+};
+
+const resolveListingImage = (listing) => {
+  const mediaItems = Array.isArray(listing?.media)
+    ? listing.media
+    : listing?.media
+      ? [listing.media]
+      : [];
+
+  for (const mediaItem of mediaItems) {
+    const mediaImage =
+      toTrimmedImageUrl(mediaItem?.fileUrl) ||
+      toTrimmedImageUrl(mediaItem?.url) ||
+      toTrimmedImageUrl(mediaItem?.signedUrl);
+
+    if (mediaImage) {
+      return mediaImage;
+    }
+  }
+
+  return (
+    toTrimmedImageUrl(listing?.image) ||
+    toTrimmedImageUrl(listing?.images?.[0]?.fileUrl) ||
+    toTrimmedImageUrl(listing?.images?.[0]?.url) ||
+    fallbackListingImage
+  );
+};
+
 const toStatusKey = (status) => {
-  const normalizedStatus = String(status || "").toLowerCase();
+  const normalizedStatus = typeof status === "string" ? status.trim().toLowerCase() : "";
+
+  if (!normalizedStatus || normalizedStatus === "null" || normalizedStatus === "undefined") {
+    return "reserved";
+  }
 
   if (normalizedStatus === "draft") return "draft";
   if (normalizedStatus === "review" || normalizedStatus === "under_review" || normalizedStatus === "under review") {
@@ -166,7 +200,7 @@ const mapListingToCard = (item) => {
     price: formatPrice(item?.estimatedValuation ?? item?.price),
     views: Number(item?.viewsCount ?? 0),
     interests: Number(item?.clicksCount ?? 0),
-    image: item?.media?.fileUrl || fallbackListingImage,
+    image: resolveListingImage(item),
     actions: toListingActions(statusKey),
   };
 };
@@ -179,6 +213,7 @@ const ListingsPage = () => {
   const [actionSuccess, setActionSuccess] = useState("");
   const [listingToDelete, setListingToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isListingsLoading, setIsListingsLoading] = useState(true);
   const [totalListings, setTotalListings] = useState(null);
 
   const openListingDetails = (listingId) => {
@@ -234,6 +269,7 @@ const ListingsPage = () => {
 
     const loadListings = async () => {
       try {
+        setIsListingsLoading(true);
         const response = await landService.getAllListings();
         const items = extractListingItems(response);
         const total = extractPaginationTotal(response);
@@ -245,6 +281,10 @@ const ListingsPage = () => {
         if (!isMounted) return;
         setListings([]);
         setTotalListings(0);
+      } finally {
+        if (isMounted) {
+          setIsListingsLoading(false);
+        }
       }
     };
 
@@ -296,6 +336,23 @@ const ListingsPage = () => {
     });
   }, [listings, totalListings]);
 
+  const listingStats = useMemo(() => {
+    const totalViews = listings.reduce((sum, item) => sum + Number(item?.views || 0), 0);
+    const totalClicks = listings.reduce((sum, item) => sum + Number(item?.interests || 0), 0);
+
+    return listingStatsConfig.map((config) => ({
+      ...config,
+      value:
+        config.id === "views"
+          ? totalViews.toLocaleString("en-US")
+          : totalClicks.toLocaleString("en-US"),
+    }));
+  }, [listings]);
+
+  if (isListingsLoading) {
+    return <Loading />;
+  }
+
   return (
     <main className="bg-background-primary py-14">
       <div className="mx-2 md:mx-10 w-fulls px-2 md:px-4">
@@ -322,11 +379,6 @@ const ListingsPage = () => {
                       <p className=" text-[18px] font-bold leading-none text-gray2 md:text-[24px]">{stat.value}</p>
                     </div>
                   </div>
-
-                  <span className="inline-flex items-center gap-1 rounded-md border border-border-card bg-white px-2 py-1 text-[11px] font-medium text-gray2 shadow-[0px_2px_8px_rgba(15,61,46,0.05)]">
-                    <UpRight size={12} color="#17B26A" />
-                    {stat.delta}
-                  </span>
                 </div>
               </article>
             );
@@ -383,6 +435,12 @@ const ListingsPage = () => {
         </div>
 
         <section className="mt-6 space-y-4">
+          {filteredListings.length === 0 ? (
+            <div className="rounded-lg border border-border-card bg-white px-3 py-2 text-[12px] text-gray5">
+              No listings found.
+            </div>
+          ) : null}
+
           {filteredListings.map((listing) => (
             <ListingCard
               key={listing.id}

@@ -3,8 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, Suspense } from "react";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import Plus from "@/components/svg/Plus";
 import Bell from "@/components/svg/Bell";
@@ -28,6 +27,7 @@ const HeaderSearchParamsHandler = ({ onToken }) => {
 };
 
 const Header = () => {
+  const pathname = usePathname();
   const router = useRouter();
   const dispatch = useDispatch();
   const { isAuth, user, hydrated } = useSelector((state) => state.auth);
@@ -130,6 +130,13 @@ const Header = () => {
   };
 
   const userInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
+  const isExploreActive = pathname === "/explore" || pathname.startsWith("/explore/");
+  const isShortlistsActive =
+    pathname === "/user-dashboard/shortlists" || pathname.startsWith("/user-dashboard/shortlists/");
+  const isEnquiriesActive =
+    pathname === "/user-dashboard/enquiries" || pathname.startsWith("/user-dashboard/enquiries/");
+  const getNavLinkClass = (isActive) =>
+    `transition hover:text-green-primary ${isActive ? "text-green-primary" : ""}`.trim();
 
   return (
     <>
@@ -152,20 +159,24 @@ const Header = () => {
           </button>
 
           <nav className="hidden flex-1 items-center justify-center gap-6 text-sm font-medium text-gray2 lg:flex">
-            <button type="button" onClick={() => router.push("/explore")} className="transition hover:text-green-primary">
+            <button
+              type="button"
+              onClick={() => router.push("/explore")}
+              className={getNavLinkClass(isExploreActive)}
+            >
               Explore Map
             </button>
             <button
               type="button"
               onClick={() => handleProtectedNavigation("/user-dashboard/shortlists")}
-              className="transition hover:text-green-primary"
+              className={getNavLinkClass(isShortlistsActive)}
             >
               Shortlists
             </button>
             <button
               type="button"
               onClick={() => handleProtectedNavigation("/user-dashboard/enquiries")}
-              className="transition hover:text-green-primary"
+              className={getNavLinkClass(isEnquiriesActive)}
             >
               My Enquiries
             </button>
@@ -195,7 +206,7 @@ const Header = () => {
 
                 <Button
                   onClick={() => router.push("/user-dashboard/listings/create-listing")}
-                  className="sm:h-10 h-8 justify-center gap-0 rounded-md !px-2 sm:gap-2 sm:px-4!"
+                  className="sm:h-10 h-8 justify-center gap-0 rounded-md px-2! sm:gap-2 sm:px-4!"
                 >
                   <span className="flex h-6 w-6 items-center justify-center text-white">
                     <Plus size={14} color="white" aria-hidden />

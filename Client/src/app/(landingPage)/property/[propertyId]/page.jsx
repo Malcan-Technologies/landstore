@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
 
+import Loading from "@/components/common/Loading";
 import ChooseFolder from "@/components/userDashboard/explore/ChooseFolder";
 import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
 import PropertyGallery from "@/components/landingPage/property/PropertyGallery";
@@ -26,31 +27,8 @@ import { folderService } from "@/services/folderService";
 import { landService } from "@/services/landService";
 import { checkAuth } from "@/utils/auth";
 
-const fallbackPropertyDetails = {
-  id: "LS-000128",
-  title: "Kuala Langat, Selangor",
-  valuation: "RM 1.2M",
-  ownerType: "Private owner",
-  category: "Agriculture",
-  area: "5.2 Acres",
-  code: "LS - 000128",
-  updatedAt: "05/20/2025",
-  status: "Active",
-  dealTypes: ["Buy", "Financing", "Flat"],
-  terrain: "Flat",
-  utilization: "Vacant",
-  tanahRezab: "Yes",
-  negeri: "Melaka / Air Keroh",
-  landArea: "15.5 acres",
-  pricePerSqft: "RM 450 / sqft",
-  features: ["Road Access", "Water Source"],
-  lat: 3.14,
-  lng: 101.69,
-  description:
-    "Excellent agriculture potential with direct road access. Soil is suitable for various high-value crops. This listing follows strict privacy guidelines. For full documentation including clean deed, please submit a professional enquiry.",
-  images: ["/Land.jpg"],
-  isApproximate: true,
-};
+const fallbackGalleryImage = "/Land.jpg";
+const defaultMapCenter = { lat: 4.2105, lng: 101.9758 };
 
 const dealTypeLabelMap = {
   buy: "Buy",
@@ -72,6 +50,7 @@ const featureTagLabelMap = {
 
 const interestTypeOptions = ["Buy", "JV", "Financing"];
 const roleOptions = ["Developer", "Buyer", "Financier", "Representative"];
+const descriptionPreviewSteps = [1000, 2000];
 
 const extractProperty = (response) => {
   if (response?.property) return response.property;
@@ -89,7 +68,7 @@ const toNumberOrFallback = (value, fallback) => {
 const formatDate = (value) => {
   const parsedDate = new Date(value);
   if (Number.isNaN(parsedDate.getTime())) {
-    return fallbackPropertyDetails.updatedAt;
+    return "-";
   }
 
   return parsedDate.toLocaleDateString("en-US", {
@@ -215,45 +194,49 @@ const mapPropertyToDetails = (property) => {
     : [];
 
   const landAreaText = formatArea(property?.landArea, property?.landAreaUnit);
-  const latitude = toNumberOrFallback(property?.location?.latitude, fallbackPropertyDetails.lat);
-  const longitude = toNumberOrFallback(property?.location?.longitude, fallbackPropertyDetails.lng);
+  const latitude = toNumberOrFallback(property?.location?.latitude, defaultMapCenter.lat);
+  const longitude = toNumberOrFallback(property?.location?.longitude, defaultMapCenter.lng);
   const pricePerSqftValue = Number(property?.pricePerSqrft);
-  const primaryImage = property?.media?.fileUrl;
+  const galleryImages = Array.isArray(property?.media)
+    ? property.media
+        .map((item) => item?.fileUrl || item?.url || item?.signedUrl)
+        .filter((imageUrl) => typeof imageUrl === "string" && imageUrl.trim())
+    : [];
 
   return {
-    id: property?.id || fallbackPropertyDetails.id,
-    title: property?.title || locationTitle || fallbackPropertyDetails.title,
+    id: property?.id || "",
+    title: property?.title || locationTitle || "Untitled property",
     valuation: formatCurrency(property?.estimatedValuation ?? property?.price, {
       compact: true,
       maximumFractionDigits: 1,
     }),
-    ownerType: property?.ownershipType?.name || fallbackPropertyDetails.ownerType,
-    category: property?.category?.name || fallbackPropertyDetails.category,
-    area: landAreaText || fallbackPropertyDetails.area,
-    code: property?.listingCode || fallbackPropertyDetails.code,
+    ownerType: property?.ownershipType?.name || "-",
+    category: property?.category?.name || "-",
+    area: landAreaText || "-",
+    code: property?.listingCode || "-",
     updatedAt: formatDate(property?.updatedAt),
     status: formatStatusLabel(property?.status),
-    dealTypes: mappedDealTypes.length > 0 ? mappedDealTypes : fallbackPropertyDetails.dealTypes,
-    terrain: mappedTerrain[0] || fallbackPropertyDetails.terrain,
-    utilization: property?.utilization?.name || fallbackPropertyDetails.utilization,
+    dealTypes: mappedDealTypes,
+    terrain: mappedTerrain[0] || "-",
+    utilization: property?.utilization?.name || "-",
     tanahRezab:
       property?.tanahRizabMelayu === true
         ? "Yes"
         : property?.tanahRizabMelayu === false
           ? "No"
-          : fallbackPropertyDetails.tanahRezab,
+          : "-",
     negeri:
       [property?.location?.state, property?.location?.district].filter(Boolean).join(" / ") ||
-      fallbackPropertyDetails.negeri,
-    landArea: landAreaText || fallbackPropertyDetails.landArea,
+      "-",
+    landArea: landAreaText || "-",
     pricePerSqft: Number.isFinite(pricePerSqftValue)
       ? `${formatCurrency(pricePerSqftValue, { maximumFractionDigits: 2 })} / sqft`
-      : fallbackPropertyDetails.pricePerSqft,
-    features: mappedFeatures.length > 0 ? mappedFeatures : fallbackPropertyDetails.features,
+      : "-",
+    features: mappedFeatures,
     lat: latitude,
     lng: longitude,
-    description: property?.description || fallbackPropertyDetails.description,
-    images: primaryImage ? [primaryImage] : fallbackPropertyDetails.images,
+    description: property?.description || "No description provided.",
+    images: galleryImages.length > 0 ? galleryImages : [fallbackGalleryImage],
     isApproximate: property?.location?.isApproximate !== false,
   };
 };
@@ -268,7 +251,7 @@ const PropertyPage = () => {
   const showMatchmakingAside = !openedFromListings;
   const backRoute = openedFromListings ? "/user-dashboard/listings" : "/explore";
 
-  const [propertyDetails, setPropertyDetails] = useState(fallbackPropertyDetails);
+  const [propertyDetails, setPropertyDetails] = useState(null);
   const [isPropertyLoading, setIsPropertyLoading] = useState(true);
   const [propertyLoadError, setPropertyLoadError] = useState("");
   const [showInterestForm, setShowInterestForm] = useState(false);
@@ -293,6 +276,7 @@ const PropertyPage = () => {
   const [isRemovingShortlist, setIsRemovingShortlist] = useState(false);
   const [shortlistError, setShortlistError] = useState("");
   const [shortlistSuccess, setShortlistSuccess] = useState("");
+  const [descriptionExpandLevel, setDescriptionExpandLevel] = useState(0);
 
   const isLoggedIn = useMemo(() => {
     if (hydrated) {
@@ -639,29 +623,47 @@ const PropertyPage = () => {
     };
   }, [propertyId]);
 
-  const stats = useMemo(
-    () => [
+  useEffect(() => {
+    setDescriptionExpandLevel(0);
+  }, [propertyDetails?.id]);
+
+  const stats = useMemo(() => {
+    if (!propertyDetails) {
+      return [];
+    }
+
+    return [
       { label: "Status", values: [{ text: propertyDetails.status, active: true }] },
       { label: "Deal type", values: propertyDetails.dealTypes.slice(0, 2).map((text) => ({ text })) },
       { label: "Terrain", values: [{ text: propertyDetails.terrain }] },
       { label: "Utilization", values: [{ text: propertyDetails.utilization }] },
       { label: "Tanah Rezab Melayu", values: [{ text: propertyDetails.tanahRezab }] },
-    ],
-    [propertyDetails]
-  );
+    ];
+  }, [propertyDetails]);
 
-  const highlightCards = useMemo(
-    () => [
+  const highlightCards = useMemo(() => {
+    if (!propertyDetails) {
+      return [];
+    }
+
+    return [
       { label: "Negeri/Daerah", value: propertyDetails.negeri, Icon: List2 },
       { label: "Land area", value: propertyDetails.landArea, Icon: Bag2 },
       { label: "Price per sqft", value: propertyDetails.pricePerSqft, Icon: Map2 },
-      { label: "Features", value: propertyDetails.features.join(", "), Icon: Layer },
-    ],
-    [propertyDetails]
-  );
+      {
+        label: "Features",
+        value: propertyDetails.features.length > 0 ? propertyDetails.features.join(", ") : "-",
+        Icon: Layer,
+      },
+    ];
+  }, [propertyDetails]);
 
-  const propertyMapMarkers = useMemo(
-    () => [
+  const propertyMapMarkers = useMemo(() => {
+    if (!propertyDetails) {
+      return [];
+    }
+
+    return [
       {
         id: "property-marker",
         price: propertyDetails.valuation,
@@ -671,9 +673,8 @@ const PropertyPage = () => {
         lat: propertyDetails.lat,
         lng: propertyDetails.lng,
       },
-    ],
-    [propertyDetails]
-  );
+    ];
+  }, [propertyDetails]);
 
   if (isEnquirySuccessOpen) {
     return (
@@ -713,6 +714,50 @@ const PropertyPage = () => {
     );
   }
 
+  if (isPropertyLoading) {
+    return <Loading />;
+  }
+
+  if (propertyLoadError) {
+    return (
+      <main className="bg-background-primary py-20">
+        <div className="mx-3 flex min-h-[72vh] items-center justify-center px-2 lg:px-6 xl:px-10">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            {propertyLoadError}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!propertyDetails) {
+    return (
+      <main className="bg-background-primary py-20">
+        <div className="mx-3 flex min-h-[72vh] items-center justify-center px-2 lg:px-6 xl:px-10">
+          <div className="rounded-xl border border-border-card bg-white px-4 py-3 text-sm font-medium text-gray5">
+            Property details are unavailable right now.
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const descriptionText = propertyDetails.description || "";
+  const firstDescriptionStep = descriptionPreviewSteps[0];
+  const shouldUseDescriptionSteps = descriptionText.length > firstDescriptionStep;
+  const currentDescriptionLimit =
+    descriptionExpandLevel >= descriptionPreviewSteps.length
+      ? descriptionText.length
+      : descriptionPreviewSteps[descriptionExpandLevel];
+  const isShowingFullDescription =
+    !shouldUseDescriptionSteps || descriptionText.length <= currentDescriptionLimit;
+  const displayedDescription = isShowingFullDescription
+    ? descriptionText
+    : `${descriptionText.slice(0, currentDescriptionLimit).trimEnd()}...`;
+  const canShowMoreDescription = shouldUseDescriptionSteps && !isShowingFullDescription;
+  const canShowLessDescription =
+    shouldUseDescriptionSteps && isShowingFullDescription && descriptionExpandLevel > 0;
+
   return (
     <main className="bg-background-primary py-20">
       <div className="flex mx-3 flex-col gap-4 px-2 lg:px-6 xl:px-10 lg:flex-row lg:items-start">
@@ -722,19 +767,7 @@ const PropertyPage = () => {
             {openedFromListings ? "Back to my listings" : "Back to marketplace"}
           </button>
 
-          {isPropertyLoading ? (
-            <div className="rounded-xl border border-border-card bg-white px-4 py-3 text-sm font-medium text-gray5">
-              Loading property details...
-            </div>
-          ) : null}
-
-          {propertyLoadError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
-              {propertyLoadError}
-            </div>
-          ) : null}
-
-          <PropertyGallery images={propertyDetails.images} moreImagesLabel="+15 more" />
+          <PropertyGallery images={propertyDetails.images} />
 
           <header className="flex flex-col gap-4 border-b w-full border-border-input pb-5 lg:flex-row lg:items-start lg:justify-between">
             <div className=" w-full">
@@ -773,7 +806,7 @@ const PropertyPage = () => {
            
           </header>
 
-          <div className="flex sm:justify-between justify-around sm:gap-0 gap-1 border-b border-border-input pb-5 flex-wrap sm:flex-nowrap lg:gap-0">
+          <div className="flex sm:justify-between justify-start sm:gap-0 gap-4 border-b border-border-input pb-5 flex-wrap sm:flex-nowrap lg:gap-0">
             {stats.map((item, index) => (
               <div key={item.label} className={`w-fit shrink-0 space-y-2 lg:px-6 ${index !== 0 ? "lg:border-l lg:border-border-input" : ""}`}>
                 <p className="text-[12px] font-medium text-gray2 w-fit">{item.label}</p>
@@ -809,7 +842,29 @@ const PropertyPage = () => {
 
           <div className="md:space-y-3 space-y-1 border-b border-border-input pb-5">
             <h2 className="sm:text-[18px] text-[16px] font-semibold text-gray2">Public Description</h2>
-            <p className="max-w-4xl text-[10px] sm:text-xs lg:text-sm xl:text-lg sm:leading-6 text-gray7 leading-snug">{propertyDetails.description}</p>
+            <p className="max-w-4xl text-[10px] sm:text-xs lg:text-sm xl:text-lg sm:leading-6 text-gray7 leading-snug">{displayedDescription}</p>
+            {canShowMoreDescription ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setDescriptionExpandLevel((previousLevel) =>
+                    Math.min(previousLevel + 1, descriptionPreviewSteps.length)
+                  )
+                }
+                className="text-green-secondary"
+              >
+                show more
+              </button>
+            ) : null}
+            {canShowLessDescription ? (
+              <button
+                type="button"
+                onClick={() => setDescriptionExpandLevel(0)}
+                className="text-green-secondary"
+              >
+                show less
+              </button>
+            ) : null}
           </div>
 
           <div className="space-y-3">

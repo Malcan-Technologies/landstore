@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Loading from "@/components/common/Loading";
 import Table from "@/components/common/Table";
 import Search from "@/components/svg/Search";
 import Person from "@/components/svg/Person";
@@ -88,7 +89,7 @@ export default function ReviewListingsPage() {
   const router = useRouter();
   const [reviewListings, setReviewListings] = useState([]);
   const [searchValue, setSearchValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -312,6 +313,10 @@ export default function ReviewListingsPage() {
     ],
   }));
 
+  if (isLoading && reviewListings.length === 0) {
+    return <Loading />;
+  }
+
   return (
     <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background-primary px-4 py-5 sm:px-5">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#E9EDF5] bg-white p-4 sm:p-5">
@@ -323,7 +328,7 @@ export default function ReviewListingsPage() {
             </span>
           </div>
 
-          <label className="flex h-8 w-full max-w-[220px] items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[#9CA3AF] sm:max-w-[200px]">
+          <label className="flex h-8 w-full max-w-55 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[#9CA3AF] sm:max-w-50">
             <Search size={16} color="var(--color-font2-green)" />
             <input
               type="text"
@@ -336,19 +341,13 @@ export default function ReviewListingsPage() {
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-hidden sm:max-h-[calc(100vh-210px)] sm:overflow-y-auto no-scrollbar">
-          {isLoading ? (
-            <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 text-[14px] text-gray5">
-              Loading listings...
-            </div>
-          ) : null}
-
-          {!isLoading && loadError ? (
+          {loadError ? (
             <div className="rounded-xl border border-[#FFE0E0] bg-[#FFF1F2] px-4 py-3 text-[14px] text-[#B42318]">
               {loadError}
             </div>
           ) : null}
 
-          {!isLoading && !loadError ? (
+          {!loadError ? (
             <>
               <Table
                 headers={headers}
@@ -359,7 +358,9 @@ export default function ReviewListingsPage() {
               />
               <div ref={sentinelRef} className="h-px" />
               {isFetchingMore ? (
-                <div className="py-4 text-center text-[13px] text-gray5">Loading more...</div>
+                <div className="flex py-4 items-center justify-center">
+                  <span className="h-6 w-6 animate-spin rounded-full border-4 border-border-card border-t-green-secondary" />
+                </div>
               ) : null}
             </>
           ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Loading from "@/components/common/Loading";
 import Table from "@/components/common/Table";
 import UserViewModal from "@/components/adminDashboard/modals/UserViewModal";
 import Search from "@/components/svg/Search";
@@ -83,7 +84,7 @@ const actionButtonBase =
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [searchValue, setSearchValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -320,6 +321,10 @@ export default function UsersPage() {
     ],
   }));
 
+  if (isLoading && users.length === 0) {
+    return <Loading />;
+  }
+
   return (
     <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background-primary px-4 py-5 sm:px-5">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#E9EDF5] bg-white p-4 sm:p-5">
@@ -344,19 +349,13 @@ export default function UsersPage() {
         </div>
 
         <div ref={scrollContainerRef} className="mt-4 min-h-0 flex-1 overflow-hidden sm:max-h-[calc(100vh-210px)] sm:overflow-y-auto no-scrollbar">
-          {isLoading ? (
-            <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 text-[14px] text-gray5">
-              Loading users...
-            </div>
-          ) : null}
-
-          {!isLoading && loadError ? (
+          {loadError ? (
             <div className="rounded-xl border border-[#FFE0E0] bg-[#FFF1F2] px-4 py-3 text-[14px] text-[#B42318]">
               {loadError}
             </div>
           ) : null}
 
-          {!isLoading && !loadError ? (
+          {!loadError ? (
             <>
               <Table
                 headers={headers}
@@ -368,7 +367,9 @@ export default function UsersPage() {
               />
               <div ref={sentinelRef} className="h-px" />
               {isFetchingMore ? (
-                <div className="py-4 text-center text-[13px] text-gray5">Loading more...</div>
+                <div className="flex py-4 items-center justify-center">
+                  <span className="h-6 w-6 animate-spin rounded-full border-4 border-border-card border-t-green-secondary" />
+                </div>
               ) : null}
             </>
           ) : null}

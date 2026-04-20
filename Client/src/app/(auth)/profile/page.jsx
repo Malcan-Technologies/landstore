@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
 import { defaultCountries, parseCountry, usePhoneInput } from "react-international-phone";
+import Loading from "@/components/common/Loading";
 
 import DualNote from "@/components/svg/DualNote";
 import Verify from "@/components/svg/Verify";
@@ -234,6 +235,10 @@ const ProfilePage = () => {
       setIsSavingProfile(false);
     }
   };
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <main className="bg-background-primary pb-14 pt-10">

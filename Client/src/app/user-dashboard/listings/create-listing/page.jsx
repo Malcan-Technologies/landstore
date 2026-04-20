@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import Loading from "@/components/common/Loading";
 import CreateListingLayout from "@/components/userDashboard/listings/createListing/CreateListingLayout";
 import BasicInfoStep from "@/components/userDashboard/listings/createListing/BasicInfoStep";
 import LocationStep from "@/components/userDashboard/listings/createListing/LocationStep";
@@ -616,6 +617,10 @@ const CreateListingPage = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
+  if (isReferenceLoading || isListingLoading) {
+    return <Loading />;
+  }
+
   return (
     <CreateListingLayout
       currentStep={currentStep}
@@ -635,18 +640,6 @@ const CreateListingPage = () => {
       }
     >
       <div className="mx-auto max-w-5xl space-y-3">
-        {isReferenceLoading ? (
-          <div className="rounded-lg border border-border-card bg-white px-3 py-2 text-[12px] text-gray5">
-            Loading listing reference data...
-          </div>
-        ) : null}
-
-        {isListingLoading ? (
-          <div className="rounded-lg border border-border-card bg-white px-3 py-2 text-[12px] text-gray5">
-            Loading listing details...
-          </div>
-        ) : null}
-
         {submitError ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-600">
             {submitError}

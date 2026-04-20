@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Loading from "@/components/common/Loading";
 import Table from "@/components/common/Table";
 import Search from "@/components/svg/Search";
 import Person from "@/components/svg/Person";
@@ -146,6 +147,10 @@ export default function EnquiryHubPage() {
 
     loadEnquiries();
   }, []);
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   const filteredEnquiries = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -293,9 +298,8 @@ export default function EnquiryHubPage() {
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-hidden sm:max-h-[calc(100vh-210px)] sm:overflow-y-auto no-scrollbar">
-          {isLoading ? <p className="text-[14px] text-gray5">Loading enquiries...</p> : null}
-          {!isLoading && error ? <p className="text-[14px] text-red-500">{error}</p> : null}
-          {!isLoading && !error && rows.length === 0 ? <p className="text-[14px] text-gray5">No enquiries found.</p> : null}
+          {error ? <p className="text-[14px] text-red-500">{error}</p> : null}
+          {!error && rows.length === 0 ? <p className="text-[14px] text-gray5">No enquiries found.</p> : null}
 
           <Table
             headers={headers}

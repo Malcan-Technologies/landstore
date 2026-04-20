@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import Loading from "@/components/common/Loading";
 import CreateFolder from "@/components/userDashboard/explore/createFolder";
 import DeleteFolderModal from "@/components/userDashboard/explore/DeleteFolderModal";
 import FolderSection from "@/components/userDashboard/explore/FolderSection";
@@ -24,11 +25,46 @@ const formatArea = (landArea, landAreaUnit) => {
   return `${area}${unit}`;
 };
 
-const shortlistedProperties = [];
+const toTrimmedImageUrl = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue || null;
+};
+
+const resolvePropertyImage = (property) => {
+  const mediaItems = Array.isArray(property?.media)
+    ? property.media
+    : property?.media
+      ? [property.media]
+      : [];
+
+  for (const mediaItem of mediaItems) {
+    const mediaImage =
+      toTrimmedImageUrl(mediaItem?.fileUrl) ||
+      toTrimmedImageUrl(mediaItem?.url) ||
+      toTrimmedImageUrl(mediaItem?.signedUrl);
+
+    if (mediaImage) {
+      return mediaImage;
+    }
+  }
+
+  return (
+    toTrimmedImageUrl(property?.image) ||
+    toTrimmedImageUrl(property?.images?.[0]?.fileUrl) ||
+    toTrimmedImageUrl(property?.images?.[0]?.url) ||
+    fallbackListingImage
+  );
+};
 
 const ShortlistsPage = () => {
   const [folders, setFolders] = useState([]);
-  const [properties, setProperties] = useState(shortlistedProperties);
+  const [properties, setProperties] = useState([]);
+  const [isLoadingShortlists, setIsLoadingShortlists] = useState(true);
+  const [shortlistsLoadError, setShortlistsLoadError] = useState("");
   const [activeFolderId, setActiveFolderId] = useState(null);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
@@ -99,7 +135,7 @@ const ShortlistsPage = () => {
               id: propertyId,
               status: "Active",
               statusColor: "var(--color-green-secondary)",
-              image: fallbackListingImage,
+              image: resolvePropertyImage(property),
               category: property?.category?.name || "-",
               area: formatArea(property?.landArea, property?.landAreaUnit),
               code: property?.listingCode || "-",
@@ -117,6 +153,11 @@ const ShortlistsPage = () => {
     };
 
     (async () => {
+      if (mounted) {
+        setIsLoadingShortlists(true);
+        setShortlistsLoadError("");
+      }
+
       try {
         const response = await folderService.getFolders();
         const normalized = normalizeFolders(response);
@@ -144,6 +185,12 @@ const ShortlistsPage = () => {
       } catch (_error) {
         if (!mounted) {
           return;
+        }
+
+        setShortlistsLoadError("Failed to load shortlists.");
+      } finally {
+        if (mounted) {
+          setIsLoadingShortlists(false);
         }
       }
     })();
@@ -301,6 +348,10 @@ const ShortlistsPage = () => {
     [activeFolderId, properties]
   );
 
+  if (isLoadingShortlists) {
+    return <Loading />;
+  }
+
   return (
     <main className="bg-background-primary py-12">
       <div className="sm:px-8 px-2">
@@ -353,7 +404,7 @@ const ShortlistsPage = () => {
         </div>
 
         {/* Folders section for screens below sm */}
-        <div className="sm:hidden mb-6" ref={folderMenuRef}>
+        <div className="sm:hidden mb-6">
           <FolderSection
             folders={folders}
             activeFolderId={activeFolderId}
@@ -385,25 +436,40 @@ const ShortlistsPage = () => {
           </div>
 
           <section className="flex h-[calc(100vh-8rem)] min-h-0 flex-1 flex-col">
-            <div
-              className="grid min-h-0 content-start items-start grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 overflow-y-auto [&::-webkit-scrollbar]:hidden"
-              style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
-            >
-              {visibleProperties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  land={property}
-                  className="w-full"
-                  isSaved={true}
-                  heartStyle="shortlist"
-                  onLikeClick={({ propertyId, isSaved }) => {
-                    if (isSaved) {
-                      handleRemoveFromShortlist(propertyId, property.folderId);
-                    }
-                  }}
-                />
-              ))}
-            </div>
+            {shortlistsLoadError ? (
+              <div className="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[14px] text-[#B42318]">
+                {shortlistsLoadError}
+              </div>
+            ) : null}
+
+            {!shortlistsLoadError && visibleProperties.length === 0 ? (
+              <div className="rounded-xl border border-border-card bg-white px-4 py-3 text-[14px] text-gray5">
+                No shortlisted properties found.
+              </div>
+            ) : null}
+
+            {!shortlistsLoadError ? (
+              <div
+                className="grid min-h-0 content-start items-start grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-4 overflow-y-auto [&::-webkit-scrollbar]:hidden"
+                style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
+              >
+                {visibleProperties.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    land={property}
+                    className="w-full max-w-80"
+                    enableCardClick
+                    isSaved={true}
+                    heartStyle="shortlist"
+                    onLikeClick={({ propertyId, isSaved }) => {
+                      if (isSaved) {
+                        handleRemoveFromShortlist(propertyId, property.folderId);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            ) : null}
           </section>
         </div>
 

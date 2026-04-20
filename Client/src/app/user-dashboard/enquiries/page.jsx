@@ -1,10 +1,46 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Loading from "@/components/common/Loading";
 import EnquiryCard from "@/components/userDashboard/enquiries/EnquiryCard";
 import { enquiryService } from "@/services/enquiryService";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=1200&q=80";
+
+const toTrimmedImageUrl = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue || null;
+};
+
+const resolvePropertyImage = (property) => {
+  const mediaItems = Array.isArray(property?.media)
+    ? property.media
+    : property?.media
+      ? [property.media]
+      : [];
+
+  for (const mediaItem of mediaItems) {
+    const mediaImage =
+      toTrimmedImageUrl(mediaItem?.fileUrl) ||
+      toTrimmedImageUrl(mediaItem?.url) ||
+      toTrimmedImageUrl(mediaItem?.signedUrl);
+
+    if (mediaImage) {
+      return mediaImage;
+    }
+  }
+
+  return (
+    toTrimmedImageUrl(property?.images?.[0]?.fileUrl) ||
+    toTrimmedImageUrl(property?.images?.[0]?.url) ||
+    toTrimmedImageUrl(property?.image) ||
+    FALLBACK_IMAGE
+  );
+};
 
 const normalizeEnquiries = (response) => {
   if (Array.isArray(response)) {
@@ -98,13 +134,13 @@ const EnquiriesPage = () => {
             code: formatEnquiryCode(enquiryId),
             status: toStatusLabel(item?.status),
             title: item?.property?.title || "Property details pending",
-            category: item?.property?.category || "N/A",
+            category: item?.property?.category?.name || item?.property?.category || "N/A",
             area: item?.property?.size || "N/A",
             dealTags: [item?.interestType?.name || "General"],
             updatedAt: formatDate(item?.updatedAt || item?.createdAt),
             unreadCount: Number(item?.messagesCount) || 0,
             highlighted: index === 0,
-            image: item?.property?.images?.[0]?.url || item?.property?.image || FALLBACK_IMAGE,
+            image: resolvePropertyImage(item?.property),
           };
         });
 
@@ -119,6 +155,10 @@ const EnquiriesPage = () => {
     loadEnquiries();
   }, []);
 
+  if (isLoading) {
+    return <Loading />;
+  }
+
   return (
     <main className="bg-background-primary py-10 md:py-12">
       <div className="mx-auto w-full  sm:px-8 px-3">
@@ -128,15 +168,11 @@ const EnquiriesPage = () => {
         </header>
 
         <section className="mt-6 space-y-4">
-          {isLoading ? (
-            <p className="text-[14px] text-gray5">Loading enquiries...</p>
-          ) : null}
-
-          {!isLoading && error ? (
+          {error ? (
             <p className="text-[14px] text-red-500">{error}</p>
           ) : null}
 
-          {!isLoading && !error && enquiries.length === 0 ? (
+          {!error && enquiries.length === 0 ? (
             <p className="text-[14px] text-gray5">No enquiries found.</p>
           ) : null}
 

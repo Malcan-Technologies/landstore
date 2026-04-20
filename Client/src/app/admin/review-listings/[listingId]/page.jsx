@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Image from "next/image";
+import Loading from "@/components/common/Loading";
 import MapView from "@/components/userDashboard/explore/MapView";
 import EyeOpen from "@/components/svg/EyeOpen";
 import Sheild from "@/components/svg/Sheild";
@@ -117,11 +118,7 @@ export default function ReviewListingDetailPage({ params }) {
   }, [listingId]);
 
   if (isLoading) {
-    return (
-      <main className="flex h-full min-h-0 flex-1 items-center justify-center px-4 py-5">
-        <p className="text-[14px] text-gray5">Loading listing...</p>
-      </main>
-    );
+    return <Loading />;
   }
 
   if (loadError || !detail) {
@@ -168,7 +165,7 @@ export default function ReviewListingDetailPage({ params }) {
           {detail.images.length > 0 ? (
             <div className="mt-4 grid grid-cols-2 gap-3">
               {detail.images.slice(0, 4).map((image, index) => (
-                <div key={`${image}-${index}`} className="relative h-[156px] overflow-hidden rounded-[4px] sm:h-[176px]">
+                <div key={`${image}-${index}`} className="relative h-39 overflow-hidden rounded-sm sm:h-44">
                   <Image
                     src={image}
                     alt={`Listing preview ${index + 1}`}
@@ -182,7 +179,7 @@ export default function ReviewListingDetailPage({ params }) {
               ))}
             </div>
           ) : (
-            <div className="mt-4 flex h-[156px] items-center justify-center rounded-[4px] bg-[#F5F5F5] text-[12px] text-gray5">
+            <div className="mt-4 flex h-39 items-center justify-center rounded-sm bg-[#F5F5F5] text-[12px] text-gray5">
               No images uploaded
             </div>
           )}
@@ -261,7 +258,7 @@ export default function ReviewListingDetailPage({ params }) {
                 <p className="mt-1 text-[11px] sm:text-[13px] text-white/45">Privileged Access Only</p>
               </div>
             </div>
-            <span className="inline-flex items-center rounded-[4px] bg-green-logo px-2.5 py-1 text-[10px] sm:text-[12px] font-semibold text-greenbg border border-[#17523F]/80">
+            <span className="inline-flex items-center rounded-sm bg-green-logo px-2.5 py-1 text-[10px] sm:text-[12px] font-semibold text-greenbg border border-[#17523F]/80">
               Verified Agent
             </span>
           </div>
@@ -278,7 +275,7 @@ export default function ReviewListingDetailPage({ params }) {
                     Corporate identity
                   </div>
                   {detail.phone !== "-" && (
-                    <div className="mt-3 inline-flex items-center gap-1 text-[12px] text-[#3DB58E]">
+                    <div className="mt-3 inline-flex items-center gap-1 text-[12px] text-green-chart-3">
                       <Telephone size={14} color="#3DB58E" />
                       {detail.phone}
                     </div>
@@ -344,27 +341,27 @@ export default function ReviewListingDetailPage({ params }) {
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <button type="button" className="inline-flex items-center justify-center rounded-[8px] bg-greenbg px-4 py-3 text-[13px] font-medium text-font2-green transition hover:opacity-90">
+            <button type="button" className="inline-flex items-center justify-center rounded-lg bg-greenbg px-4 py-3 text-[13px] font-medium text-font2-green transition hover:opacity-90">
               Approve
             </button>
             <button
               type="button"
               onClick={() => setActiveModal("requestChanges")}
-              className="inline-flex items-center justify-center rounded-[8px] bg-[#134635] px-4 py-3 text-[13px] font-medium text-white transition hover:bg-[#184D39]"
+              className="inline-flex items-center justify-center rounded-lg bg-[#134635] px-4 py-3 text-[13px] font-medium text-white transition hover:bg-[#184D39]"
             >
               Request changes
             </button>
             <button
               type="button"
               onClick={() => setActiveModal("reject")}
-              className="inline-flex items-center justify-center rounded-[8px] bg-[#134635] px-4 py-3 text-[13px] font-medium text-white transition hover:bg-[#184D39]"
+              className="inline-flex items-center justify-center rounded-lg bg-[#134635] px-4 py-3 text-[13px] font-medium text-white transition hover:bg-[#184D39]"
             >
               Reject
             </button>
             <button
               type="button"
               onClick={() => setActiveModal("permanentDelete")}
-              className="inline-flex items-center justify-center rounded-[8px] bg-[#30201D] px-4 py-3 text-[13px] font-medium text-[#F87171] transition hover:bg-[#382623]"
+              className="inline-flex items-center justify-center rounded-lg bg-[#30201D] px-4 py-3 text-[13px] font-medium text-[#F87171] transition hover:bg-[#382623]"
             >
               Permanent Delete
             </button>

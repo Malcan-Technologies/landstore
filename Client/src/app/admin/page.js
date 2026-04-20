@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import Loading from "@/components/common/Loading";
 import StatCard from "@/components/adminDashboard/home/StatCard";
 import BuildingEntity from "@/components/svg/BuildingEntity";
 import GroupEntity from "@/components/svg/GroupEntity";
@@ -14,6 +15,7 @@ import Chart from "@/components/adminDashboard/home/Chart";
 import ChartComboBox from "@/components/adminDashboard/home/ChartComboBox";
 import EntityDonutChart from "@/components/adminDashboard/home/EntityDonutChart";
 import { analyticsService } from "@/services/analyticsService";
+import { enquiryService } from "@/services/enquiryService";
 import { landService } from "@/services/landService";
 
 const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
@@ -30,6 +32,49 @@ const extractListingItems = (response) => {
   if (Array.isArray(response?.data)) return response.data;
   if (Array.isArray(response)) return response;
   return [];
+};
+
+const extractEnquiryItems = (response) => {
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.result?.data)) return response.result.data;
+  if (Array.isArray(response?.items)) return response.items;
+  if (Array.isArray(response)) return response;
+  return [];
+};
+
+const toTrimmedImageUrl = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue || null;
+};
+
+const resolveListingImage = (item) => {
+  const mediaItems = Array.isArray(item?.media)
+    ? item.media
+    : item?.media
+      ? [item.media]
+      : [];
+
+  for (const mediaItem of mediaItems) {
+    const mediaImage =
+      toTrimmedImageUrl(mediaItem?.fileUrl) ||
+      toTrimmedImageUrl(mediaItem?.url) ||
+      toTrimmedImageUrl(mediaItem?.signedUrl);
+
+    if (mediaImage) {
+      return mediaImage;
+    }
+  }
+
+  return (
+    toTrimmedImageUrl(item?.image) ||
+    toTrimmedImageUrl(item?.images?.[0]?.fileUrl) ||
+    toTrimmedImageUrl(item?.images?.[0]?.url) ||
+    fallbackListingImage
+  );
 };
 
 const formatDate = (value) => {
@@ -86,7 +131,7 @@ const mapListingToCard = (item) => ({
   price: formatPrice(item?.estimatedValuation ?? item?.price),
   views: Number(item?.viewsCount ?? 0),
   interests: Number(item?.clicksCount ?? 0),
-  image: item?.media?.fileUrl || fallbackListingImage,
+  image: resolveListingImage(item),
   actions: [{ type: "view", label: "View" }],
 });
 
@@ -138,6 +183,13 @@ export default function AdminPage() {
   const [isLoadingApprovedListings, setIsLoadingApprovedListings] = useState(false);
   const [approvedListingsError, setApprovedListingsError] = useState("");
 
+  const [overviewStats, setOverviewStats] = useState({
+    listingsUnderReview: 0,
+    enquiriesPending: 0,
+    enquiriesNeedInfo: 0,
+  });
+  const [isLoadingOverviewStats, setIsLoadingOverviewStats] = useState(true);
+
   const [growthTimeRange, setGrowthTimeRange] = useState("12 months");
   const [growthData, setGrowthData] = useState({ series: [], categories: [], trendPercent: null });
   const [isLoadingGrowth, setIsLoadingGrowth] = useState(false);
@@ -147,9 +199,73 @@ export default function AdminPage() {
   const [isLoadingActiveListings, setIsLoadingActiveListings] = useState(false);
 
   const [breakdownTimeRange, setBreakdownTimeRange] = useState("12 months");
-  const [breakdownData, setBreakdownData] = useState({ labels: ["Individual", "Company", "Koperasi", "Unspecified"], series: [46, 28, 18, 8], colors: ["#298064", "#339978", "#3DB58E", "#CFCFCF"] });
+  const [breakdownData, setBreakdownData] = useState({ labels: ["Individual", "Company", "Koperasi"], series: [0, 0, 0], colors: ["#298064", "#339978", "#3DB58E"] });
   const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
   const [breakdownEntityCards, setBreakdownEntityCards] = useState([]);
+  const [hasCompletedInitialLoad, setHasCompletedInitialLoad] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadOverviewStats = async () => {
+      try {
+        setIsLoadingOverviewStats(true);
+
+        const [listingsResponse, enquiriesResponse] = await Promise.all([
+          landService.getAdminListings({ page: 1, limit: 500, recentlyApproved: false }),
+          enquiryService.getAllEnquiries({ page: 1, limit: 500 }),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const listingItems = extractListingItems(listingsResponse);
+        const enquiryItems = extractEnquiryItems(enquiriesResponse);
+
+        const listingsUnderReview = listingItems.filter((item) => {
+          const normalizedStatus = String(item?.status || "").toLowerCase();
+          return normalizedStatus === "review" || normalizedStatus === "under_review" || normalizedStatus === "under review";
+        }).length;
+
+        const enquiriesPending = enquiryItems.filter((item) => {
+          const normalizedStatus = String(item?.status || "").toLowerCase();
+          return normalizedStatus === "pending";
+        }).length;
+
+        const enquiriesNeedInfo = enquiryItems.filter((item) => {
+          const normalizedStatus = String(item?.status || "").toLowerCase();
+          return normalizedStatus === "need_more_info" || normalizedStatus === "need more info";
+        }).length;
+
+        setOverviewStats({
+          listingsUnderReview,
+          enquiriesPending,
+          enquiriesNeedInfo,
+        });
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setOverviewStats({
+          listingsUnderReview: 0,
+          enquiriesPending: 0,
+          enquiriesNeedInfo: 0,
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoadingOverviewStats(false);
+        }
+      }
+    };
+
+    loadOverviewStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const loadUserGrowth = useCallback(async (timeRange) => {
     setIsLoadingGrowth(true);
@@ -243,13 +359,41 @@ export default function AdminPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (hasCompletedInitialLoad) {
+      return;
+    }
+
+    const isAnySectionLoading =
+      isLoadingOverviewStats ||
+      isLoadingGrowth ||
+      isLoadingActiveListings ||
+      isLoadingBreakdown ||
+      isLoadingApprovedListings;
+
+    if (!isAnySectionLoading) {
+      setHasCompletedInitialLoad(true);
+    }
+  }, [
+    hasCompletedInitialLoad,
+    isLoadingOverviewStats,
+    isLoadingGrowth,
+    isLoadingActiveListings,
+    isLoadingBreakdown,
+    isLoadingApprovedListings,
+  ]);
+
+  if (!hasCompletedInitialLoad) {
+    return <Loading />;
+  }
+
   return (
     <main className="flex flex-col bg-background-primary px-4 py-5 sm:h-full no-scrollbar sm:min-h-0 sm:overflow-y-auto sm:px-5">
       <div className="shrink-0 grid gap-2 sm:gap-4 grid-cols-2 sm:grid-cols-3">
         <StatCard
           icon={<Clock />}
           iconBgClassName="bg-[#FFF7E8]"
-          value="12"
+          value={isLoadingOverviewStats ? "..." : String(overviewStats.listingsUnderReview)}
           label="LISTINGS"
           description="Under review"
         />
@@ -257,7 +401,7 @@ export default function AdminPage() {
         <StatCard
           icon={<Chat size={20} color="#3B82F6" />}
           iconBgClassName="bg-[#EEF4FF]"
-          value="8"
+          value={isLoadingOverviewStats ? "..." : String(overviewStats.enquiriesPending)}
           label="ENQUIRIES"
           description="Pending matching"
         />
@@ -265,7 +409,7 @@ export default function AdminPage() {
         <StatCard
           icon={<Exclamation size={20} color="#F04438" />}
           iconBgClassName="bg-[#FEF3F2]"
-          value="5"
+          value={isLoadingOverviewStats ? "..." : String(overviewStats.enquiriesNeedInfo)}
           label="ENQUIRIES"
           description="Need more info"
         />
@@ -310,7 +454,9 @@ export default function AdminPage() {
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex justify-center w-full col-span-1">
             {isLoadingBreakdown ? (
-              <div className="flex h-[150px] items-center justify-center text-sm text-gray5">Loading…</div>
+              <div className="flex h-37.5 items-center justify-center">
+                <span className="h-8 w-8 animate-spin rounded-full border-4 border-border-card border-t-green-secondary" />
+              </div>
             ) : (
               <EntityDonutChart
                 series={breakdownData.series}
@@ -385,7 +531,7 @@ export default function AdminPage() {
       <section className="mt-6 flex flex-1 flex-col rounded-2xl border border-border-input bg-white p-4 sm:p-5">
         <div className="flex shrink-0 items-center justify-between gap-3">
           <div className="flex items-center gap-1 sm:justify-center">
-            <span className="inline-flex sm:h-8 sm:w-8 w-3 h-3 items-center justify-center rounded-full -mt-0.25 sm:-mt-1">
+            <span className="-mt-px inline-flex h-3 w-3 items-center justify-center rounded-full sm:-mt-1 sm:h-8 sm:w-8">
               <RoundCheck size={22} />
             </span>
             <div>
@@ -398,7 +544,7 @@ export default function AdminPage() {
 
           <button
             type="button"
-            className="shrink-0 text-[10px] sm:text-[14px] font-semibold text-green-secondary transition hover:opacity-80 sm:text-[14px]"
+            className="shrink-0 text-[10px] font-semibold text-green-secondary transition hover:opacity-80 sm:text-[14px]"
           >
             View all
           </button>
@@ -406,8 +552,8 @@ export default function AdminPage() {
 
         <div className="mt-5 overflow-y-auto space-y-4 pr-1 no-scrollbar">
           {isLoadingApprovedListings ? (
-            <div className="rounded-xl border border-border-input bg-background-primary px-4 py-3 text-[14px] text-gray5">
-              Loading recently approved listings...
+            <div className="flex min-h-25 items-center justify-center rounded-xl border border-border-input bg-background-primary px-4 py-3">
+              <span className="h-8 w-8 animate-spin rounded-full border-4 border-border-card border-t-green-secondary" />
             </div>
           ) : null}
 

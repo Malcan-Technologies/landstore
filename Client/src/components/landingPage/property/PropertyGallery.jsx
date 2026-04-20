@@ -5,13 +5,18 @@ import Image from "next/image";
 
 import Modal from "@/components/common/Modal";
 
-const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
+const PropertyGallery = ({ images = [], moreImagesLabel }) => {
   const fallbackImage = "/Land.jpg";
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [failedImageMap, setFailedImageMap] = useState({});
 
   const hasSecondaryImages = images.length > 1;
+  const moreImagesCount = Math.max(images.length - 3, 0);
+  const resolvedMoreImagesLabel =
+    typeof moreImagesLabel === "string" && moreImagesLabel.trim()
+      ? moreImagesLabel
+      : `+${moreImagesCount} more`;
 
   const resolveImageSrc = useCallback(
     (source) => {
@@ -128,9 +133,11 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
                   onError={() => markImageAsFailed(images[2])}
                   unoptimized
                 />
-                <div className="absolute inset-0 flex items-center justify-center rounded-r-xl bg-black/30 text-white sm:rounded-br-xl">
-                  {moreImagesLabel}
-                </div>
+                {moreImagesCount > 0 ? (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-r-xl bg-black/30 text-white sm:rounded-br-xl">
+                    {resolvedMoreImagesLabel}
+                  </div>
+                ) : null}
               </button>
             ) : null}
           </div>
@@ -140,15 +147,26 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
       <Modal
         open={isGalleryOpen}
         onClose={handleCloseGallery}
-        panelClassName="w-full max-w-[1100px] overflow-visible bg-transparent px-4 py-4 text-left shadow-none md:px-5 md:py-5"
+        panelClassName="w-full max-w-[1100px] overflow-hidden bg-transparent px-2 py-2 text-left shadow-none sm:px-4 sm:py-4 md:px-5 md:py-5"
         overlayClassName="bg-black/70"
-        containerClassName="flex min-h-full items-center justify-center p-4"
-        closeButtonClassName="absolute right-5 top-4 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-[34px] leading-none text-white/80 backdrop-blur-sm transition hover:bg-black/70 hover:text-white"
+        containerClassName="flex min-h-full items-center justify-center p-2 sm:p-4"
+        showCloseButton={false}
         closeLabel="Close gallery"
       >
-        <div className="relative space-y-4 rounded-[28px] bg-[#0D0D0D] p-4 shadow-2xl md:p-5">
+        <div className="relative w-full space-y-3 rounded-[22px] bg-[#0D0D0D] p-3 shadow-2xl sm:space-y-4 sm:rounded-[28px] sm:p-4 md:p-5">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleCloseGallery}
+              className="inline-flex h-9 w-9 items-center justify-center text-[34px] leading-none text-white transition hover:text-white/80"
+              aria-label="Close gallery"
+            >
+              ×
+            </button>
+          </div>
+
           <div className="relative z-10 overflow-hidden rounded-[22px] bg-black/50">
-            <div className="relative h-[70vh] min-h-105 w-full">
+            <div className="relative h-[44vh] min-h-55 sm:w-full sm:h-[58vh] sm:min-h-105">
               <Image
                 src={resolveImageSrc(images[activeImageIndex])}
                 alt={`Property gallery image ${activeImageIndex + 1}`}
@@ -165,31 +183,47 @@ const PropertyGallery = ({ images = [], moreImagesLabel = "+15 more" }) => {
                 <button
                   type="button"
                   onClick={handlePreviousImage}
-                  className="absolute left-4 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
+                  className="absolute left-5 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white  transition hover:bg-black/60 sm:left-4 sm:h-11 sm:w-11"
                   aria-label="Previous image"
                 >
-                  <span className="text-[22px] leading-none">‹</span>
+                  <span className="text-[18px] leading-none sm:text-[22px]">‹</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleNextImage}
-                  className="absolute right-4 top-1/2 z-20 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition hover:bg-black/60"
+                  className="absolute right-5 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white  transition hover:bg-black/60 sm:right-4 sm:h-11 sm:w-11"
                   aria-label="Next image"
                 >
-                  <span className="text-[22px] leading-none">›</span>
+                  <span className="text-[18px] leading-none sm:text-[22px]">›</span>
                 </button>
               </>
             ) : null}
           </div>
 
-          <div className="relative z-10 flex items-center justify-between gap-3 text-sm text-white/80">
+          <div className="relative z-10 flex items-center justify-between gap-3 text-xs text-white/80 sm:text-sm">
             <span>
               Image {activeImageIndex + 1} of {images.length}
             </span>
           </div>
 
-          <div className="relative z-10 flex gap-3 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
+          <div className="relative z-10 flex items-center justify-center gap-1.5 sm:hidden">
+            {images.map((image, index) => {
+              const isActive = activeImageIndex === index;
+
+              return (
+                <button
+                  key={`${image || "dot"}-${index}`}
+                  type="button"
+                  onClick={() => setActiveImageIndex(index)}
+                  className={`h-2 rounded-full transition ${isActive ? "w-6 bg-green-secondary" : "w-2 bg-white/40"}`}
+                  aria-label={`Open image ${index + 1}`}
+                />
+              );
+            })}
+          </div>
+
+          <div className="relative z-10 hidden gap-3 overflow-x-auto pb-1 sm:flex [&::-webkit-scrollbar]:hidden" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
             {images.map((image, index) => {
               const isActive = activeImageIndex === index;
 

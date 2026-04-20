@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 
+import Loading from "@/components/common/Loading";
 import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
 import ChooseFolder from "@/components/userDashboard/explore/ChooseFolder";
 import FilterPanel from "@/components/userDashboard/explore/FilterPanel";
@@ -323,6 +324,41 @@ const formatArea = (landArea, landAreaUnit) => {
   return `${area}${unit}`;
 };
 
+const toTrimmedImageUrl = (value) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue || null;
+};
+
+const resolveListingImage = (listing) => {
+  const mediaItems = Array.isArray(listing?.media)
+    ? listing.media
+    : listing?.media
+      ? [listing.media]
+      : [];
+
+  for (const mediaItem of mediaItems) {
+    const mediaImage =
+      toTrimmedImageUrl(mediaItem?.fileUrl) ||
+      toTrimmedImageUrl(mediaItem?.url) ||
+      toTrimmedImageUrl(mediaItem?.signedUrl);
+
+    if (mediaImage) {
+      return mediaImage;
+    }
+  }
+
+  return (
+    toTrimmedImageUrl(listing?.image) ||
+    toTrimmedImageUrl(listing?.images?.[0]?.fileUrl) ||
+    toTrimmedImageUrl(listing?.images?.[0]?.url) ||
+    fallbackListingImage
+  );
+};
+
 const getStatusMeta = (status) => {
   const normalizedStatus = String(status || "").toLowerCase();
 
@@ -363,7 +399,7 @@ const mapListingToExploreCard = (listing) => {
     id: listing?.id || listing?.listingCode || `${lat}-${lng}`,
     status: statusMeta.label,
     statusColor: statusMeta.color,
-    image: listing?.media?.fileUrl || listing?.media?.url || fallbackListingImage,
+    image: resolveListingImage(listing),
     category: listing?.category?.name || "-",
     area: formatArea(listing?.landArea, listing?.landAreaUnit),
     code: listing?.listingCode || "-",
@@ -780,6 +816,10 @@ const ExplorePage = () => {
     }
   }, [handleCloseChooseFolder, isSavingToFolder, pendingPropertyId, selectedFolderId]);
 
+  if (isLoadingListings && listings.length === 0 && !fetchError) {
+    return <Loading />;
+  }
+
   return (
     <>
       <main className="bg-background-primary pt-10 pb-2">
@@ -810,8 +850,8 @@ const ExplorePage = () => {
               </header>
               <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto no-scrollbar">
                 {isLoadingListings && listingsNearCenter.length === 0 ? (
-                  <div className="rounded-xl bg-white px-4 py-3 text-[14px] text-gray5 shadow-[0_10px_35px_rgba(15,61,46,0.05)]">
-                    Loading listings from visible map area...
+                  <div className="flex items-center justify-center rounded-xl bg-white px-4 py-6 shadow-[0_10px_35px_rgba(15,61,46,0.05)]">
+                    <span className="h-8 w-8 animate-spin rounded-full border-4 border-border-card border-t-green-secondary" />
                   </div>
                 ) : null}
 
