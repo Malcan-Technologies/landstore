@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -7,7 +8,6 @@ import { useDispatch, useSelector } from "react-redux";
 import Bell from "@/components/svg/Bell";
 import ArrowDown from "@/components/svg/ArrowDown";
 import DoubleArrows from "@/components/svg/DoubleArrows";
-import Person from "@/components/svg/Person";
 import Search from "@/components/svg/Search";
 import ThreeBars from "@/components/svg/ThreeBars";
 import Button from "@/components/common/Button";
@@ -121,7 +121,16 @@ const AdminHeader = ({ onMenuClick }) => {
     router.push("/profile");
   };
 
-  const userInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
+  const profileImageSrc =
+    user?.profilePicture?.url ||
+    user?.profilePicture?.fileUrl ||
+    (typeof user?.profilePicture === "string" ? user.profilePicture : "") ||
+    user?.profileMedia?.fileUrl ||
+    user?.profileImage ||
+    user?.image ||
+    "/user.png";
+  const resolvedProfileImageSrc =
+    typeof profileImageSrc === "string" && profileImageSrc.trim() ? profileImageSrc : "/user.png";
 
   return (
     <>
@@ -178,8 +187,15 @@ const AdminHeader = ({ onMenuClick }) => {
                     className="inline-flex items-center gap-3 rounded-full bg-white pl-1 pr-1 text-[#0F172A] transition hover:bg-background-primary sm:gap-4 sm:pl-1.5 sm:pr-2"
                     aria-label="Open profile menu"
                   >
-                    <span className="flex h-4 w-4 items-center justify-center overflow-hidden rounded-full text-[14px] bg-gray1 font-semibold text-[#111827] sm:h-8 sm:w-8 sm:text-[14px]">
-                      {user?.name ? userInitial : <Person size={16} color="#111827" />}
+                    <span className="relative flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-gray1 sm:h-8 sm:w-8">
+                      <Image
+                        src={resolvedProfileImageSrc}
+                        alt="Admin profile"
+                        fill
+                        sizes="(min-width: 640px) 32px, 16px"
+                        className="object-cover"
+                        unoptimized
+                      />
                     </span>
                     <span className="hidden max-w-36 truncate text-[14px] font-normal leading-none text-[#0F172A] sm:block md:text-[14px]">
                       {user?.name || "Anthony"}

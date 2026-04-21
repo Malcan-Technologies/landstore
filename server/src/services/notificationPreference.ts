@@ -110,19 +110,20 @@ export const getNotificationPreferenceById = async (id: string) => {
 
 /**
  * Update notification preferences for a user
+ * Creates the preference if it doesn't exist (upsert)
  */
 export const updateNotificationPreference = async (
   userId: string,
   payload: UpdateNotificationPreferencePayload
 ) => {
   try {
-    // Check if notification preference exists
-    const existingPrefs = await db.notificationPreference.findUnique({
-      where: { userId },
+    // Check if user exists
+    const user = await db.user.findUnique({
+      where: { id: userId },
     });
 
-    if (!existingPrefs) {
-      const notFoundError = new Error("Notification preference not found for this user");
+    if (!user) {
+      const notFoundError = new Error("User not found");
       (notFoundError as Error & { statusCode?: number }).statusCode = 404;
       throw notFoundError;
     }
@@ -142,17 +143,22 @@ export const updateNotificationPreference = async (
       throw badRequestError;
     }
 
-    // Update notification preference
-    const notificationPreference = await db.notificationPreference.update({
+    // Use upsert to update if exists, create if not
+    const notificationPreference = await db.notificationPreference.upsert({
       where: { userId },
-      data: updateData,
+      update: updateData,
+      create: {
+        userId,
+        emailEnabled: payload.emailEnabled ?? true,
+        pushEnabled: payload.pushEnabled ?? true,
+      },
     });
 
     return notificationPreference;
   } catch (error: unknown) {
     const err = error as Error & { statusCode?: number };
     if (err.statusCode) throw error;
-    
+
     const updateError = new Error("Failed to update notification preference");
     (updateError as Error & { statusCode?: number }).statusCode = 400;
     throw updateError;

@@ -16,7 +16,8 @@ import {
   getMyProfileController,
   loginController,
   getUserGrowthController,
-  getUserBreakdownController
+  getUserBreakdownController,
+  getUserStatisticsController
 } from "../controllers/user.controller.js";
 import requireApiAuth from "../middleware/requireApiAuth.js";
 import { requireAdmin } from "../middleware/authorization.js";
@@ -61,14 +62,19 @@ userRouter.get("/profile", requireApiAuth, getUserCompleteProfileController);
 
 // User management (admin only)
 userRouter.get("/", requireApiAuth, requireAdmin,getAllUsersController);
-userRouter.get("/:id", requireApiAuth, getUserByIdController);
-userRouter.patch("/me", requireApiAuth, upload.single("profileImage"), updateUserController);
-userRouter.delete("/:id", requireApiAuth, deleteUserController);
+
+// Get user statistics (listings, shortlistings, enquiries counts)
+userRouter.get("/statistics", requireApiAuth, getUserStatisticsController);
 
 // Analytics - User growth over time (admin only)
 userRouter.get("/analytics/growth", requireApiAuth, requireAdmin, getUserGrowthController);
 
 // Analytics - User breakdown by entity type (admin only)
 userRouter.get("/analytics/breakdown", requireApiAuth, requireAdmin, getUserBreakdownController);
+
+// User by ID (must come after specific routes)
+userRouter.get("/:id", requireApiAuth, getUserByIdController);
+userRouter.patch("/me", requireApiAuth, upload.single("profileImage"), updateUserController);
+userRouter.delete("/:id", requireApiAuth, deleteUserController);
 
 export default userRouter;

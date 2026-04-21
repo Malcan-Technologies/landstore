@@ -1010,3 +1010,54 @@ export const getUserBreakdownController = async (req: Request, res: Response) =>
 	}
 };
 
+/**
+ * Get user statistics (counts for listings, shortlistings, and enquiries)
+ * GET /api/users/statistics
+ */
+export const getUserStatisticsController = async (req: Request, res: Response) => {
+	try {
+		const user = (req as any).user;
+		if (!user) {
+			return res.status(401).json({
+				success: false,
+				message: "Authentication required. Please log in to access your statistics.",
+			});
+		}
+
+		// Fetch user statistics in parallel
+		const [totalListings, totalShortlisted, totalEnquiries] = await Promise.all([
+			// Count total listings owned by this user
+			db.property.count({
+				where: { userId: user.id }
+			}),
+			// Count total shortlisted properties by this user
+			db.shortlistProperty.count({
+				where: {
+					folder: {
+						userId: user.id
+					}
+				}
+			}),
+			// Count total enquiries by this user
+			db.propertyEnquiry.count({
+				where: { userId: user.id }
+			})
+		]);
+
+		return res.status(200).json({
+			success: true,
+			data: {
+				totalListings,
+				totalShortlisted,
+				totalEnquiries
+			}
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+

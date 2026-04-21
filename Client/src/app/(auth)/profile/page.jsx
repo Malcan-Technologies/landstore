@@ -56,6 +56,7 @@ const ProfilePage = () => {
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [appAlerts, setAppAlerts] = useState(false);
+  const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
   const [selectedProfileImage, setSelectedProfileImage] = useState(null);
   const [profileImagePreview, setProfileImagePreview] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -90,7 +91,7 @@ const ProfilePage = () => {
     profile?.profileMedia?.fileUrl ||
     profile?.profileImage ||
     profile?.image ||
-    "/user.jpg";
+    "/user.png";
   const isEmailVerified = Boolean(profile?.emailVerified);
   const displayName =
     profile?.name ||
@@ -98,6 +99,36 @@ const ProfilePage = () => {
     profile?.company?.companyName ||
     profile?.koperasi?.koperasiName ||
     "User";
+
+  const handleEmailNotificationToggle = async () => {
+    const newValue = !emailNotifications;
+    setEmailNotifications(newValue);
+    setIsUpdatingNotifications(true);
+
+    try {
+      await userService.updateNotificationPreferences(newValue, appAlerts);
+    } catch (error) {
+      console.error("Failed to update email notification preference:", error);
+      setEmailNotifications(emailNotifications); // Revert on error
+    } finally {
+      setIsUpdatingNotifications(false);
+    }
+  };
+
+  const handleAppAlertsToggle = async () => {
+    const newValue = !appAlerts;
+    setAppAlerts(newValue);
+    setIsUpdatingNotifications(true);
+
+    try {
+      await userService.updateNotificationPreferences(emailNotifications, newValue);
+    } catch (error) {
+      console.error("Failed to update app alerts preference:", error);
+      setAppAlerts(appAlerts); // Revert on error
+    } finally {
+      setIsUpdatingNotifications(false);
+    }
+  };
   const memberId = profile?.id || "-";
 
   useEffect(() => {
@@ -257,7 +288,7 @@ const ProfilePage = () => {
             <div className="relative md:h-36 md:w-36 shrink-0 h-30 w-30">
               <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-white shadow-[0px_4px_18px_rgba(15,61,46,0.08)]">
                 <Image
-                  src={profileImageSrc || "/user.jpg"}
+                  src={profileImageSrc || "/user.png"}
                   alt="User profile"
                   fill
                   unoptimized
@@ -589,10 +620,11 @@ const ProfilePage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setEmailNotifications((prev) => !prev)}
+                onClick={handleEmailNotificationToggle}
+                disabled={isUpdatingNotifications}
                 className={`relative inline-flex h-7 w-12 shrink-0 rounded-full transition ${
                   emailNotifications ? "bg-green-secondary" : "bg-border-input"
-                }`}
+                } ${isUpdatingNotifications ? "opacity-50 cursor-not-allowed" : ""}`}
                 aria-pressed={emailNotifications}
                 aria-label="Toggle email notifications"
               >
@@ -615,10 +647,11 @@ const ProfilePage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setAppAlerts((prev) => !prev)}
+                onClick={handleAppAlertsToggle}
+                disabled={isUpdatingNotifications}
                 className={`relative inline-flex h-7 w-12 shrink-0 rounded-full transition ${
                   appAlerts ? "bg-green-secondary" : "bg-border-input"
-                }`}
+                } ${isUpdatingNotifications ? "opacity-50 cursor-not-allowed" : ""}`}
                 aria-pressed={appAlerts}
                 aria-label="Toggle in-app alerts"
               >

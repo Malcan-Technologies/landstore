@@ -251,5 +251,28 @@ export const userService = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Get user statistics (listings, shortlistings, enquiries counts)
+  getUserStatistics: async () => {
+    try {
+      const response = await api.get('/users/statistics');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update notification preferences
+  updateNotificationPreferences: async (emailEnabled, pushEnabled) => {
+    try {
+      const response = await api.patch('/notification-preferences/me', {
+        emailEnabled,
+        pushEnabled,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };

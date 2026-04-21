@@ -205,11 +205,19 @@ const MapView = ({
   }, [emitViewportChange]);
 
   const infoWindowOptions = useMemo(() => {
-    if (typeof window === "undefined" || !window.google) return undefined;
+    if (
+      typeof window === "undefined" ||
+      !window.google ||
+      !window.google.maps ||
+      !window.google.maps.Size ||
+      !isLoaded
+    ) {
+      return undefined;
+    }
     return {
       pixelOffset: new window.google.maps.Size(0, infoWindowOffset),
     };
-  }, [infoWindowOffset]);
+  }, [infoWindowOffset, isLoaded]);
 
   if (loadError) {
     return (

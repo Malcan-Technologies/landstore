@@ -1385,7 +1385,9 @@ export const searchPropertiesByRadius = async (
 			throw error;
 		}
 
-		throw createHttpError("Failed to search properties by radius", 500);
+		const errorMessage = err?.message || "Failed to search properties by radius";
+		console.error("Error in searchPropertiesByRadius:", error);
+		throw createHttpError(errorMessage, 500);
 	}
 };
 

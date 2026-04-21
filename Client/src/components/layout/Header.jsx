@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Plus from "@/components/svg/Plus";
 import Bell from "@/components/svg/Bell";
 import Person from "@/components/svg/Person";
+import ArrowDown from "@/components/svg/ArrowDown";
 import Button from "@/components/common/Button";
 import LoginModal from "@/components/auth/LoginModal";
 import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
@@ -130,6 +131,18 @@ const Header = () => {
   };
 
   const userInitial = user?.name?.trim()?.charAt(0)?.toUpperCase() || "U";
+  const profileDisplayName = user?.name?.trim() || `User ${userInitial}`;
+  const profileImageSrc =
+    user?.profilePicture?.url ||
+    user?.profilePicture?.fileUrl ||
+    (typeof user?.profilePicture === "string" ? user.profilePicture : "") ||
+    user?.profileMedia?.fileUrl ||
+    user?.profileImage ||
+    user?.image ||
+    "/user.png";
+  const resolvedProfileImageSrc =
+    typeof profileImageSrc === "string" && profileImageSrc.trim() ? profileImageSrc : "/user.png";
+  const isAdminUser = user?.userType === "admin";
   const isExploreActive = pathname === "/explore" || pathname.startsWith("/explore/");
   const isShortlistsActive =
     pathname === "/user-dashboard/shortlists" || pathname.startsWith("/user-dashboard/shortlists/");
@@ -214,18 +227,38 @@ const Header = () => {
                   <span className="hidden sm:inline">List a land</span>
                 </Button>
 
-                <div ref={profileMenuRef} className="relative">
+                <div ref={profileMenuRef} className="relative flex items-center self-center">
                   <button
                     type="button"
                     onClick={() => setProfileMenuOpen((prev) => !prev)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-card bg-white text-green-primary transition hover:border-green-secondary/40 hover:bg-background-primary"
+                    className={isAdminUser
+                      ? "relative inline-flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-border-card bg-white text-green-primary transition hover:border-green-secondary/40 hover:bg-background-primary sm:h-11 sm:w-auto sm:gap-2 sm:overflow-visible sm:rounded-none sm:border-none sm:bg-transparent sm:px-2 sm:text-gray2 sm:hover:border-none sm:hover:bg-transparent"
+                      : "relative inline-flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-border-card bg-white text-green-primary transition hover:border-green-secondary/40 hover:bg-background-primary"
+                    }
                     aria-label="Open profile menu"
                   >
-                    {user?.name ? (
-                      <span className="text-[14px] font-semibold text-green-primary">{userInitial}</span>
-                    ) : (
-                      <Person size={16} color="var(--color-green-primary)" />
-                    )}
+                    <span className={isAdminUser
+                      ? "relative block h-10 w-10 overflow-hidden rounded-full sm:h-9 sm:w-9"
+                      : "relative block h-10 w-10 overflow-hidden rounded-full"
+                    }
+                    >
+                      <Image
+                        src={resolvedProfileImageSrc}
+                        alt="User profile"
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </span>
+                    {isAdminUser ? (
+                      <>
+                        <span className="hidden max-w-32 items-center truncate text-[17px] font-normal leading-normal text-gray2 sm:inline-flex">
+                          {profileDisplayName}
+                        </span>
+                        <ArrowDown size={18} color="#111827" className="hidden shrink-0 sm:block" />
+                      </>
+                    ) : null}
                   </button>
 
                   {profileMenuOpen ? (

@@ -94,12 +94,6 @@ const normalizeOptionList = (options, fallbackOptions = []) => {
   return source.map(normalizeOption).filter(Boolean);
 };
 
-const summaryStats = [
-  { label: "Listings", value: 5, icon: Note, key: "listings", filterKey: "myListings" },
-  { label: "Shortlists", value: 15, icon: Note, key: "shortlists", filterKey: "myShortlistings" },
-  { label: "Deals", value: 2, icon: List, key: "deals", filterKey: "myEnquiries" },
-];
-
 const viewModeOptions = [
   { key: "list", icons: [ThreeBars, Map] },
   { key: "map", icons: [Map] },
@@ -203,6 +197,7 @@ const FilterPanel = ({
   onApplyFilters,
   onSummarySelect,
   isApplyLoading = false,
+  userStatistics = null,
 }) => {
   const [internalFilterValues, setInternalFilterValues] = useState(defaultFilterValues);
   const [viewMode, setViewMode] = useState(viewModeOptions[0].key);
@@ -257,6 +252,12 @@ const FilterPanel = ({
     () => normalizeOptionList(filterOptions?.titleTypes),
     [filterOptions]
   );
+
+  const summaryStats = useMemo(() => [
+    { label: "Listings", value: userStatistics?.totalListings ?? 0, icon: Note, key: "listings", filterKey: "myListings" },
+    { label: "Shortlists", value: userStatistics?.totalShortlisted ?? 0, icon: Note, key: "shortlists", filterKey: "myShortlistings" },
+    { label: "Deals", value: userStatistics?.totalEnquiries ?? 0, icon: List, key: "deals", filterKey: "myEnquiries" },
+  ], [userStatistics]);
 
   const locationSuggestionListId = useId();
 

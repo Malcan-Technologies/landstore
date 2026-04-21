@@ -13,6 +13,7 @@ import Funnel from "@/components/svg/Funnel";
 import { adminService } from "@/services/adminService";
 import { folderService } from "@/services/folderService";
 import { landService } from "@/services/landService";
+import { userService } from "@/services/userService";
 import { checkAuth } from "@/utils/auth";
 
 const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
@@ -435,6 +436,7 @@ const ExplorePage = () => {
   const [isSavingToFolder, setIsSavingToFolder] = useState(false);
   const [fetchError, setFetchError] = useState("");
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [pendingFilters, setPendingFilters] = useState(defaultExploreFilters);
   const [activeFilters, setActiveFilters] = useState(defaultExploreFilters);
   const [filterOptions, setFilterOptions] = useState({
@@ -445,10 +447,13 @@ const ExplorePage = () => {
     utilizations: [],
     titleTypes: [],
   });
+  const [userStatistics, setUserStatistics] = useState(null);
 
   const filterMenuRef = useRef(null);
   const lastRequestKeyRef = useRef("");
   const requestIdRef = useRef(0);
+  const isInitialLoadRef = useRef(true);
+  const lastAppliedFiltersRef = useRef(defaultExploreFilters);
 
   const isLoggedIn = useMemo(() => {
     if (hydrated) {
@@ -524,6 +529,26 @@ const ExplorePage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setUserStatistics(null);
+      return;
+    }
+
+    const fetchUserStatistics = async () => {
+      try {
+        const response = await userService.getUserStatistics();
+        if (response?.success && response?.data) {
+          setUserStatistics(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user statistics:", error);
+      }
+    };
+
+    fetchUserStatistics();
+  }, [isLoggedIn]);
+
   const handleFiltersChange = useCallback((nextFilters) => {
     setPendingFilters(nextFilters);
   }, []);
@@ -532,12 +557,15 @@ const ExplorePage = () => {
     setIsApplyingFilters(true);
     setPendingFilters(nextFilters);
     setActiveFilters(nextFilters);
+    lastAppliedFiltersRef.current = nextFilters;
     setIsFilterModalOpen(false);
   }, []);
 
   const handleSummarySelect = useCallback((nextFilters) => {
+    // Just update filters silently without showing loader
     setPendingFilters(nextFilters);
     setActiveFilters(nextFilters);
+    lastAppliedFiltersRef.current = nextFilters;
   }, []);
 
   const activeFilterQuery = useMemo(() => buildExploreFilterQuery(activeFilters), [activeFilters]);
@@ -610,6 +638,10 @@ const ExplorePage = () => {
 
     const requestKey = `${latitude}:${longitude}:${radiusKm}:${JSON.stringify(activeFilterQuery)}`;
     if (requestKey === lastRequestKeyRef.current) {
+      if (isInitialLoadRef.current) {
+        setIsInitialLoading(false);
+        isInitialLoadRef.current = false;
+      }
       setIsApplyingFilters(false);
       return;
     }
@@ -619,7 +651,10 @@ const ExplorePage = () => {
       const requestId = requestIdRef.current + 1;
       requestIdRef.current = requestId;
 
-      setIsLoadingListings(true);
+      // Only show loader on initial load or when applying filters
+      if (isInitialLoadRef.current || isApplyingFilters) {
+        setIsLoadingListings(true);
+      }
       setFetchError("");
 
       try {
@@ -652,6 +687,12 @@ const ExplorePage = () => {
         if (requestId === requestIdRef.current) {
           setIsLoadingListings(false);
           setIsApplyingFilters(false);
+          
+          // Mark initial load as complete
+          if (isInitialLoadRef.current) {
+            setIsInitialLoading(false);
+            isInitialLoadRef.current = false;
+          }
         }
       }
     }, 350);
@@ -659,7 +700,7 @@ const ExplorePage = () => {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [activeFilterQuery, mapViewport.center.lat, mapViewport.center.lng, mapViewport.radiusKm]);
+  }, [activeFilterQuery, mapViewport.center.lat, mapViewport.center.lng, mapViewport.radiusKm, isApplyingFilters]);
 
   const listingsNearCenter = useMemo(() => {
     return [...listings].sort((first, second) => {
@@ -816,7 +857,7 @@ const ExplorePage = () => {
     }
   }, [handleCloseChooseFolder, isSavingToFolder, pendingPropertyId, selectedFolderId]);
 
-  if (isLoadingListings && listings.length === 0 && !fetchError) {
+  if (isInitialLoading) {
     return <Loading />;
   }
 
@@ -837,6 +878,7 @@ const ExplorePage = () => {
               onApplyFilters={handleApplyFilters}
               onSummarySelect={handleSummarySelect}
               isApplyLoading={isApplyingFilters}
+              userStatistics={userStatistics}
             />
           </div>
         ) : null}
@@ -905,6 +947,7 @@ const ExplorePage = () => {
                       onApplyFilters={handleApplyFilters}
                       onSummarySelect={handleSummarySelect}
                       isApplyLoading={isApplyingFilters}
+                      userStatistics={userStatistics}
                     />
                   </div>
                 ) : null}

@@ -54,7 +54,16 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
   const { user } = useSelector((state) => state.auth);
   const displayName = user?.name || "shadcn";
   const displayEmail = user?.email || "m@example.com";
-  const displayInitial = displayName.trim().charAt(0).toUpperCase();
+  const profileImageSrc =
+    user?.profilePicture?.url ||
+    user?.profilePicture?.fileUrl ||
+    (typeof user?.profilePicture === "string" ? user.profilePicture : "") ||
+    user?.profileMedia?.fileUrl ||
+    user?.profileImage ||
+    user?.image ||
+    "/user.png";
+  const resolvedProfileImageSrc =
+    typeof profileImageSrc === "string" && profileImageSrc.trim() ? profileImageSrc : "/user.png";
 
   const isSidebarItemActive = (itemHref) => {
     if (!pathname) return false;
@@ -83,7 +92,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
   };
 
   const mobileDrawerContent = (
-    <div className="flex min-h-screen w-[242px] flex-col border-r border-[#E5E7EB] bg-white">
+    <div className="flex min-h-screen w-60.5 flex-col border-r border-[#E5E7EB] bg-white">
       <div className="flex h-17 items-center justify-between border-b border-[#E5E7EB] px-5">
         <button type="button" onClick={() => handleNavigate("/admin")} className="flex items-center gap-3">
           <div className="relative h-7 w-7">
@@ -136,8 +145,15 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
 
       <div className="px-4 py-4">
         <button type="button" className="flex w-full items-center gap-3 rounded-2xl bg-white text-left transition hover:bg-[#F9FAFB]" aria-label="Open user menu">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#FFB703] text-[14px] font-semibold text-[#111827]">
-            {displayInitial}
+          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray1">
+            <Image
+              src={resolvedProfileImageSrc}
+              alt="Admin profile"
+              fill
+              sizes="40px"
+              className="object-cover"
+              unoptimized
+            />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[14px] font-semibold leading-none text-[#27272A]">{displayName}</span>
@@ -182,7 +198,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
 
   return (
     <>
-      <aside className="hidden min-h-screen w-22 shrink-0 border-r border-[#E5E7EB] bg-white md:flex md:flex-col lg:w-[242px]">
+      <aside className="hidden min-h-screen w-22 shrink-0 border-r border-[#E5E7EB] bg-white md:flex md:flex-col lg:w-60.5">
         <div className="flex h-17 items-center border-b border-[#E5E7EB] px-5 lg:px-5 md:justify-center lg:justify-start">
           <button type="button" onClick={() => handleNavigate("/admin")} className="flex items-center gap-3">
             <div className="relative h-7 w-7 sm:h-8 sm:w-8">
@@ -201,16 +217,30 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
 
         <div className="px-2 py-3 lg:hidden">
           <button type="button" className="flex w-full items-center justify-center rounded-2xl bg-white text-left transition hover:bg-[#F9FAFB]" aria-label="Open user menu">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#FFB703] text-[14px] font-semibold text-[#111827]">
-              {displayInitial}
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray1">
+              <Image
+                src={resolvedProfileImageSrc}
+                alt="Admin profile"
+                fill
+                sizes="40px"
+                className="object-cover"
+                unoptimized
+              />
             </span>
           </button>
         </div>
 
         <div className="hidden px-4 py-4 lg:block">
           <button type="button" className="flex w-full items-center gap-3 rounded-2xl bg-white text-left transition hover:bg-[#F9FAFB]" aria-label="Open user menu">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray1 text-[14px] font-semibold text-[#111827]">
-              {displayInitial}
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray1">
+              <Image
+                src={resolvedProfileImageSrc}
+                alt="Admin profile"
+                fill
+                sizes="40px"
+                className="object-cover"
+                unoptimized
+              />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[14px] font-semibold leading-none text-[#27272A]">{displayName}</span>
