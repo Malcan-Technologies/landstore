@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Loading from "@/components/common/Loading";
 import StatCard from "@/components/adminDashboard/home/StatCard";
 import BuildingEntity from "@/components/svg/BuildingEntity";
@@ -179,6 +180,7 @@ const extractBreakdown = (response) => {
 };
 
 export default function AdminPage() {
+  const router = useRouter();
   const [approvedListings, setApprovedListings] = useState([]);
   const [isLoadingApprovedListings, setIsLoadingApprovedListings] = useState(false);
   const [approvedListingsError, setApprovedListingsError] = useState("");
@@ -211,38 +213,19 @@ export default function AdminPage() {
       try {
         setIsLoadingOverviewStats(true);
 
-        const [listingsResponse, enquiriesResponse] = await Promise.all([
-          landService.getAdminListings({ page: 1, limit: 500, recentlyApproved: false }),
-          enquiryService.getAllEnquiries({ page: 1, limit: 500 }),
-        ]);
+        const response = await landService.getListingStatistics();
 
         if (!isMounted) {
           return;
         }
 
-        const listingItems = extractListingItems(listingsResponse);
-        const enquiryItems = extractEnquiryItems(enquiriesResponse);
-
-        const listingsUnderReview = listingItems.filter((item) => {
-          const normalizedStatus = String(item?.status || "").toLowerCase();
-          return normalizedStatus === "review" || normalizedStatus === "under_review" || normalizedStatus === "under review";
-        }).length;
-
-        const enquiriesPending = enquiryItems.filter((item) => {
-          const normalizedStatus = String(item?.status || "").toLowerCase();
-          return normalizedStatus === "pending";
-        }).length;
-
-        const enquiriesNeedInfo = enquiryItems.filter((item) => {
-          const normalizedStatus = String(item?.status || "").toLowerCase();
-          return normalizedStatus === "need_more_info" || normalizedStatus === "need more info";
-        }).length;
-
-        setOverviewStats({
-          listingsUnderReview,
-          enquiriesPending,
-          enquiriesNeedInfo,
-        });
+        if (response?.success && response?.data) {
+          setOverviewStats({
+            listingsUnderReview: response.data.listings.underReview,
+            enquiriesPending: response.data.enquiries.pending,
+            enquiriesNeedInfo: response.data.enquiries.needMoreInfo,
+          });
+        }
       } catch {
         if (!isMounted) {
           return;
@@ -544,6 +527,7 @@ export default function AdminPage() {
 
           <button
             type="button"
+            onClick={() => router.push('/admin/review-listings')}
             className="shrink-0 text-[10px] font-semibold text-green-secondary transition hover:opacity-80 sm:text-[14px]"
           >
             View all

@@ -50,13 +50,13 @@ const mapApiUserToTableUser = (user) => {
     company: user?.userType === "admin" ? "Admin Account" : "Individual Member",
     email: user?.email || "-",
     phone: user?.phone || "-",
-    identityNo: "-",
+    identityNo: user?.identityNo || user?.registrationNo || "-",
     status,
     actionVariant: status === "Active" ? "deactivate" : "reactivate",
     avatar: user?.image || null,
     preferences: {
-      emailNotifications: true,
-      appAlerts: true,
+      emailNotifications: user?.notificationPrefs?.emailEnabled ?? false,
+      appAlerts: user?.notificationPrefs?.pushEnabled ?? false,
     },
   };
 };

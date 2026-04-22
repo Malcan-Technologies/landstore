@@ -13,6 +13,7 @@ import {
 	searchPropertiesByRadius,
 	getActiveListingsOverTime,
 	getListingStatusCounts,
+	getListingStatistics,
 	type CreateListLandPayload,
 } from "../services/listLand.js";
 import type { GetLandsQuery } from "../../types/express/land.types.js";
@@ -584,6 +585,29 @@ export const getListingStatusCountsController = async (req: Request, res: Respon
 		return res.status(200).json({
 			success: true,
 			data,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({
+			success: false,
+			message,
+		});
+	}
+};
+
+/**
+ * Get listing statistics (admin only)
+ * GET /api/listings/statistics
+ * Returns counts of listings by status
+ */
+export const getListingStatisticsController = async (req: Request, res: Response) => {
+	try {
+		getRequesterUserOrThrow(req);
+
+		const statistics = await getListingStatistics();
+		return res.status(200).json({
+			success: true,
+			data: statistics,
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);

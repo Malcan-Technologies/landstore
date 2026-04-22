@@ -560,7 +560,24 @@ export const getAllUsers = async (page: number = 1, limit: number = 10) => {
     ]);
 
     const items = await Promise.all(
-      users.map((user) => transformUserMediaWithSignedUrls(user))
+      users.map(async (user) => {
+        const transformedUser = await transformUserMediaWithSignedUrls(user);
+        
+        // Flatten IC number to top level
+        if (transformedUser.individuals?.identityNo) {
+          transformedUser.identityNo = transformedUser.individuals.identityNo;
+        }
+        
+        // Flatten registration numbers for company/koperasi
+        if (transformedUser.companies?.registrationNo) {
+          transformedUser.registrationNo = transformedUser.companies.registrationNo;
+        }
+        if (transformedUser.koperasi?.registrationNo) {
+          transformedUser.registrationNo = transformedUser.koperasi.registrationNo;
+        }
+        
+        return transformedUser;
+      })
     );
 
     return {

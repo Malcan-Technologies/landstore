@@ -16,7 +16,7 @@ const panelClassName =
 const inputClassName =
   "h-11 w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-3 text-[13px] text-[#6B7280] outline-none";
 
-const ToggleRow = ({ label, description, checked, onChange }) => (
+const ToggleRow = ({ label, description, checked }) => (
   <div className="flex items-start justify-between gap-4 py-3">
     <div>
       <p className="text-[13px] font-medium text-[#111827]">{label}</p>
@@ -24,8 +24,8 @@ const ToggleRow = ({ label, description, checked, onChange }) => (
     </div>
     <Switch
       checked={checked}
-      onChange={onChange}
-      className={`${checked ? "bg-green-primary" : "bg-[#D1D5DB]"} relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition`}
+      disabled
+      className={`${checked ? "bg-green-primary" : "bg-[#D1D5DB]"} relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition opacity-60 cursor-not-allowed`}
     >
       <span
         className={`${checked ? "translate-x-6" : "translate-x-1"} inline-block h-4 w-4 rounded-full bg-white transition`}
@@ -48,12 +48,12 @@ const InfoField = ({ label, value, rightIcon, prefix }) => (
 );
 
 export default function UserViewModal({ open, onClose, user }) {
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [appAlerts, setAppAlerts] = useState(true);
-
   if (!user) {
     return null;
   }
+
+  const emailNotifications = user.preferences?.emailNotifications ?? false;
+  const appAlerts = user.preferences?.appAlerts ?? false;
 
   const entityLabel = user.entityType === "Corporate" ? "Corporate" : user.entityType;
   const registrationLabel = user.entityType === "Corporate" ? "Corporate" : "corporate";
@@ -130,13 +130,11 @@ export default function UserViewModal({ open, onClose, user }) {
               label="Email Notifications"
               description="Receive weekly market reports and listing updates via email"
               checked={emailNotifications}
-              onChange={setEmailNotifications}
             />
             <ToggleRow
               label="In-App Alerts"
               description="Instant notifications for new enquiries and status changes"
               checked={appAlerts}
-              onChange={setAppAlerts}
             />
           </div>
         </div>

@@ -133,5 +133,15 @@ export const landService = {
 
   deleteLand: async (id) => {
     return landService.deleteListing(id);
+  },
+
+  // Get listing statistics (admin only)
+  getListingStatistics: async () => {
+    try {
+      const response = await api.get('/list-lands/statistics');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };

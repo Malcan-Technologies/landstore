@@ -5,6 +5,82 @@ import { transformPropertyWithSignedUrls, generateMediaSignedUrl, processConcurr
 
 type MulterFile = Express.Multer.File;
 
+/**
+ * Get listing statistics for admin dashboard
+ * Returns counts of listings and enquiries by status
+ */
+export const getListingStatistics = async () => {
+  try {
+    const [
+      totalListings,
+      activeListings,
+      pendingListings,
+      underReviewListings,
+      needMoreInfoListings,
+      totalEnquiries,
+      pendingEnquiries,
+      needMoreInfoEnquiries,
+    ] = await Promise.all([
+      // Count total listings
+      db.property.count(),
+      // Count active listings
+      db.property.count({
+        where: { status: "active" },
+      }),
+      // Count pending listings
+      db.property.count({
+        where: { status: "pending" },
+      }),
+      // Count under review listings
+      db.property.count({
+        where: { status: "under_review" },
+      }),
+      // Count need more info listings
+      db.property.count({
+        where: { status: "need_more_info" },
+      }),
+      // Count total enquiries
+      db.propertyEnquiry.count(),
+      // Count pending enquiries
+      db.propertyEnquiry.count({
+        where: {
+          status: {
+            in: ["pending", "pending_matching"],
+          },
+        },
+      }),
+      // Count need more info enquiries
+      db.propertyEnquiry.count({
+        where: {
+          status: {
+            in: ["need_more_info", "need more info"],
+          },
+        },
+      }),
+    ]);
+
+    return {
+      listings: {
+        total: totalListings,
+        active: activeListings,
+        pending: pendingListings,
+        underReview: underReviewListings,
+        needMoreInfo: needMoreInfoListings,
+      },
+      enquiries: {
+        total: totalEnquiries,
+        pending: pendingEnquiries,
+        needMoreInfo: needMoreInfoEnquiries,
+      },
+    };
+  } catch (error: unknown) {
+    const err = error as Error & { statusCode?: number };
+    const serviceError = new Error("Failed to fetch listing statistics");
+    (serviceError as Error & { statusCode?: number }).statusCode = err.statusCode || 500;
+    throw serviceError;
+  }
+};
+
 type PropertyLocationPayload = {
 	state: string;
 	district: string;
@@ -572,6 +648,9 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 			: 10;
 	const skip = (page - 1) * limit;
 
+	console.log("getAllListings called with query:", query);
+	console.log("Page:", page, "Limit:", limit, "Skip:", skip);
+
 	let where: Prisma.PropertyWhereInput;
 
 	if (query.status) {
@@ -579,14 +658,16 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 		const normalizedStatus = normalizePropertyStatus(query.status);
 		where = normalizedStatus
 			? { status: normalizedStatus }
-			: { status: { not: null } };
+			: {};
 	} else if (query.recentlyApproved) {
 		// If recentlyApproved is true, show only active properties
 		where = { status: "active" };
 	} else {
-		// Show all properties with a status set
-		where = { status: { not: null } };
+		// Show all properties (including those with null status)
+		where = {};
 	}
+
+	console.log("Where clause:", JSON.stringify(where));
 
 	const [items, total] = await Promise.all([
 		db.property.findMany({
@@ -598,6 +679,8 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 		}),
 		db.property.count({ where }),
 	]);
+
+	console.log("Items returned:", items.length, "Total count:", total);
 
 	// Transform items with signed URLs and add isShortListed
 	let itemsWithSignedUrls;

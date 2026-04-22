@@ -168,6 +168,21 @@ export default function AdminMapPage() {
   const [searchValue, setSearchValue] = useState("");
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [listingsError, setListingsError] = useState("");
+  const [listingStats, setListingStats] = useState({
+    listings: {
+      total: 0,
+      active: 0,
+      pending: 0,
+      underReview: 0,
+      needMoreInfo: 0,
+    },
+    enquiries: {
+      total: 0,
+      pending: 0,
+      needMoreInfo: 0,
+    },
+  });
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -206,7 +221,40 @@ export default function AdminMapPage() {
     };
   }, []);
 
-  const listingStats = useMemo(() => getListingStatusCounts(listings), [listings]);
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStatistics = async () => {
+      try {
+        setIsLoadingStats(true);
+        const response = await landService.getListingStatistics();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (response?.success && response?.data) {
+          setListingStats(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch listing statistics:", error);
+        if (isMounted) {
+          setIsLoadingStats(false);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingStats(false);
+        }
+      }
+    };
+
+    loadStatistics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
 
   const markers = useMemo(
     () => listings.map((listing) => mapListingToMarker(listing)).filter(Boolean),
@@ -235,7 +283,7 @@ export default function AdminMapPage() {
         id: "total",
         icon: <MapStatTotal size={20} />,
         iconBgClassName: "bg-[#F3F4F6]",
-        value: isLoadingListings ? "..." : String(listingStats.total),
+        value: isLoadingStats ? "..." : String(listingStats.listings.total),
         label: "LISTINGS",
         description: "Total",
       },
@@ -243,7 +291,7 @@ export default function AdminMapPage() {
         id: "active",
         icon: <MapStatActive size={20} />,
         iconBgClassName: "bg-[#ECFDF3]",
-        value: isLoadingListings ? "..." : String(listingStats.active),
+        value: isLoadingStats ? "..." : String(listingStats.listings.active),
         label: "LISTINGS",
         description: "Active",
       },
@@ -251,7 +299,7 @@ export default function AdminMapPage() {
         id: "pending",
         icon: <MapStatPending size={20} />,
         iconBgClassName: "bg-[#EEF4FF]",
-        value: isLoadingListings ? "..." : String(listingStats.pending),
+        value: isLoadingStats ? "..." : String(listingStats.listings.pending),
         label: "LISTINGS",
         description: "Pending matching",
       },
@@ -259,7 +307,7 @@ export default function AdminMapPage() {
         id: "review",
         icon: <MapStatReview size={20} />,
         iconBgClassName: "bg-[#FFF7E8]",
-        value: isLoadingListings ? "..." : String(listingStats.review),
+        value: isLoadingStats ? "..." : String(listingStats.listings.underReview),
         label: "LISTINGS",
         description: "Under review",
       },
@@ -267,12 +315,12 @@ export default function AdminMapPage() {
         id: "need-info",
         icon: <MapStatNeedInfo size={20} />,
         iconBgClassName: "bg-[#FEF3F2]",
-        value: isLoadingListings ? "..." : String(listingStats.needInfo),
+        value: isLoadingStats ? "..." : String(listingStats.listings.needMoreInfo),
         label: "LISTINGS",
         description: "Need more info",
       },
     ],
-    [isLoadingListings, listingStats]
+    [isLoadingStats, listingStats]
   );
 
   if (isLoadingListings) {

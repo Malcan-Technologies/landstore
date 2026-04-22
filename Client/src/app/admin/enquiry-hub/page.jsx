@@ -148,10 +148,6 @@ export default function EnquiryHubPage() {
     loadEnquiries();
   }, []);
 
-  if (isLoading) {
-    return <Loading />;
-  }
-
   const filteredEnquiries = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
 
@@ -165,6 +161,10 @@ export default function EnquiryHubPage() {
         .some((value) => String(value).toLowerCase().includes(query));
     });
   }, [enquiries, searchTerm]);
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   const handleOpenEnquiry = (enquiryId) => {
     router.push(`/admin/enquiry-hub/${enquiryId}`);
