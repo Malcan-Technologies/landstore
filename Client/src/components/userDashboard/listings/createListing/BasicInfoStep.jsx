@@ -56,10 +56,12 @@ const BasicInfoStep = ({
 
   const photoItems = useMemo(
     () => [
-      ...existingImageUrls.map((url) => ({ url, isExisting: true })),
+      ...existingImageUrls
+        .filter((url) => !(formData.removedExistingImages || []).includes(url))
+        .map((url) => ({ url, isExisting: true })),
       ...previewUrls.map((url, newIndex) => ({ url, isExisting: false, newIndex })),
     ],
-    [existingImageUrls, previewUrls]
+    [existingImageUrls, previewUrls, formData.removedExistingImages]
   );
 
   useEffect(() => {
@@ -94,6 +96,13 @@ const BasicInfoStep = ({
     );
   };
 
+  const handleRemoveExistingPhoto = (url) => {
+    updateField(
+      "removedExistingImages",
+      [...(formData.removedExistingImages || []), url]
+    );
+  };
+
   return (
     <div className="space-y-5 sm:space-y-6 md:space-y-7">
       <div className="relative">
@@ -107,16 +116,14 @@ const BasicInfoStep = ({
             {photoSlots.map((photoItem, index) =>
             photoItem ? (
               <div key={index} className="relative h-30 w-full overflow-hidden rounded-md bg-background-primary sm:h-40 sm:rounded-lg md:h-44">
-                {!photoItem.isExisting ? (
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePhoto(photoItem.newIndex)}
-                    className="absolute right-2 top-2 z-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-[16px] leading-none text-white transition hover:bg-black/80"
-                    aria-label={`Remove uploaded photo ${index + 1}`}
-                  >
-                    ×
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => photoItem.isExisting ? handleRemoveExistingPhoto(photoItem.url) : handleRemovePhoto(photoItem.newIndex)}
+                  className="absolute right-2 top-2 z-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/65 text-[16px] leading-none text-white transition hover:bg-black/80"
+                  aria-label={`Remove ${photoItem.isExisting ? 'existing' : 'uploaded'} photo ${index + 1}`}
+                >
+                  ×
+                </button>
                 <img src={photoItem.url} alt={`Uploaded land ${index + 1}`} className="h-full w-full object-cover" />
                 {photoItem.isExisting ? (
                   <span className="absolute left-2 top-2 z-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-medium text-white">

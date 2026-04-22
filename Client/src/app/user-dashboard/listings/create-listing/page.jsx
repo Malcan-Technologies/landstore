@@ -96,6 +96,7 @@ const buildListingCode = () => {
 const initialFormData = {
   images: [],
   existingImages: [],
+  removedExistingImages: [],
   documents: [],
   existingDocuments: [],
   dealTypes: ["Buy", "JV"],
@@ -359,7 +360,11 @@ const CreateListingPage = () => {
         const fallbackDistrict = titleParts[0] || "";
         const fallbackState = titleParts[1] || "";
 
-        const existingImages = property?.media?.fileUrl ? [property.media.fileUrl] : [];
+        const existingImages = Array.isArray(property?.media)
+          ? property.media
+              .filter((item) => item?.mediaCategory === "list_land_images" && item?.fileUrl)
+              .map((item) => item.fileUrl)
+          : [];
         const existingDocuments = Array.isArray(property?.documents)
           ? property.documents
               .map((doc, index) => ({
@@ -410,6 +415,7 @@ const CreateListingPage = () => {
           status: property.status || prev.status,
           acceptedTerms: Boolean(property.agreementAccepted),
           existingImages,
+          removedExistingImages: [],
           existingDocuments,
           images: [],
           documents: [],
@@ -506,6 +512,14 @@ const CreateListingPage = () => {
       payload.append("images", file);
     });
 
+    // Only include existing images that haven't been removed
+    const remainingExistingImages = (formData.existingImages || []).filter(
+      (url) => !formData.removedExistingImages?.includes(url)
+    );
+    remainingExistingImages.forEach((url) => {
+      payload.append("existingImages", url);
+    });
+
     (formData.documents || []).forEach((file) => {
       payload.append("documents", file);
     });
@@ -558,6 +572,7 @@ const CreateListingPage = () => {
 
       if (isEditMode) {
         setSubmitSuccess("Listing updated successfully.");
+        router.replace("/user-dashboard/listings");
       } else {
         setSubmitSuccess("Listing submitted successfully.");
         router.replace("/user-dashboard/listings");

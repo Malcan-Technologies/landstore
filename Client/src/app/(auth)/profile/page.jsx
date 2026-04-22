@@ -44,7 +44,7 @@ const lockIcon = (
 );
 
 const inputClassName =
-  "h-11 w-full rounded-lg border border-border-input bg-white px-4 text-[14px] text-gray2 outline-none transition focus:border-green-secondary focus:ring-1 focus:ring-border-green disabled:bg-background-primary disabled:text-gray5";
+  "h-11 w-full rounded-lg border border-border-input bg-white px-4 text-[14px] text-gray2 outline-none transition focus:border-green-secondary focus:ring-1 focus:ring-border-green disabled:text-gray5";
 
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -414,7 +414,7 @@ const ProfilePage = () => {
                   className={`${inputClassName} pr-10`}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  disabled={!isEditing}
+                  disabled
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
                   {" "}
