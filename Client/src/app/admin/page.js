@@ -213,7 +213,7 @@ export default function AdminPage() {
       try {
         setIsLoadingOverviewStats(true);
 
-        const response = await landService.getListingStatistics();
+        // const response = await landService.getListingStatistics();
 
         if (!isMounted) {
           return;
@@ -253,7 +253,7 @@ export default function AdminPage() {
   const loadUserGrowth = useCallback(async (timeRange) => {
     setIsLoadingGrowth(true);
     try {
-      const response = await analyticsService.getUserGrowth({ timeRange });
+      // const response = await analyticsService.getUserGrowth({ timeRange });
       setGrowthData(extractGrowthPoints(response));
     } catch {
       setGrowthData({ series: [], categories: [], trendPercent: null });
@@ -265,7 +265,7 @@ export default function AdminPage() {
   const loadActiveListings = useCallback(async (timeRange) => {
     setIsLoadingActiveListings(true);
     try {
-      const response = await analyticsService.getActiveListings({ timeRange });
+      // const response = await analyticsService.getActiveListings({ timeRange });
       setActiveListingsData(extractGrowthPoints(response));
     } catch {
       setActiveListingsData({ series: [], categories: [], trendPercent: null });
@@ -277,7 +277,7 @@ export default function AdminPage() {
   const loadUserBreakdown = useCallback(async (timeRange) => {
     setIsLoadingBreakdown(true);
     try {
-      const response = await analyticsService.getUserBreakdown({ timeRange });
+      // const response = await analyticsService.getUserBreakdown({ timeRange });
       const parsed = extractBreakdown(response);
       setBreakdownData(parsed);
       const labelMap = { individual: "Individual", company: "Company", koperasi: "Koperasi" };
@@ -314,11 +314,11 @@ export default function AdminPage() {
         setIsLoadingApprovedListings(true);
         setApprovedListingsError("");
 
-        const response = await landService.getAdminListings({
-          page: 1,
-          limit: 5,
-          recentlyApproved: true,
-        });
+        // const response = await landService.getAdminListings({
+        //   page: 1,
+        //   limit: 5,
+        //   recentlyApproved: true,
+        // });
 
         if (!isMounted) return;
 

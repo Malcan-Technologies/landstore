@@ -157,7 +157,8 @@ const buildExploreFilterQuery = (filters) => {
 
   const state = resolveNegeriLabel(filters?.selectedState || filters?.locationSearch?.trim());
   if (state) {
-    query.location = state;
+    // backend expects `state` query param (not `location`)
+    query.state = state;
   }
 
   if (Array.isArray(filters?.selectedDealTypes) && filters.selectedDealTypes.length > 0) {

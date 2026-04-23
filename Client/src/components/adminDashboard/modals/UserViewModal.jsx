@@ -52,11 +52,22 @@ export default function UserViewModal({ open, onClose, user }) {
     return null;
   }
 
-  const emailNotifications = user.preferences?.emailNotifications ?? false;
-  const appAlerts = user.preferences?.appAlerts ?? false;
+  const hasPreferences = user.preferences !== undefined && user.preferences !== null;
+  const emailNotifications = hasPreferences ? Boolean(user.preferences.emailNotifications ?? user.preferences.emailEnabled) : false;
+  const appAlerts = hasPreferences ? Boolean(user.preferences.appAlerts ?? user.preferences.pushEnabled) : false;
 
   const entityLabel = user.entityType === "Corporate" ? "Corporate" : user.entityType;
-  const registrationLabel = user.entityType === "Corporate" ? "Corporate" : "corporate";
+  const registrationLabel = user.entityType === "Corporate" ? "Corporate" : user.entityType ? String(user.entityType) : null;
+
+  const hasEmail = Boolean(user.email && String(user.email).trim() && user.email !== "-");
+  const hasPhone = Boolean(user.phone && String(user.phone).trim() && user.phone !== "-");
+  const hasContractDetails = hasEmail || hasPhone;
+
+  const hasEntityInfo = Boolean(
+    (user.entityType && String(user.entityType).trim() && user.entityType !== "-") ||
+      (user.company && String(user.company).trim() && user.company !== "-") ||
+      (user.identityNo && String(user.identityNo).trim() && user.identityNo !== "-")
+  );
 
   return (
     <Modal
@@ -78,66 +89,80 @@ export default function UserViewModal({ open, onClose, user }) {
                 <Person size={34} color="#9CA3AF" />
               )}
             </div>
-            <span className="absolute bottom-0 right-0 inline-flex items-center justify-center">
-              <UserVerified size={29} />
-            </span>
+            {user.userId ? (
+              <span className="absolute bottom-0 right-0 inline-flex items-center justify-center">
+                <UserVerified size={29} />
+              </span>
+            ) : null}
           </div>
 
           <div className="flex-1">
             <h2 className="text-[24px] font-semibold text-[#111827]">{user.name}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF3] px-2.5 py-1 text-[11px] font-medium text-[#1E9E57]">
-                <IdentityVerified size={15} />
-                <span className="font-medium">Identity Verified</span>
-              </span>
-              <span className="inline-flex rounded-full bg-[#111827] px-2.5 py-1 text-[11px] font-medium text-white">
-                Member ID: {user.userId.replace("#", "")}
+              {user.identityVerified || user.identityNo ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF3] px-2.5 py-1 text-[11px] font-medium text-[#1E9E57]">
+                  <IdentityVerified size={15} />
+                  <span className="font-medium">Identity Verified</span>
+                </span>
+              ) : null}
+              {user.userId ? (
+                <span className="inline-flex rounded-full bg-[#111827] px-2.5 py-1 text-[11px] font-medium text-white">
+                  Member ID: {user.userId.replace("#", "")}
+                </span>
+              ) : null}
+            </div>
+            {registrationLabel ? (
+              <p className="mt-3 max-w-[520px] text-[14px] leading-6 text-[#6B7280]">
+                Registered as a {registrationLabel} user. Access limited to verified land assets and mediated enquiries.
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {hasContractDetails ? (
+          <div className="pt-2">
+            <h3 className="text-[16px] font-semibold text-[#111827] border-b border-[#EEF2F6] pb-5">Contract details</h3>
+            <div className="mt-4 space-y-3">
+              {hasEmail ? <InfoField label="Email address" value={user.email} rightIcon={<InputVerified size={20} />} /> : null}
+              {hasPhone ? <InfoField label="Phone number" value={user.phone} prefix="MY" rightIcon={<InputVerified size={20} />} /> : null}
+            </div>
+          </div>
+        ) : null}
+
+        {hasEntityInfo ? (
+          <div className="pt-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b pb-5 border-[#EEF2F6]">
+              <h3 className="text-[16px] font-semibold text-[#111827]">Entity information</h3>
+              <span className="inline-flex items-center gap-1 text-[12px] text-[#9CA3AF]">
+                <Lock size={14} color="#9CA3AF" />
+                <span>Locked after verification</span>
               </span>
             </div>
-            <p className="mt-3 max-w-[520px] text-[14px] leading-6 text-[#6B7280]">
-              Registered as a {registrationLabel} user. Access limited to verified land assets and mediated enquiries.
-            </p>
+            <div className="mt-4 space-y-3">
+              {entityLabel ? <InfoField label="Entity Type" value={entityLabel} /> : null}
+              {user.company ? <InfoField label="Company Name" value={user.company} /> : null}
+              {user.identityNo ? <InfoField label="ID Number (SSM / IC)" value={user.identityNo} /> : null}
+            </div>
           </div>
-        </div>
+        ) : null}
 
-        <div className="pt-2">
-          <h3 className="text-[16px] font-semibold text-[#111827] border-b border-[#EEF2F6] pb-5">Contract details</h3>
-          <div className="mt-4 space-y-3">
-            <InfoField label="Email address" value={user.email} rightIcon={<InputVerified size={20} />} />
-            <InfoField label="Phone number" value={user.phone} prefix="MY" rightIcon={<InputVerified size={20} />} />
+        {hasPreferences ? (
+          <div className="pt-2">
+            <h3 className="text-[16px] font-semibold text-[#111827] border-b border-[#EEF2F6] pb-5">Notification Preferences</h3>
+            <div className="mt-2">
+              <ToggleRow
+                label="Email Notifications"
+                description="Receive weekly market reports and listing updates via email"
+                checked={emailNotifications}
+              />
+              <ToggleRow
+                label="In-App Alerts"
+                description="Instant notifications for new enquiries and status changes"
+                checked={appAlerts}
+              />
+            </div>
           </div>
-        </div>
-
-        <div className="pt-2">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b pb-5 border-[#EEF2F6]">
-            <h3 className="text-[16px] font-semibold text-[#111827]">Entity information</h3>
-            <span className="inline-flex items-center gap-1 text-[12px] text-[#9CA3AF]">
-              <Lock size={14} color="#9CA3AF" />
-              <span>Locked after verification</span>
-            </span>
-          </div>
-          <div className="mt-4 space-y-3">
-            <InfoField label="Entity Type" value={entityLabel} />
-            <InfoField label="Company Name" value={user.company} />
-            <InfoField label="ID Number (SSM / IC)" value={user.identityNo} />
-          </div>
-        </div>
-
-        <div className="pt-2">
-          <h3 className="text-[16px] font-semibold text-[#111827] border-b border-[#EEF2F6] pb-5">Notification Preferences</h3>
-          <div className="mt-2">
-            <ToggleRow
-              label="Email Notifications"
-              description="Receive weekly market reports and listing updates via email"
-              checked={emailNotifications}
-            />
-            <ToggleRow
-              label="In-App Alerts"
-              description="Instant notifications for new enquiries and status changes"
-              checked={appAlerts}
-            />
-          </div>
-        </div>
+        ) : null}
       </div>
     </Modal>
   );

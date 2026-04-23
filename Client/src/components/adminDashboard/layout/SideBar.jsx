@@ -42,6 +42,11 @@ const sidebarItems = [
     icon: Persons,
   },
   {
+    label: "Admin Management",
+    href: "/admin/admin-management",
+    icon: Persons,
+  },
+  {
     label: "Homepage Content",
     href: "/admin/homepage-content",
     icon: Monitor,
