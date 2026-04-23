@@ -18,6 +18,7 @@ import {
 } from "../services/listLand.js";
 import type { GetLandsQuery } from "../../types/express/land.types.js";
 import type { string } from "better-auth";
+import db from "../../config/prisma.js";
 
 const getErrorPayload = (error: unknown) => {
 	const err = error as
@@ -265,14 +266,39 @@ export const updateListLandController = async (req: Request, res: Response) => {
 		const propertyId = getPropertyIdParamOrThrow(req);
 		const files = req.files as Express.Multer.File[];
 
+		// Fetch existing property with media and documents to validate status and get old assets
+		const existingPropertyRaw = await db.property.findUnique({
+			where: { id: propertyId },
+			include: {
+				media: {
+					include: {
+						documents: true,
+					},
+				},
+			},
+		});
+
+		if (!existingPropertyRaw) {
+			return res.status(404).json({ message: "Property not found" });
+		}
+
+		// Only allow updates if status is "pending" or "draft"
+		if (existingPropertyRaw.status && !["pending", "draft"].includes(existingPropertyRaw.status.toLowerCase())) {
+			return res.status(403).json({
+				message: `Cannot update property with status '${existingPropertyRaw.status}'. Only listings with status 'pending' or 'draft' can be updated.`,
+			});
+		}
+
 		let mediaIds: string[] = [];
 		let documentIds: string[] = [];
+		let oldMediaIds: string[] = [];
+		let oldDocumentIds: string[] = [];
+
+		// Separate new image and document files by field name
+		const imageFiles: Express.Multer.File[] = [];
+		const documentFiles: Express.Multer.File[] = [];
 
 		if (files && files.length > 0) {
-			// Separate images and documents by field name
-			const imageFiles: Express.Multer.File[] = [];
-			const documentFiles: Express.Multer.File[] = [];
-
 			for (const file of files) {
 				if (file.fieldname === "images") {
 					imageFiles.push(file);
@@ -280,37 +306,52 @@ export const updateListLandController = async (req: Request, res: Response) => {
 					documentFiles.push(file);
 				}
 			}
+		}
 
-			// Upload images if provided
-			if (imageFiles.length > 0) {
-				mediaIds = await uploadPropertyImages(requester.id, imageFiles);
-			}
+		// If new images are being uploaded, collect old image IDs for deletion
+		if (imageFiles.length > 0 && existingPropertyRaw.media && existingPropertyRaw.media.length > 0) {
+			oldMediaIds = existingPropertyRaw.media.map((m) => m.id);
+			// Upload new images
+			mediaIds = await uploadPropertyImages(requester.id, imageFiles);
+		} else if (imageFiles.length > 0) {
+			// Upload new images without old ones to delete
+			mediaIds = await uploadPropertyImages(requester.id, imageFiles);
+		}
 
-			// Upload documents if provided
-			if (documentFiles.length > 0) {
-				documentIds = await uploadPropertyDocuments(requester.id, documentFiles);
+		// If new documents are being uploaded, collect old document IDs for deletion
+		if (documentFiles.length > 0) {
+			// Collect all document IDs from existing media
+			if (existingPropertyRaw.media && existingPropertyRaw.media.length > 0) {
+				for (const media of existingPropertyRaw.media) {
+					if (media.documents && media.documents.length > 0) {
+						oldDocumentIds.push(...media.documents.map((d) => d.id));
+					}
+				}
 			}
+			// Upload new documents
+			documentIds = await uploadPropertyDocuments(requester.id, documentFiles);
 		}
 
 		const normalizedBody = buildNestedMultipartPayload(req.body as Record<string, unknown>);
 
-		// Add uploaded media IDs and document IDs to payload
+		// Add uploaded media IDs and document IDs to payload, including info about old ones to delete
 		const payload = {
 			...normalizedBody,
 			...(mediaIds.length > 0 && { landMediaIds: mediaIds }),
 			...(documentIds.length > 0 && { documentIds }),
+			...(oldMediaIds.length > 0 && { oldMediaIds }),
+			...(oldDocumentIds.length > 0 && { oldDocumentIds }),
 		};
 
-		const property = await updateListLandById(
-			propertyId,
-			payload
-		);
+		const property = await updateListLandById(propertyId, payload);
 
 		return res.status(200).json({
 			message: "Property updated successfully",
 			property,
 			imageCount: mediaIds.length,
 			documentCount: documentIds.length,
+			deletedImageCount: oldMediaIds.length,
+			deletedDocumentCount: oldDocumentIds.length,
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);

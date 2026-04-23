@@ -109,7 +109,7 @@ app.use("/api/utilizations", utilizationRoutes);
 app.use("/api/title-types", titleTypeRoutes);
 app.use("/api/enquiries", requireApiAuth, enquiryRoutes);
 app.use("/api/interest-types", interestTypeRoutes);
-app.use("/api/entity-types", requireApiAuth, entityTypeRoutes);
+app.use("/api/entity-types", entityTypeRoutes);
 app.use("/api/notifications", requireApiAuth, notificationRoutes);
 app.use("/api/locations", requireApiAuth, locationRoutes);
 app.use("/api/leaseholds", requireApiAuth, leaseholdRoutes);

@@ -1,4 +1,5 @@
 import { DealType, FeatureTag, Prisma, TerrainType } from "@prisma/client";
+import { randomUUID } from "crypto";
 import db from "../../config/prisma.js";
 import { uploadFileToS3, deleteFileFromS3 } from "./s3Upload.js";
 import { transformPropertyWithSignedUrls, generateMediaSignedUrl, processConcurrently } from "./signedUrlTransformer.js";
@@ -163,7 +164,10 @@ export type CreateListLandPayload = {
 	leaseholdDetails?: LeaseholdDetailPayload | null;
 };
 
-export type UpdateListLandPayload = Partial<CreateListLandPayload>;
+export type UpdateListLandPayload = Partial<CreateListLandPayload> & {
+	oldMediaIds?: string[];
+	oldDocumentIds?: string[];
+};
 
 type GetLandsQuery = {
 	page?: number;
@@ -257,7 +261,11 @@ const includePropertyRelations = {
 	titleType: true,
 	location: true,
 	leaseholdDetails: true,
-	media: true,
+	media: {
+		include: {
+			documents: true,
+		},
+	},
 } as const;
 
 /**
@@ -444,11 +452,14 @@ export const createListLand = async (
 
 		// Auto-generate unique listing code
 		const listingCode = generateListingCode();
+		const propertyId = randomUUID();
 
-		const created = await db.$transaction(async (trx) => {
-			// Create property
-			const property = await trx.property.create({
+		const operations: Prisma.PrismaPromise<unknown>[] = [];
+
+		operations.push(
+			db.property.create({
 				data: {
+					id: propertyId,
 					userId,
 					title: payload.title.trim(),
 					categoryId: payload.categoryId,
@@ -486,21 +497,23 @@ export const createListLand = async (
 					agreementAccepted: normalizeBoolean(parseBoolean(payload.agreementAccepted)) ?? false,
 					agreementAcceptedAt: toDateOrNull(payload.agreementAcceptedAt) ?? null,
 				},
-			});
+			})
+		);
 
-			// Link all media files to the property
-			if (payload.landMediaIds && payload.landMediaIds.length > 0) {
-				await trx.media.updateMany({
+		if (payload.landMediaIds && payload.landMediaIds.length > 0) {
+			operations.push(
+				db.media.updateMany({
 					where: { id: { in: payload.landMediaIds } },
-					data: { propertyId: property.id },
-				});
-			}
+					data: { propertyId },
+				})
+			);
+		}
 
-			// Create location if provided
-			if (payload.location) {
-				await trx.location.create({
+		if (payload.location) {
+			operations.push(
+				db.location.create({
 					data: {
-						propertyId: property.id,
+						propertyId,
 						state: payload.location.state,
 						district: payload.location.district,
 						mukim: payload.location.mukim ?? null,
@@ -509,24 +522,27 @@ export const createListLand = async (
 						longitude: parseDecimal(payload.location.longitude, "location.longitude"),
 						isApproximate: normalizeBoolean(parseBoolean(payload.location.isApproximate)) ?? false,
 					},
-				});
-			}
+				})
+			);
+		}
 
-			// Create leasehold details if provided
-			if (payload.leaseholdDetails) {
-				await trx.leaseholdDetail.create({
+		if (payload.leaseholdDetails) {
+			operations.push(
+				db.leaseholdDetail.create({
 					data: {
-						propertyId: property.id,
+						propertyId,
 						startYear: payload.leaseholdDetails.startYear,
 						leasePeriodYears: payload.leaseholdDetails.leasePeriodYears,
 					},
-				});
-			}
+				})
+			);
+		}
 
-			return trx.property.findUnique({
-				where: { id: property.id },
-				include: includePropertyRelations,
-			});
+		await db.$transaction(operations);
+
+		const created = await db.property.findUnique({
+			where: { id: propertyId },
+			include: includePropertyRelations,
 		});
 
 		return created;
@@ -609,7 +625,8 @@ export const getListLands = async (
 				});
 				return {
 					...item,
-					isShortListed: !!shortlistedProperty
+					isShortListed: !!shortlistedProperty,
+					isMine: item.userId === userId
 				};
 			})
 		);
@@ -618,7 +635,8 @@ export const getListLands = async (
 		// Fallback: return items without signed URLs
 		itemsWithSignedUrls = items.map(item => ({
 			...item,
-			isShortListed: false
+			isShortListed: false,
+			isMine: item.userId === userId
 		}));
 	}
 
@@ -705,7 +723,8 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 				
 				return {
 					...transformed,
-					isShortListed
+					isShortListed,
+					isMine: !!userId && item.userId === userId
 				};
 			})
 		);
@@ -714,7 +733,8 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 		// Fallback: return items without signed URLs but with isShortListed
 		itemsWithSignedUrls = items.map(item => ({
 			...item,
-			isShortListed: false
+			isShortListed: false,
+			isMine: !!userId && item.userId === userId
 		}));
 	}
 
@@ -764,20 +784,23 @@ export const getListLandById = async (
 		const transformed = await transformPropertyWithSignedUrls(property);
 		return {
 			...transformed,
-			isShortListed
+			isShortListed,
+			isMine: !!userId && property.userId === userId
 		};
 	} catch (signingError) {
 		console.error("Error transforming property with signed URLs in getListLandById:", signingError);
 		// Fallback: return property without signed URLs
 		return {
 			...property,
-			isShortListed
+			isShortListed,
+			isMine: !!userId && property.userId === userId
 		};
 	}
 };
 
 /**
  * Update property by ID
+ * Note: Only properties with status "pending" or "draft" can be updated
  */
 export const updateListLandById = async (
 	propertyId: string,
@@ -785,10 +808,19 @@ export const updateListLandById = async (
 ) => {
 	const existingProperty = await db.property.findUnique({
 		where: { id: propertyId },
+		include: { media: true },
 	});
 
 	if (!existingProperty) {
 		throw createHttpError("Property not found", 404);
+	}
+
+	// Check if property can be updated (only "pending" or "draft" status allowed)
+	if (existingProperty.status && !["pending", "draft"].includes(existingProperty.status.toLowerCase())) {
+		throw createHttpError(
+			`Cannot update property with status '${existingProperty.status}'. Only listings with status 'pending' or 'draft' can be updated.`,
+			403
+		);
 	}
 
 	try {
@@ -804,13 +836,53 @@ export const updateListLandById = async (
 				updateData.utilizationId = payload.utilizationId;
 			if (payload.titleTypeId !== undefined)
 				updateData.titleTypeId = payload.titleTypeId;
-			if (payload.landMediaIds !== undefined) {
-				// Update all media files to be associated with this property
-				await trx.media.updateMany({
-					where: { id: { in: payload.landMediaIds } },
-					data: { propertyId: propertyId },
-				});
+			
+			// Handle old media deletion and new media association
+			if (payload.landMediaIds !== undefined || payload.oldMediaIds !== undefined) {
+				// Delete old media files if provided
+				if (payload.oldMediaIds && payload.oldMediaIds.length > 0) {
+					console.log("🗑️ Deleting old media IDs:", payload.oldMediaIds);
+					// Delete documents associated with old media first (explicit by ID)
+					const documentsToDelete = await trx.document.findMany({
+						where: { media: { id: { in: payload.oldMediaIds } } },
+						select: { id: true },
+					});
+					if (documentsToDelete.length > 0) {
+						const docIds = documentsToDelete.map(d => d.id);
+						console.log("🗑️ Deleting documents:", docIds);
+						await trx.document.deleteMany({
+							where: { id: { in: docIds } },
+						});
+					}
+					// Delete old media
+					console.log("🗑️ Deleting old media files");
+					await trx.media.deleteMany({
+						where: { id: { in: payload.oldMediaIds } },
+					});
+				}
+				// Associate new media files with this property
+				if (payload.landMediaIds && payload.landMediaIds.length > 0) {
+					console.log("🔗 Associating new media IDs:", payload.landMediaIds);
+					await trx.media.updateMany({
+						where: { id: { in: payload.landMediaIds } },
+						data: { propertyId: propertyId },
+					});
+				}
 			}
+
+			// Handle old documents deletion and new documents association
+			if (payload.documentIds !== undefined || payload.oldDocumentIds !== undefined) {
+				// Delete old documents if provided
+				if (payload.oldDocumentIds && payload.oldDocumentIds.length > 0) {
+					console.log("🗑️ Deleting old document IDs:", payload.oldDocumentIds);
+					await trx.document.deleteMany({
+						where: { id: { in: payload.oldDocumentIds } },
+					});
+				}
+				// New documents are already created with their media in the controller
+				// Just ensure they're properly associated (they should be via uploadPropertyDocuments)
+			}
+
 			if (payload.tanahRizabMelayu !== undefined) {
 				const normalizedValue = normalizeBoolean(parseBoolean(payload.tanahRizabMelayu));
 				if (normalizedValue !== null) {
@@ -1187,7 +1259,11 @@ export const searchPropertiesByRadius = async (
 		// Apply optional filters
 		if (filters) {
 			if (filters.state) {
-				(whereCondition.location as any).state = filters.state;
+				// Use regex search for case-insensitive state matching
+				(whereCondition.location as any).state = {
+					contains: filters.state.trim(),
+					mode: 'insensitive'
+				};
 			}
 
 			if (filters.dealTypes && filters.dealTypes.length > 0) {
@@ -1344,6 +1420,7 @@ export const searchPropertiesByRadius = async (
 								folder: { userId },
 							},
 						})),
+						isMine: item.userId === userId,
 					}))
 				);
 			};
@@ -1355,6 +1432,7 @@ export const searchPropertiesByRadius = async (
 						property: {
 							...await transformPropertyWithSignedUrls(shortlist.property),
 							isShortListed: true,
+							isMine: shortlist.property.userId === userId,
 						},
 					}))
 				);
@@ -1373,6 +1451,7 @@ export const searchPropertiesByRadius = async (
 									folder: { userId },
 								},
 							})),
+							isMine: enquiry.property.userId === userId,
 						},
 					}))
 				);
@@ -1415,7 +1494,8 @@ export const searchPropertiesByRadius = async (
 					}
 					return {
 						...item,
-						isShortListed
+						isShortListed,
+						isMine: !!userId && item.userId === userId
 					};
 				})
 			);
@@ -1424,7 +1504,8 @@ export const searchPropertiesByRadius = async (
 			// Fallback: return results without signed URLs but with isShortListed
 			resultsWithSignedUrls = results.map(item => ({
 				...item,
-				isShortListed: false
+				isShortListed: false,
+				isMine: !!userId && item.userId === userId
 			}));
 		}
 

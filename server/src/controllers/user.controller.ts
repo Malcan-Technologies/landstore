@@ -112,8 +112,8 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 			return res.status(400).json({ message: "Invalid userType. Must be 'admin' or 'user'" });
 		}
 		if (profileType && !["individual", "company", "koperasi"].includes(profileType)) {
-			return res.status(400).json({ 
-				message: "Invalid profileType. Must be 'individual', 'company', or 'koperasi'" 
+			return res.status(400).json({
+				message: "Invalid profileType. Must be 'individual', 'company', or 'koperasi'"
 			});
 		}
 
@@ -165,7 +165,7 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 
 		// Generate email verification token
 		const verificationToken = randomBytes(32).toString("hex");
-		
+
 		// Create verification URL
 		const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
 		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
@@ -196,9 +196,9 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
-		return res.status(statusCode).json({ 
+		return res.status(statusCode).json({
 			success: false,
-			message 
+			message
 		});
 	}
 };
@@ -273,9 +273,26 @@ export const loginController = async (req: Request, res: Response) => {
 			});
 		}
 
+		const user = await getUserByEmail(email);
+
+		if (!user) {
+			return res.status(400).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		if (user.emailVerified != true) {
+			return res.status(400).json({
+				success: false,
+				message: "Email is not verified",
+			});
+		}
+
+
 		try {
 			// Call Better Auth with proper request context - convert headers to array format
-			const headerArray = Object.entries(req.headers).map(([key, value]) => 
+			const headerArray = Object.entries(req.headers).map(([key, value]) =>
 				[key, String(value)] as [string, string]
 			);
 
@@ -319,9 +336,6 @@ export const loginController = async (req: Request, res: Response) => {
 					message: "Invalid email or password",
 				});
 			}
-
-			// Fetch user with userType from database
-			const user = await getUserByEmail(responseBody.user.email);
 
 			// Prepare userName for welcome email
 			const emailPrefix = responseBody.user.email.split('@')[0];
@@ -374,9 +388,9 @@ export const getCurrentUserController = async (req: Request, res: Response) => {
 		// Better Auth provides user in request via middleware
 		const user = (req as any).user;
 		if (!user) {
-			return res.status(401).json({ 
+			return res.status(401).json({
 				error: "Unauthorized",
-				message: "Authentication required. Please log in to access your profile." 
+				message: "Authentication required. Please log in to access your profile."
 			});
 		}
 
@@ -400,7 +414,7 @@ export const getCurrentUserController = async (req: Request, res: Response) => {
 			})
 		]);
 
-		return res.status(200).json({ 
+		return res.status(200).json({
 			user,
 			statistics: {
 				totalListings,
@@ -419,24 +433,24 @@ export const getUserCompleteProfileController = async (req: Request, res: Respon
 		// Better Auth provides user in request via middleware
 		const user = (req as any).user;
 		if (!user) {
-			return res.status(401).json({ 
+			return res.status(401).json({
 				error: "Unauthorized",
-				message: "Authentication required. Please log in to access your profile." 
+				message: "Authentication required. Please log in to access your profile."
 			});
 		}
 
 		const completeProfile = await getUserCompleteProfile(user.id);
 
-		return res.status(200).json({ 
+		return res.status(200).json({
 			success: true,
-			message: "User profile retrieved successfully", 
-			result: completeProfile 
+			message: "User profile retrieved successfully",
+			result: completeProfile
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
-		return res.status(statusCode).json({ 
+		return res.status(statusCode).json({
 			success: false,
-			message 
+			message
 		});
 	}
 };
@@ -453,26 +467,26 @@ export const getMyProfileController = async (req: Request, res: Response) => {
 		// Get user ID from authenticated request (via requireApiAuth middleware)
 		const user = (req as any).user;
 		if (!user || !user.id) {
-			return res.status(401).json({ 
+			return res.status(401).json({
 				success: false,
 				error: "Unauthorized",
-				message: "Authentication required. Please log in to access your profile." 
+				message: "Authentication required. Please log in to access your profile."
 			});
 		}
 
 		// Fetch complete profile using authenticated user ID
 		const completeProfile = await getUserCompleteProfile(user.id);
 
-		return res.status(200).json({ 
+		return res.status(200).json({
 			success: true,
-			message: "My profile retrieved successfully", 
-			result: completeProfile 
+			message: "My profile retrieved successfully",
+			result: completeProfile
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
-		return res.status(statusCode).json({ 
+		return res.status(statusCode).json({
 			success: false,
-			message 
+			message
 		});
 	}
 };
@@ -492,9 +506,9 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 	try {
 		const requester = (req as any).user;
 		if (!requester) {
-			return res.status(401).json({ 
+			return res.status(401).json({
 				error: "Unauthorized",
-				message: "Authentication required. Please log in to access this resource." 
+				message: "Authentication required. Please log in to access this resource."
 			});
 		}
 
@@ -513,9 +527,9 @@ export const getUserByIdController = async (req: Request, res: Response) => {
 	try {
 		const requester = (req as any).user;
 		if (!requester) {
-			return res.status(401).json({ 
+			return res.status(401).json({
 				error: "Unauthorized",
-				message: "Authentication required. Please log in to access this resource." 
+				message: "Authentication required. Please log in to access this resource."
 			});
 		}
 		const userId = getUserIdParamOrThrow(req);
@@ -532,9 +546,9 @@ export const updateUserController = async (req: Request, res: Response) => {
 	try {
 		const requester = (req as any).user;
 		if (!requester) {
-			return res.status(401).json({ 
+			return res.status(401).json({
 				error: "Unauthorized",
-				message: "Authentication required. Please log in to access this resource." 
+				message: "Authentication required. Please log in to access this resource."
 			});
 		}
 
@@ -544,9 +558,9 @@ export const updateUserController = async (req: Request, res: Response) => {
 
 		// Users cannot modify their own role or allow role changes
 		if (req.body.userType !== undefined) {
-			return res.status(403).json({ 
+			return res.status(403).json({
 				error: "Forbidden",
-				message: "You cannot modify your own role. Contact support if you need role changes." 
+				message: "You cannot modify your own role. Contact support if you need role changes."
 			});
 		}
 
@@ -599,9 +613,9 @@ export const deleteUserController = async (req: Request, res: Response) => {
 
 		// Users can only delete their own account
 		if (requester.id !== userId) {
-			return res.status(403).json({ 
+			return res.status(403).json({
 				error: "Forbidden",
-				message: "You can only delete your own account." 
+				message: "You can only delete your own account."
 			});
 		}
 
@@ -643,7 +657,7 @@ export const requestPasswordResetController = async (req: Request, res: Response
 
 		// Generate secure reset token
 		const resetToken = randomBytes(32).toString("hex");
-		
+
 		// Create reset URL - send directly to frontend with token
 		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
 		const resetURL = `${frontendURL}?token=${resetToken}`;
@@ -765,7 +779,7 @@ export const resetPasswordController = async (req: Request, res: Response) => {
 
 		// Extract email from identifier (format: "password_reset_{email}")
 		const email = verification.identifier.replace("password_reset_", "");
-		
+
 		const user = await getUserByEmail(email);
 		if (!user) {
 			return res.status(404).json({
@@ -777,7 +791,7 @@ export const resetPasswordController = async (req: Request, res: Response) => {
 		// Update password in Account table with hashed password
 		// Use Better Auth's native hashPassword function (same as signup)
 		const hashedPassword = await hashPassword(newPassword);
-		
+
 		await db.account.updateMany({
 			where: {
 				userId: user.id,
@@ -888,7 +902,7 @@ export const verifyEmailController = async (req: Request, res: Response) => {
 
 		// Extract email from identifier (format: "email_verification_{email}")
 		const email = verification.identifier.replace("email_verification_", "");
-		
+
 		const user = await getUserByEmail(email);
 		if (!user) {
 			return res.status(404).json({

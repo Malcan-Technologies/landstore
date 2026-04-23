@@ -11,9 +11,9 @@ import requireApiAuth from "../middleware/requireApiAuth.js";
 const router = Router();
 
 // Entity type CRUD routes
-router.post("/", requireApiAuth, createEntityTypeController);
+router.post("/", requireApiAuth,requireApiAuth, createEntityTypeController);
 router.get("/", getAllEntityTypesController);
-router.get("/:id", getEntityTypeByIdController);
+router.get("/:id", requireApiAuth, getEntityTypeByIdController);
 router.patch("/:id", requireApiAuth, updateEntityTypeController);
 router.delete("/:id", requireApiAuth, deleteEntityTypeController);
 

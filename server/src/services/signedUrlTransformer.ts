@@ -68,7 +68,7 @@ export const processConcurrently = async <T, R>(
  * - Respects concurrency to avoid S3 API limits
  * 
  * @param property - Property object with media array
- * @returns Property object with signed URLs added to media
+ * @returns Property object with signed URLs added to media and documents
  */
 export const transformPropertyWithSignedUrls = async (property: any) => {
 	if (!property) {
@@ -102,9 +102,39 @@ export const transformPropertyWithSignedUrls = async (property: any) => {
 					console.log(`🔗 Generating signed URL for media ${media.id} - fileKey: ${media.fileUrl}`);
 					const signedUrl = await generateSignedUrl(media.fileUrl, AWS_BUCKET_NAME, SIGNED_URL_EXPIRY);
 
+					// Process documents if they exist
+					let documentsWithUrls = media.documents;
+					if (media.documents && Array.isArray(media.documents) && media.documents.length > 0) {
+						console.log(`📋 Processing ${media.documents.length} documents for media ${media.id}`);
+						documentsWithUrls = await Promise.all(
+							media.documents.map(async (doc: any) => {
+								if (!doc.media || !doc.media.fileUrl) {
+									console.log(`⚠️ Document has no media or fileUrl, returning as-is`);
+									return doc;
+								}
+
+								try {
+									console.log(`🔗 Generating signed URL for document ${doc.id} - fileKey: ${doc.media.fileUrl}`);
+									const docSignedUrl = await generateSignedUrl(doc.media.fileUrl, AWS_BUCKET_NAME, SIGNED_URL_EXPIRY);
+									return {
+										...doc,
+										media: {
+											...doc.media,
+											fileUrl: docSignedUrl,
+										},
+									};
+								} catch (docError) {
+									console.error(`❌ Failed to generate signed URL for document ${doc.id}`, docError);
+									return doc;
+								}
+							})
+						);
+					}
+
 					return {
 						...media,
 						fileUrl: signedUrl,
+						documents: documentsWithUrls,
 					};
 				} catch (error) {
 					console.error(`❌ Failed to generate signed URL for media ${media.id}`, error);
@@ -129,11 +159,41 @@ export const transformPropertyWithSignedUrls = async (property: any) => {
 		console.log(`🔗 Generating signed URL for media ${mediaRelation.id} - fileKey: ${mediaRelation.fileUrl}`);
 		const signedUrl = await generateSignedUrl(mediaRelation.fileUrl, AWS_BUCKET_NAME, SIGNED_URL_EXPIRY);
 
+		// Process documents if they exist
+		let documentsWithUrls = mediaRelation.documents;
+		if (mediaRelation.documents && Array.isArray(mediaRelation.documents) && mediaRelation.documents.length > 0) {
+			console.log(`📋 Processing ${mediaRelation.documents.length} documents for media ${mediaRelation.id}`);
+			documentsWithUrls = await Promise.all(
+				mediaRelation.documents.map(async (doc: any) => {
+					if (!doc.media || !doc.media.fileUrl) {
+						console.log(`⚠️ Document has no media or fileUrl, returning as-is`);
+						return doc;
+					}
+
+					try {
+						console.log(`🔗 Generating signed URL for document ${doc.id} - fileKey: ${doc.media.fileUrl}`);
+						const docSignedUrl = await generateSignedUrl(doc.media.fileUrl, AWS_BUCKET_NAME, SIGNED_URL_EXPIRY);
+						return {
+							...doc,
+							media: {
+								...doc.media,
+								fileUrl: docSignedUrl,
+							},
+						};
+					} catch (docError) {
+						console.error(`❌ Failed to generate signed URL for document ${doc.id}`, docError);
+						return doc;
+					}
+				})
+			);
+		}
+
 		return {
 			...property,
 			media: {
 				...mediaRelation,
 				fileUrl: signedUrl,
+				documents: documentsWithUrls,
 			},
 		};
 	} catch (error) {

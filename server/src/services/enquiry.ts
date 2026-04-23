@@ -100,11 +100,16 @@ export const createEnquiry = async (payload: CreateEnquiryPayload) => {
 		// Verify property exists
 		const propertyExists = await db.property.findUnique({
 			where: { id: payload.propertyId },
-			select: { id: true },
+			select: { id: true, userId: true },
 		});
 
 		if (!propertyExists) {
 			throw createHttpError("Property not found", 404);
+		}
+
+		// A user cannot create an enquiry for their own property
+		if (propertyExists.userId === payload.userId) {
+			throw createHttpError("You cannot enquire about your own property", 403);
 		}
 
 		// Verify user exists
