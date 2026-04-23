@@ -126,6 +126,20 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
     }
   };
 
+  const handleCheckMailResend = async () => {
+    if (!checkMailEmail) return;
+    setForgotPasswordLoading(true);
+    setForgotPasswordError("");
+    try {
+      await authService.forgotPassword(checkMailEmail);
+      // Successfully resent, show a brief success message or keep modal as is
+    } catch (error) {
+      setForgotPasswordError(error?.response?.data?.message || error?.message || "Failed to resend email");
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
   const handleSetNewPasswordSuccess = async ({ password: newPassword, token }) => {
     console.log("Step 1: handleSetNewPasswordSuccess called in LoginModal");
     console.log("Step 1.5: Current state - setNewPasswordOpen:", setNewPasswordOpen, "resetPasswordSuccessOpen:", resetPasswordSuccessOpen);
@@ -357,6 +371,9 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
           setCheckMailOpen(false);
           setForgotPasswordOpen(false);
         }}
+        onResend={handleCheckMailResend}
+        isResending={forgotPasswordLoading}
+        resendError={forgotPasswordError}
       />
 
       <SetNewPasswordModal
