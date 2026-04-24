@@ -3,7 +3,16 @@
 import Modal from "@/components/common/Modal";
 import Message from "@/components/svg/message";
 
-const CheckMailModal = ({ open, onClose, email, onContinue, onBackToLogin }) => {
+const CheckMailModal = ({ 
+  open, 
+  onClose, 
+  email, 
+  onContinue, 
+  onBackToLogin, 
+  onResend, 
+  isResending = false, 
+  resendError = "" 
+}) => {
   const resolvedEmail = typeof email === "string" ? email.trim() : "";
 
   const handleContinue = () => {
@@ -14,6 +23,12 @@ const CheckMailModal = ({ open, onClose, email, onContinue, onBackToLogin }) => 
 
     if (typeof window !== "undefined") {
       window.open("https://mail.google.com/mail/", "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleResend = () => {
+    if (typeof onResend === "function" && !isResending) {
+      onResend();
     }
   };
 
@@ -49,8 +64,16 @@ const CheckMailModal = ({ open, onClose, email, onContinue, onBackToLogin }) => 
 
         <p className="mt-3 text-[12px] text-gray5">
           Didn&apos;t receive the email?{" "}
-          <span className="font-medium text-green-secondary">Click to resend</span>
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={isResending}
+            className="font-medium text-green-secondary transition hover:opacity-80 disabled:opacity-50"
+          >
+            {isResending ? "Resending..." : "Click to resend"}
+          </button>
         </p>
+        {resendError ? <p className="mt-2 text-[12px] text-red-500">{resendError}</p> : null}
 
         <button
           type="button"

@@ -8,5 +8,8 @@ export default function AdminLayout({ children }) {
       {/* <div className="flex min-h-screen bg-background-primary pt-17">
       </div> */}
     </AdminRouteGate>
+    // <AdminShell>
+    //   {children}
+    // </AdminShell>
   );
 }
