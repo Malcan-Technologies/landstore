@@ -11,6 +11,7 @@ import {
 	uploadPropertyDocuments,
 	getUploadedMediaAndDocuments,
 	searchPropertiesByRadius,
+	searchPropertiesByBoundingBox,
 	getActiveListingsOverTime,
 	getListingStatusCounts,
 	getListingStatistics,
@@ -442,16 +443,22 @@ export const getAllListingsController = async (req: Request, res: Response) => {
 };
 
 /**
- * SEARCH PROPERTIES BY RADIUS
+ * SEARCH PROPERTIES BY RADIUS OR BOUNDING BOX
+ * 
+ * RADIUS SEARCH:
  * POST /api/list-lands/search/by-radius
  * Body: { latitude, longitude, radiusKm }
-	 * Query: { page?, limit?, state?, dealTypes?, categoryId?, terrainChips?, utilizationId?, tanahRizabMelayu?, landAreaMin?, landAreaMax?, pricePerSqft?, titleTypeId? }
+ * 
+ * BOUNDING BOX SEARCH:
+ * POST /api/list-lands/search/by-radius
+ * Body: { minLat, maxLat, minLon, maxLon }
+ * 
+ * Query: { page?, limit?, state?, dealTypes?, categoryId?, terrainChips?, utilizationId?, tanahRizabMelayu?, landAreaMin?, landAreaMax?, pricePerSqft?, titleTypeId? }
  *
- * Searches for active properties within a geographic radius using:
- * 1. Bounding box calculation for initial filtering
- * 2. Pythagorean theorem for precise distance verification
- * 3. Optional filters for refining results
- *
+ * The controller detects which search type based on the provided parameters:
+ * - If 4 bbox parameters are provided: uses bounding box search
+ * - If 3 radius parameters are provided: uses radius search
+ * 
  * Returns: { items, pagination, searchParams }
  */
 export const searchPropertiesByRadiusController = async (
@@ -459,27 +466,16 @@ export const searchPropertiesByRadiusController = async (
 	res: Response
 ) => {
 	try {
-		const { latitude, longitude, radiusKm } = req.body;
+		const { latitude, longitude, radiusKm, minLat, maxLat, minLon, maxLon } = req.body;
 
-		// Validate required fields
-		if (latitude === undefined || latitude === null) {
+		// Detect search type: Bounding Box or Radius
+		const hasBboxParams = minLat !== undefined && maxLat !== undefined && minLon !== undefined && maxLon !== undefined;
+		const hasRadiusParams = latitude !== undefined && longitude !== undefined && radiusKm !== undefined;
+
+		if (!hasBboxParams && !hasRadiusParams) {
 			return res.status(400).json({
 				success: false,
-				message: "Latitude is required",
-			});
-		}
-
-		if (longitude === undefined || longitude === null) {
-			return res.status(400).json({
-				success: false,
-				message: "Longitude is required",
-			});
-		}
-
-		if (radiusKm === undefined || radiusKm === null) {
-			return res.status(400).json({
-				success: false,
-				message: "Radius (radiusKm) is required",
+				message: "Either provide bounding box (minLat, maxLat, minLon, maxLon) OR radius search (latitude, longitude, radiusKm) parameters",
 			});
 		}
 
@@ -545,24 +541,49 @@ export const searchPropertiesByRadiusController = async (
 		}
 		if (req.query.titleTypeId !== undefined) filters.titleTypeId = req.query.titleTypeId as string;
 		
-		const result = await searchPropertiesByRadius(
-			latitude,
-			longitude,
-			radiusKm,
-			page,
-			limit,
-			userId,
-			filters,
-			{
-				myListings,
-				myShortlistings,
-				myEnquiries
-			}
-		);
+		let result;
+		let searchType: string;
+
+		// Execute appropriate search based on parameters provided
+		if (hasBboxParams) {
+			searchType = "bounding_box";
+			result = await searchPropertiesByBoundingBox(
+				minLat,
+				maxLat,
+				minLon,
+				maxLon,
+				page,
+				limit,
+				userId,
+				filters,
+				{
+					myListings,
+					myShortlistings,
+					myEnquiries
+				}
+			);
+		} else {
+			searchType = "radius";
+			result = await searchPropertiesByRadius(
+				latitude,
+				longitude,
+				radiusKm,
+				page,
+				limit,
+				userId,
+				filters,
+				{
+					myListings,
+					myShortlistings,
+					myEnquiries
+				}
+			);
+		}
 
 		return res.status(200).json({
 			success: true,
-			message: "Properties found within radius",
+			message: "Properties found",
+			searchType,
 			data: result,
 		});
 	} catch (error: unknown) {
@@ -573,6 +594,18 @@ export const searchPropertiesByRadiusController = async (
 		});
 	}
 };
+
+/**
+ * DEPRECATED: Use searchPropertiesByRadiusController instead
+ * This function is kept for backward compatibility and reference
+ * Searches for active properties within a geographic radius using:
+ * 1. Bounding box calculation for initial filtering
+ * 2. Pythagorean theorem for precise distance verification
+ * 3. Optional filters for refining results
+ *
+ * Returns: { items, pagination, searchParams }
+ *
+export const searchPropertiesByRadiusControllerOld = async (
 
 /**
  * Get active listings analytics over time

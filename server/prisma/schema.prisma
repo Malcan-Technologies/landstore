@@ -16,6 +16,11 @@ enum UserType {
   user
 }
 
+enum UserStatus {
+  active
+  suspended
+}
+
 enum NotificationType {
   welcome
   urgent
@@ -63,6 +68,7 @@ model User {
   // Custom business fields
   phone             String?
   userType          UserType               @default(user)
+  status            UserStatus             @default(active)
   profileMediaId    String?
 
   profileMedia      Media?                 @relation("UserProfileMedia", fields: [profileMediaId], references: [id])

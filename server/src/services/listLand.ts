@@ -1556,6 +1556,364 @@ export const searchPropertiesByRadius = async (
 };
 
 /**
+ * SEARCH PROPERTIES BY BOUNDING BOX
+ * Search for properties within a geographic bounding box area
+ * 
+ * Bounding box format:
+ * - minLat: minimum latitude (bottom)
+ * - maxLat: maximum latitude (top)
+ * - minLon: minimum longitude (left)
+ * - maxLon: maximum longitude (right)
+ * 
+ * Latitude range: -90.0 to 90.0
+ * Longitude range: -180.0 to 180.0
+ */
+export const searchPropertiesByBoundingBox = async (
+	minLat: number | string,
+	maxLat: number | string,
+	minLon: number | string,
+	maxLon: number | string,
+	page: number = 1,
+	limit: number = 10,
+	userId?: string,
+	filters?: {
+		state?: string;
+		dealTypes?: string[];
+		categoryId?: string;
+		terrainChips?: string[];
+		utilizationId?: string;
+		tanahRizabMelayu?: boolean;
+		landAreaMin?: number;
+		landAreaMax?: number;
+		pricePerSqft?: number;
+		titleTypeId?: string;
+	},
+	userFilters?: {
+		myListings?: boolean;
+		myShortlistings?: boolean;
+		myEnquiries?: boolean;
+	}
+) => {
+	try {
+		// Parse and validate bounding box inputs
+		const minLatNum = Number(minLat);
+		const maxLatNum = Number(maxLat);
+		const minLonNum = Number(minLon);
+		const maxLonNum = Number(maxLon);
+
+		if (!Number.isFinite(minLatNum) || minLatNum < -90 || minLatNum > 90) {
+			throw createHttpError("Invalid minLat. Must be between -90 and 90", 400);
+		}
+
+		if (!Number.isFinite(maxLatNum) || maxLatNum < -90 || maxLatNum > 90) {
+			throw createHttpError("Invalid maxLat. Must be between -90 and 90", 400);
+		}
+
+		if (!Number.isFinite(minLonNum) || minLonNum < -180 || minLonNum > 180) {
+			throw createHttpError("Invalid minLon. Must be between -180 and 180", 400);
+		}
+
+		if (!Number.isFinite(maxLonNum) || maxLonNum < -180 || maxLonNum > 180) {
+			throw createHttpError("Invalid maxLon. Must be between -180 and 180", 400);
+		}
+
+		if (minLatNum >= maxLatNum) {
+			throw createHttpError("minLat must be less than maxLat", 400);
+		}
+
+		if (minLonNum >= maxLonNum) {
+			throw createHttpError("minLon must be less than maxLon", 400);
+		}
+
+		// Build WHERE clause with filters
+		const whereCondition: Prisma.PropertyWhereInput = {
+			status: "active",
+			location: {
+				latitude: {
+					gte: new Prisma.Decimal(minLatNum),
+					lte: new Prisma.Decimal(maxLatNum),
+				},
+				longitude: {
+					gte: new Prisma.Decimal(minLonNum),
+					lte: new Prisma.Decimal(maxLonNum),
+				},
+			},
+		};
+
+		// Apply optional filters
+		if (filters) {
+			if (filters.state) {
+				(whereCondition.location as any).state = {
+					contains: filters.state.trim(),
+					mode: 'insensitive'
+				};
+			}
+
+			if (filters.dealTypes && filters.dealTypes.length > 0) {
+				whereCondition.dealTypes = {
+					hasSome: filters.dealTypes as DealType[],
+				};
+			}
+
+			if (filters.categoryId) {
+				whereCondition.categoryId = filters.categoryId;
+			}
+
+			if (filters.terrainChips && filters.terrainChips.length > 0) {
+				whereCondition.terrainChips = {
+					hasSome: filters.terrainChips as TerrainType[],
+				};
+			}
+
+			if (filters.utilizationId) {
+				whereCondition.utilizationId = filters.utilizationId;
+			}
+
+			if (filters.tanahRizabMelayu !== undefined) {
+				whereCondition.tanahRizabMelayu = filters.tanahRizabMelayu;
+			}
+
+			if (filters.landAreaMin !== undefined || filters.landAreaMax !== undefined) {
+				whereCondition.landArea = {};
+				if (filters.landAreaMin !== undefined) {
+					(whereCondition.landArea as any).gte = new Prisma.Decimal(filters.landAreaMin);
+				}
+				if (filters.landAreaMax !== undefined) {
+					(whereCondition.landArea as any).lte = new Prisma.Decimal(filters.landAreaMax);
+				}
+			}
+
+			if (filters.pricePerSqft !== undefined) {
+				whereCondition.pricePerSqrft = {
+					lte: new Prisma.Decimal(filters.pricePerSqft)
+				};
+			}
+
+			if (filters.titleTypeId) {
+				whereCondition.titleTypeId = filters.titleTypeId;
+			}
+		}
+
+		// Determine if any user-specific filter is active
+		const hasUserFilters = userFilters?.myListings || userFilters?.myShortlistings || userFilters?.myEnquiries;
+
+		// Query properties within the bounding box
+		const bboxSkip = (page - 1) * limit;
+
+		const results = await db.property.findMany({
+			where: whereCondition,
+			include: includePropertyRelations,
+			skip: bboxSkip,
+			take: limit,
+		});
+
+		// Get total count for pagination
+		const totalCount = await db.property.count({
+			where: whereCondition,
+		});
+
+		let userFilterData: {
+			myListings: { items: any[]; total: number } | null;
+			myShortlistings: { items: any[]; total: number } | null;
+			myEnquiries: { items: any[]; total: number } | null;
+		} | null = null;
+
+		if (hasUserFilters && userId) {
+			const shortlistWhere: Prisma.ShortlistPropertyWhereInput = {
+				folder: { userId },
+			};
+
+			const enquiryWhere: Prisma.PropertyEnquiryWhereInput = {
+				userId,
+			};
+
+			const [myListingsResults, myShortlistingsResults, myEnquiriesResults] = await Promise.all([
+				userFilters?.myListings
+					? db.property.findMany({
+						where: { userId },
+						include: includePropertyRelations,
+						orderBy: { createdAt: "desc" },
+					})
+					: Promise.resolve([]),
+				userFilters?.myShortlistings
+					? db.shortlistProperty.findMany({
+						where: shortlistWhere,
+						include: {
+							folder: {
+								select: {
+									id: true,
+									name: true,
+									parentFolderId: true,
+									createdAt: true,
+									updatedAt: true,
+								},
+							},
+							property: {
+								include: includePropertyRelations,
+							},
+						},
+						orderBy: { createdAt: "desc" },
+					})
+					: Promise.resolve([]),
+				userFilters?.myEnquiries
+					? db.propertyEnquiry.findMany({
+						where: enquiryWhere,
+						include: {
+							property: {
+								include: includePropertyRelations,
+							},
+							interestType: true,
+						},
+						orderBy: { createdAt: "desc" },
+					})
+					: Promise.resolve([]),
+			]);
+
+			const transformPropertyList = async (properties: any[]) => {
+				const transformed = await Promise.all(
+					properties.map((property) => transformPropertyWithSignedUrls(property))
+				);
+
+				return Promise.all(
+					transformed.map(async (item) => ({
+						...item,
+						isShortListed: !!(await db.shortlistProperty.findFirst({
+							where: {
+								propertyId: item.id,
+								folder: { userId },
+							},
+						})),
+						isMine: item.userId === userId,
+					}))
+				);
+			};
+
+			const transformShortlistEntries = async (shortlists: any[]) => {
+				return Promise.all(
+					shortlists.map(async (shortlist) => ({
+						...shortlist,
+						property: {
+							...await transformPropertyWithSignedUrls(shortlist.property),
+							isShortListed: true,
+							isMine: shortlist.property.userId === userId,
+						},
+					}))
+				);
+			};
+
+			const transformEnquiryEntries = async (enquiries: any[]) => {
+				return Promise.all(
+					enquiries.map(async (enquiry) => ({
+						...enquiry,
+						budget: enquiry.budget?.toString() ?? null,
+						property: {
+							...await transformPropertyWithSignedUrls(enquiry.property),
+							isShortListed: !!(await db.shortlistProperty.findFirst({
+								where: {
+									propertyId: enquiry.propertyId,
+									folder: { userId },
+								},
+							})),
+							isMine: enquiry.property.userId === userId,
+						},
+					}))
+				);
+			};
+
+			const [myListings, myShortlistings, myEnquiries] = await Promise.all([
+				userFilters?.myListings ? transformPropertyList(myListingsResults as any[]) : Promise.resolve([]),
+				userFilters?.myShortlistings ? transformShortlistEntries(myShortlistingsResults as any[]) : Promise.resolve([]),
+				userFilters?.myEnquiries ? transformEnquiryEntries(myEnquiriesResults as any[]) : Promise.resolve([]),
+			]);
+
+			userFilterData = {
+				myListings: userFilters?.myListings ? { items: myListings, total: myListingsResults.length } : null,
+				myShortlistings: userFilters?.myShortlistings ? { items: myShortlistings, total: myShortlistingsResults.length } : null,
+				myEnquiries: userFilters?.myEnquiries ? { items: myEnquiries, total: myEnquiriesResults.length } : null,
+			};
+		}
+
+		// Transform results with signed URLs
+		let resultsWithSignedUrls;
+		try {
+			const transformed = await Promise.all(
+				results.map((item) => transformPropertyWithSignedUrls(item))
+			);
+
+			resultsWithSignedUrls = await Promise.all(
+				transformed.map(async (item) => {
+					let isShortListed = false;
+					if (userId) {
+						const shortlistedProperty = await db.shortlistProperty.findFirst({
+							where: {
+								propertyId: item.id,
+								folder: {
+									userId: userId
+								}
+							},
+						});
+						isShortListed = !!shortlistedProperty;
+					}
+					return {
+						...item,
+						isShortListed,
+						isMine: !!userId && item.userId === userId
+					};
+				})
+			);
+		} catch (signingError) {
+			console.error("Error during batch URL signing, returning results without signed URLs:", signingError);
+			resultsWithSignedUrls = results.map(item => ({
+				...item,
+				isShortListed: false,
+				isMine: !!userId && item.userId === userId
+			}));
+		}
+
+		return {
+			items: resultsWithSignedUrls,
+			pagination: {
+				page,
+				limit,
+				total: results.length,
+				totalInBoundingBox: totalCount,
+				totalPages: Math.ceil(results.length / limit),
+			},
+			appliedFilters: {
+				state: filters?.state ?? null,
+				dealTypes: filters?.dealTypes ?? null,
+				categoryId: filters?.categoryId ?? null,
+				terrainChips: filters?.terrainChips ?? null,
+				utilizationId: filters?.utilizationId ?? null,
+				tanahRizabMelayu: filters?.tanahRizabMelayu ?? null,
+				landAreaMin: filters?.landAreaMin ?? null,
+				landAreaMax: filters?.landAreaMax ?? null,
+				pricePerSqft: filters?.pricePerSqft ?? null,
+				titleTypeId: filters?.titleTypeId ?? null,
+			},
+			userFilters: userFilterData,
+			searchParams: {
+				boundingBox: {
+					minLat: minLatNum,
+					maxLat: maxLatNum,
+					minLon: minLonNum,
+					maxLon: maxLonNum,
+				},
+			},
+		};
+	} catch (error: unknown) {
+		const err = error as Error & { statusCode?: number };
+		if (err.statusCode) {
+			throw error;
+		}
+
+		const errorMessage = err?.message || "Failed to search properties by bounding box";
+		console.error("Error in searchPropertiesByBoundingBox:", error);
+		throw createHttpError(errorMessage, 500);
+	}
+};
+
+/**
  * Get active listings over time with optional filtering by time range
  * Supports time ranges: 24hours, 7days, 30days, 12months
  * Returns data points with cumulative active listings count and percentage increase

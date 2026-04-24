@@ -166,10 +166,9 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 		// Generate email verification token
 		const verificationToken = randomBytes(32).toString("hex");
 
-		// Create verification URL
-		const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3001";
+		// Create verification URL - send directly to frontend with token
 		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
-		const verificationURL = `${baseURL}/api/users/verify-email-callback?token=${verificationToken}&redirectTo=${encodeURIComponent(frontendURL)}`;
+		const verificationURL = `${frontendURL}/verify-email-callback?token=${verificationToken}`;
 
 		// Store verification token in database with 24 hour expiration
 		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
@@ -286,6 +285,14 @@ export const loginController = async (req: Request, res: Response) => {
 			return res.status(400).json({
 				success: false,
 				message: "Email is not verified",
+			});
+		}
+
+		if (user.status === "suspended") {
+			return res.status(403).json({
+				
+				success: false,
+				message: "Your account is suspended. Contact admin",
 			});
 		}
 

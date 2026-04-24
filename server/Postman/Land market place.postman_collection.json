@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    // \"email\": \"ahsanmaqsood786@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}\r\n// {\r\n//     \"email\": \"dawartoor30@gmail.com\",\r\n//     \"password\": \"Test@123456789\"\r\n// }",
+              "raw": "{\r\n    // \"email\": \"basitshykh@gmail.com\",\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -97,60 +97,13 @@
               }
             ],
             "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "email",
-                  "value": "ahsanmaqsood976@gmail.com",
-                  "type": "text"
-                },
-                {
-                  "key": "password",
-                  "value": "Test@1234567",
-                  "type": "text"
-                },
-                {
-                  "key": "name",
-                  "value": "basit sheikh",
-                  "type": "text"
-                },
-                {
-                  "key": "userType",
-                  "value": "user",
-                  "type": "text"
-                },
-                {
-                  "key": "phone",
-                  "value": "60123456789",
-                  "type": "text"
-                },
-                {
-                  "key": "profileType",
-                  "value": "individual",
-                  "type": "text"
-                },
-                {
-                  "key": "fullName",
-                  "value": "John Doe",
-                  "type": "text"
-                },
-                {
-                  "key": "identityNo",
-                  "value": "123456789",
-                  "type": "text"
-                },
-                {
-                  "key": "entityTypes",
-                  "value": "1790ec04-21db-49da-860a-614f0a033042",
-                  "type": "text"
-                },
-                {
-                  "key": "profileImage",
-                  "type": "file",
-                  "uuid": "9fa21b33-1e16-4f29-93db-3d5970f9b11e",
-                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/author.jpeg"
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Dawar Abbas\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Dawar Abbas\",\r\n    \"identityNo\": \"123456789\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
                 }
-              ]
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/users/register",
@@ -485,7 +438,8 @@
                 {
                   "key": "email",
                   "value": "dawartoor30@gmail.com",
-                  "type": "text"
+                  "type": "text",
+                  "disabled": true
                 },
                 {
                   "key": "phone",
@@ -504,7 +458,7 @@
                 },
                 {
                   "key": "identityNo",
-                  "value": "123456-12-1234",
+                  "value": "123456-12-12",
                   "type": "text"
                 },
                 {
@@ -516,8 +470,7 @@
                   "key": "profileImage",
                   "type": "file",
                   "uuid": "29738c2f-b594-4ea3-a73f-600cda2e19cf",
-                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/author.jpeg",
-                  "disabled": true
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/author.jpeg"
                 }
               ]
             },
@@ -829,25 +782,25 @@
                 },
                 {
                   "key": "categoryId",
-                  "value": "99f16847-4681-4984-b0cc-e9debe0c2c64",
+                  "value": "f5f08f98-ba32-4c19-bfa1-82d5804275e6",
                   "type": "text",
                   "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e"
                 },
                 {
                   "key": "ownershipTypeId",
-                  "value": "a5a937da-bb18-4157-bdf6-a42c3df0b947",
+                  "value": "8e38179d-52f3-4ee9-89c0-b92e940b8f61",
                   "type": "text",
                   "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e"
                 },
                 {
                   "key": "utilizationId",
-                  "value": "162a0a33-7531-4e5b-b668-4992a8ba139f",
+                  "value": "1b9766f1-b04b-4658-8a3d-243d15b1f72e",
                   "type": "text",
                   "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391"
                 },
                 {
                   "key": "titleTypeId",
-                  "value": "2a56fa5d-781d-46e6-86ea-335fef8e1e7b",
+                  "value": "5484127d-5157-4db2-8fb2-fcf94b235708",
                   "type": "text",
                   "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad"
                 },
@@ -856,12 +809,6 @@
                   "value": "km",
                   "type": "text",
                   "uuid": "38a78f65-281b-4355-ae3d-cb501205a75b"
-                },
-                {
-                  "key": "listingCode",
-                  "value": "LAND-2026-004",
-                  "type": "text",
-                  "uuid": "282a7e12-073e-4f5b-a7b3-511c4af51c0c"
                 },
                 {
                   "key": "landArea",
@@ -886,8 +833,11 @@
                   "type": "file",
                   "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
                   "src": [
+                    "/C:/Users/Lenovo/OneDrive/Desktop/F50.avif",
                     "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/images (1).jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/images.jpeg"
                   ]
                 },
                 {
@@ -938,9 +888,10 @@
                 },
                 {
                   "key": "status",
-                  "value": "active",
+                  "value": "draft",
                   "type": "text",
-                  "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024"
+                  "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024",
+                  "disabled": true
                 }
               ]
             },
@@ -1041,16 +992,15 @@
                   "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
                   "src": [
                     "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg"
-                  ],
-                  "disabled": true
+                    "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/images (2).jpeg"
+                  ]
                 },
                 {
                   "key": "documents",
                   "type": "file",
                   "uuid": "625f394d-38e2-459a-9dca-278290853ba4",
-                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Database Students.pdf",
-                  "disabled": true
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Docker Docs.pdf"
                 },
                 {
                   "key": "tanahRizabMelayu",
@@ -1103,7 +1053,8 @@
                   "value": "active",
                   "type": "text",
                   "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024",
-                  "description": "active / draft / under review / reserved"
+                  "description": "active / draft / under review / reserved",
+                  "disabled": true
                 }
               ]
             },
@@ -1119,7 +1070,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "885caa6b-ff94-48bd-800a-6f267f1b4a21"
+                  "value": "39d6fd15-f083-4c73-a237-a5494d01a64f"
                 }
               ]
             }
@@ -1198,6 +1149,32 @@
           "response": []
         },
         {
+          "name": "All listings Count",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/analytics/listing-status-counts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "analytics",
+                "listing-status-counts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get listing By id",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
@@ -1221,7 +1198,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "885caa6b-ff94-48bd-800a-6f267f1b4a21"
+                  "value": "39d6fd15-f083-4c73-a237-a5494d01a64f"
                 }
               ]
             }
@@ -1263,7 +1240,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"latitude\" : \"3.1738\",\r\n    \"longitude\": \"101.595\",\r\n    \"radiusKm\": \"5\"\r\n}",
+              "raw": "{\r\n    \"latitude\" : \"6.1988\",\r\n    \"longitude\": \"102.1709\",\r\n    \"radiusKm\": \"5\"\r\n    // \"minLat\": 2.8854,\r\n    // \"maxLat\": 3.0844,\r\n    // \"minLon\": 101.5500,\r\n    // \"maxLon\": 101.7500\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1271,7 +1248,7 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/list-lands/search/by-radius?myListings=true&myShortlistings=true&myEnquiries=true",
+              "raw": "{{baseUrl}}/list-lands/search/by-radius",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1282,7 +1259,7 @@
               ],
               "query": [
                 {
-                  "key": "location",
+                  "key": "state",
                   "value": "Selangor",
                   "description": "any state",
                   "disabled": true
@@ -1335,15 +1312,18 @@
                 },
                 {
                   "key": "myListings",
-                  "value": "true"
+                  "value": "true",
+                  "disabled": true
                 },
                 {
                   "key": "myShortlistings",
-                  "value": "true"
+                  "value": "true",
+                  "disabled": true
                 },
                 {
                   "key": "myEnquiries",
-                  "value": "true"
+                  "value": "true",
+                  "disabled": true
                 }
               ]
             }
@@ -3199,6 +3179,28 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Health Land market place",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://landstore-server-434749786.ap-southeast-5.elb.amazonaws.com/",
+          "protocol": "http",
+          "host": [
+            "landstore-server-434749786",
+            "ap-southeast-5",
+            "elb",
+            "amazonaws",
+            "com"
+          ],
+          "path": [
+            ""
+          ]
+        }
+      },
+      "response": []
     }
   ],
   "event": [
