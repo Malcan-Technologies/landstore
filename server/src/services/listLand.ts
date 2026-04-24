@@ -1240,8 +1240,9 @@ export const searchPropertiesByRadius = async (
 		const maxLon = lon + dX;
 
 		// Build WHERE clause with filters
+		// Public users: active listings only. Authenticated users: all statuses.
 		const whereCondition: Prisma.PropertyWhereInput = {
-			status: "active",
+			...(userId ? {} : { status: "active" }),
 			location: {
 				latitude: {
 					gte: new Prisma.Decimal(minLat),
@@ -1356,18 +1357,83 @@ export const searchPropertiesByRadius = async (
 		} | null = null;
 
 		if (hasUserFilters && userId) {
+			const userScopedPropertyFilters: Prisma.PropertyWhereInput = {};
+
+			if (filters?.state) {
+				(userScopedPropertyFilters.location as any) = {
+					...((userScopedPropertyFilters.location as any) ?? {}),
+					state: {
+						contains: filters.state.trim(),
+						mode: "insensitive",
+					},
+				};
+			}
+
+			if (filters?.dealTypes && filters.dealTypes.length > 0) {
+				userScopedPropertyFilters.dealTypes = {
+					hasSome: filters.dealTypes as DealType[],
+				};
+			}
+
+			if (filters?.categoryId) {
+				userScopedPropertyFilters.categoryId = filters.categoryId;
+			}
+
+			if (filters?.terrainChips && filters.terrainChips.length > 0) {
+				userScopedPropertyFilters.terrainChips = {
+					hasSome: filters.terrainChips as TerrainType[],
+				};
+			}
+
+			if (filters?.utilizationId) {
+				userScopedPropertyFilters.utilizationId = filters.utilizationId;
+			}
+
+			if (filters?.tanahRizabMelayu !== undefined) {
+				userScopedPropertyFilters.tanahRizabMelayu = filters.tanahRizabMelayu;
+			}
+
+			if (filters?.landAreaMin !== undefined || filters?.landAreaMax !== undefined) {
+				userScopedPropertyFilters.landArea = {};
+				if (filters?.landAreaMin !== undefined) {
+					(userScopedPropertyFilters.landArea as any).gte = new Prisma.Decimal(filters.landAreaMin);
+				}
+				if (filters?.landAreaMax !== undefined) {
+					(userScopedPropertyFilters.landArea as any).lte = new Prisma.Decimal(filters.landAreaMax);
+				}
+			}
+
+			if (filters?.pricePerSqft !== undefined) {
+				userScopedPropertyFilters.pricePerSqrft = {
+					lte: new Prisma.Decimal(filters.pricePerSqft),
+				};
+			}
+
+			if (filters?.titleTypeId) {
+				userScopedPropertyFilters.titleTypeId = filters.titleTypeId;
+			}
+
 			const shortlistWhere: Prisma.ShortlistPropertyWhereInput = {
 				folder: { userId },
+				...(Object.keys(userScopedPropertyFilters).length > 0
+					? { property: userScopedPropertyFilters }
+					: {}),
 			};
 
 			const enquiryWhere: Prisma.PropertyEnquiryWhereInput = {
 				userId,
+				...(Object.keys(userScopedPropertyFilters).length > 0
+					? { property: userScopedPropertyFilters }
+					: {}),
 			};
 
 			const [myListingsResults, myShortlistingsResults, myEnquiriesResults] = await Promise.all([
 				userFilters?.myListings
 					? db.property.findMany({
-						where: { userId },
+						where: {
+							userId,
+							...userScopedPropertyFilters,
+						},
 						include: includePropertyRelations,
 						orderBy: { createdAt: "desc" },
 					})
@@ -1626,8 +1692,9 @@ export const searchPropertiesByBoundingBox = async (
 		}
 
 		// Build WHERE clause with filters
+		// Public users: active listings only. Authenticated users: all statuses.
 		const whereCondition: Prisma.PropertyWhereInput = {
-			status: "active",
+			...(userId ? {} : { status: "active" }),
 			location: {
 				latitude: {
 					gte: new Prisma.Decimal(minLatNum),
@@ -1719,18 +1786,83 @@ export const searchPropertiesByBoundingBox = async (
 		} | null = null;
 
 		if (hasUserFilters && userId) {
+			const userScopedPropertyFilters: Prisma.PropertyWhereInput = {};
+
+			if (filters?.state) {
+				(userScopedPropertyFilters.location as any) = {
+					...((userScopedPropertyFilters.location as any) ?? {}),
+					state: {
+						contains: filters.state.trim(),
+						mode: "insensitive",
+					},
+				};
+			}
+
+			if (filters?.dealTypes && filters.dealTypes.length > 0) {
+				userScopedPropertyFilters.dealTypes = {
+					hasSome: filters.dealTypes as DealType[],
+				};
+			}
+
+			if (filters?.categoryId) {
+				userScopedPropertyFilters.categoryId = filters.categoryId;
+			}
+
+			if (filters?.terrainChips && filters.terrainChips.length > 0) {
+				userScopedPropertyFilters.terrainChips = {
+					hasSome: filters.terrainChips as TerrainType[],
+				};
+			}
+
+			if (filters?.utilizationId) {
+				userScopedPropertyFilters.utilizationId = filters.utilizationId;
+			}
+
+			if (filters?.tanahRizabMelayu !== undefined) {
+				userScopedPropertyFilters.tanahRizabMelayu = filters.tanahRizabMelayu;
+			}
+
+			if (filters?.landAreaMin !== undefined || filters?.landAreaMax !== undefined) {
+				userScopedPropertyFilters.landArea = {};
+				if (filters?.landAreaMin !== undefined) {
+					(userScopedPropertyFilters.landArea as any).gte = new Prisma.Decimal(filters.landAreaMin);
+				}
+				if (filters?.landAreaMax !== undefined) {
+					(userScopedPropertyFilters.landArea as any).lte = new Prisma.Decimal(filters.landAreaMax);
+				}
+			}
+
+			if (filters?.pricePerSqft !== undefined) {
+				userScopedPropertyFilters.pricePerSqrft = {
+					lte: new Prisma.Decimal(filters.pricePerSqft),
+				};
+			}
+
+			if (filters?.titleTypeId) {
+				userScopedPropertyFilters.titleTypeId = filters.titleTypeId;
+			}
+
 			const shortlistWhere: Prisma.ShortlistPropertyWhereInput = {
 				folder: { userId },
+				...(Object.keys(userScopedPropertyFilters).length > 0
+					? { property: userScopedPropertyFilters }
+					: {}),
 			};
 
 			const enquiryWhere: Prisma.PropertyEnquiryWhereInput = {
 				userId,
+				...(Object.keys(userScopedPropertyFilters).length > 0
+					? { property: userScopedPropertyFilters }
+					: {}),
 			};
 
 			const [myListingsResults, myShortlistingsResults, myEnquiriesResults] = await Promise.all([
 				userFilters?.myListings
 					? db.property.findMany({
-						where: { userId },
+						where: {
+							userId,
+							...userScopedPropertyFilters,
+						},
 						include: includePropertyRelations,
 						orderBy: { createdAt: "desc" },
 					})

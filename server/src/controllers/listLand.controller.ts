@@ -566,6 +566,7 @@ export const searchPropertiesByRadiusController = async (
 				}
 			);
 		} else {
+			console.log("else")
 			searchType = "radius";
 			result = await searchPropertiesByRadius(
 				latitude,

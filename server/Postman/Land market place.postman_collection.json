@@ -98,7 +98,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Dawar Abbas\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Dawar Abbas\",\r\n    \"identityNo\": \"123456789\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Abdul Basit\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Abdul Basit\",\r\n    \"identityNo\": \"123456789\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1240,7 +1240,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"latitude\" : \"6.1988\",\r\n    \"longitude\": \"102.1709\",\r\n    \"radiusKm\": \"5\"\r\n    // \"minLat\": 2.8854,\r\n    // \"maxLat\": 3.0844,\r\n    // \"minLon\": 101.5500,\r\n    // \"maxLon\": 101.7500\r\n}",
+              "raw": "{\r\n    \"latitude\" : \"3.1738\",\r\n    \"longitude\": \"101.595\",\r\n    \"radiusKm\": \"5\"\r\n    // \"minLat\": 2.8854,\r\n    // \"maxLat\": 3.0844,\r\n    // \"minLon\": 101.5500,\r\n    // \"maxLon\": 101.7500\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1248,7 +1248,7 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/list-lands/search/by-radius",
+              "raw": "{{baseUrl}}/list-lands/search/by-radius?state=Selangor&myListings=true",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1261,8 +1261,7 @@
                 {
                   "key": "state",
                   "value": "Selangor",
-                  "description": "any state",
-                  "disabled": true
+                  "description": "any state"
                 },
                 {
                   "key": "dealTypes",
@@ -1312,8 +1311,7 @@
                 },
                 {
                   "key": "myListings",
-                  "value": "true",
-                  "disabled": true
+                  "value": "true"
                 },
                 {
                   "key": "myShortlistings",
@@ -1353,6 +1351,75 @@
                 "list-lands",
                 ":id",
                 "request-changes"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "aa9a1a73-0909-4aed-be85-0149577d0e78"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject listings",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"reason\" : \"{{reason}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands//:id/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                "",
+                ":id",
+                "reject"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "aa9a1a73-0909-4aed-be85-0149577d0e78"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Soft delete listing",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"reason\" : \"{{reason}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/list-lands/:id/soft-delete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "list-lands",
+                ":id",
+                "soft-delete"
               ],
               "variable": [
                 {
