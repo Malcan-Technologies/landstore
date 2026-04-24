@@ -167,7 +167,8 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 		const verificationToken = randomBytes(32).toString("hex");
 
 		// Create verification URL - send directly to frontend with token
-		const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
+		// const frontendURL = process.env.FRONTEND_URL || "http://localhost:3000";
+		const frontendURL = "https://landstore.my";
 		const verificationURL = `${frontendURL}/verify-email-callback?token=${verificationToken}`;
 
 		// Store verification token in database with 24 hour expiration
