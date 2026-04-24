@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/common/Button";
 import Modal from "@/components/common/Modal";
 import Register from "@/components/auth/Register";
+import EmailConfirmationModal from "@/components/auth/modals/EmailConfirmationModal";
 import ForgotPasswordModal from "@/components/auth/modals/forgotPasswordModal";
 import CheckMailModal from "@/components/auth/modals/checkmailModel";
 import SetNewPasswordModal from "@/components/auth/modals/setNewPasswordModel";
@@ -34,6 +35,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [isEmailConfirmationOpen, setIsEmailConfirmationOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [checkMailOpen, setCheckMailOpen] = useState(false);
@@ -64,6 +66,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
       setActiveTab(initialTab);
       resetLoginState();
       setForgotPasswordOpen(false);
+      setIsEmailConfirmationOpen(false);
       setCheckMailOpen(false);
       setSetNewPasswordOpen(false);
       setResetPasswordSuccessOpen(false);
@@ -229,9 +232,17 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
   };
 
   const handleRegisterSuccess = () => {
-    // setActiveTab("register");
     resetLoginState();
+    setIsEmailConfirmationOpen(true);
+  };
+
+  const handleCloseEmailConfirmation = () => {
+    setIsEmailConfirmationOpen(false);
     onClose();
+  };
+
+  const handleResendVerificationEmail = () => {
+    console.info("Resend verification email clicked");
   };
 
   return (
@@ -240,7 +251,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
         <LoginModalSearchParamsHandler open={open} onToken={handleToken} />
       </Suspense>
       <Modal
-        open={open && !forgotPasswordOpen && !checkMailOpen && !setNewPasswordOpen && !resetPasswordSuccessOpen}
+        open={open && !isEmailConfirmationOpen && !forgotPasswordOpen && !checkMailOpen && !setNewPasswordOpen && !resetPasswordSuccessOpen}
         onClose={onClose}
         showCloseButton
       >
@@ -352,6 +363,13 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
         </div>
       )}
       </Modal>
+
+      <EmailConfirmationModal
+        open={isEmailConfirmationOpen}
+        onClose={handleCloseEmailConfirmation}
+        onConfirm={handleCloseEmailConfirmation}
+        onResend={handleResendVerificationEmail}
+      />
 
       <ForgotPasswordModal
         open={forgotPasswordOpen}

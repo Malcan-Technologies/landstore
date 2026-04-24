@@ -12,21 +12,35 @@ const baseTextareaClassName =
 
 export default function PermanentDeleteModal({ open, onClose, listingId = "LS-000128", onConfirm }) {
   const [reason, setReason] = useState("");
+  const [localError, setLocalError] = useState("");
 
   useEffect(() => {
     if (!open) {
       setReason("");
+      setLocalError("");
     }
   }, [open]);
 
   const handleClose = () => {
     setReason("");
+    setLocalError("");
     onClose?.();
   };
 
-  const handleConfirm = () => {
-    onConfirm?.(reason);
-    handleClose();
+  const handleConfirm = async () => {
+    const trimmedReason = reason.trim();
+
+    if (!trimmedReason) {
+      setLocalError("Reason is required.");
+      return;
+    }
+
+    try {
+      await onConfirm?.(trimmedReason);
+      handleClose();
+    } catch (error) {
+      setLocalError(error?.message || "Failed to soft delete listing.");
+    }
   };
 
   return (
@@ -40,7 +54,7 @@ export default function PermanentDeleteModal({ open, onClose, listingId = "LS-00
       showCloseButton
     >
       <div className="text-center">
-        <h2 className="text-[18px] font-semibold leading-none text-[#111827]">Permanently Delete</h2>
+        <h2 className="text-[18px] font-semibold leading-none text-[#111827]">Soft Delete Listing</h2>
         <p className="mt-2 text-[14px] text-[#6B7280]">Target id: {listingId}</p>
       </div>
 
@@ -51,7 +65,7 @@ export default function PermanentDeleteModal({ open, onClose, listingId = "LS-00
           </span>
         </span>
         <p className="text-[12px] leading-4">
-          Delete for extreme policy violations. This action is recorded in the mediator audit log.
+          Soft delete for extreme policy violations. Listing is locked and hidden, but record remains for audit.
         </p>
       </div>
 
@@ -59,10 +73,16 @@ export default function PermanentDeleteModal({ open, onClose, listingId = "LS-00
         <label className="block text-[13px] font-medium text-[#6B7280]">Administrative Reason</label>
         <textarea
           value={reason}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={(event) => {
+            setReason(event.target.value);
+            if (localError) {
+              setLocalError("");
+            }
+          }}
           placeholder="Enter reason"
           className={`${baseTextareaClassName} mt-2`}
         />
+        {localError ? <p className="mt-2 text-[12px] text-[#B42318]">{localError}</p> : null}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
@@ -78,7 +98,7 @@ export default function PermanentDeleteModal({ open, onClose, listingId = "LS-00
           onClick={handleConfirm}
           className="inline-flex h-11 items-center justify-center rounded-lg bg-[#EF4444] px-4 text-[14px] font-medium text-white transition hover:opacity-95"
         >
-          Confirm Delete
+          Confirm Soft Delete
         </button>
       </div>
     </Modal>

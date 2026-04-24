@@ -13,7 +13,7 @@ import RoundX from "@/components/svg/RoundX";
 import RoundArrow from "@/components/svg/RoundArrow";
 import { userService } from "@/services/userService";
 
-const PAGE_LIMIT = 20;
+const PAGE_LIMIT = 5;
 
 const extractUsers = (response) => {
   if (Array.isArray(response?.data)) return response.data;

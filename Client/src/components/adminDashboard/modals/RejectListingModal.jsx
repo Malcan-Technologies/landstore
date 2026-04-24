@@ -12,21 +12,35 @@ const baseTextareaClassName =
 
 export default function RejectListingModal({ open, onClose, listingId = "LS-000128", onConfirm }) {
   const [reason, setReason] = useState("");
+  const [localError, setLocalError] = useState("");
 
   useEffect(() => {
     if (!open) {
       setReason("");
+      setLocalError("");
     }
   }, [open]);
 
   const handleClose = () => {
     setReason("");
+    setLocalError("");
     onClose?.();
   };
 
-  const handleConfirm = () => {
-    onConfirm?.(reason);
-    handleClose();
+  const handleConfirm = async () => {
+    const trimmedReason = reason.trim();
+
+    if (!trimmedReason) {
+      setLocalError("Reason is required.");
+      return;
+    }
+
+    try {
+      await onConfirm?.(trimmedReason);
+      handleClose();
+    } catch (error) {
+      setLocalError(error?.message || "Failed to reject listing.");
+    }
   };
 
   return (
@@ -59,10 +73,16 @@ export default function RejectListingModal({ open, onClose, listingId = "LS-0001
         <label className="block text-[13px] font-medium text-[#6B7280]">Administrative Reason</label>
         <textarea
           value={reason}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={(event) => {
+            setReason(event.target.value);
+            if (localError) {
+              setLocalError("");
+            }
+          }}
           placeholder="Enter reason"
           className={`${baseTextareaClassName} mt-2`}
         />
+        {localError ? <p className="mt-2 text-[12px] text-[#B42318]">{localError}</p> : null}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">

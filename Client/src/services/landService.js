@@ -52,6 +52,46 @@ export const landService = {
     }
   },
 
+  // Admin: approve listing (set status active)
+  approveListing: async (id) => {
+    try {
+      const response = await api.patch(`/list-lands/${id}`, { status: 'active' });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Admin: request changes (move back to draft)
+  requestListingChanges: async (id, reason) => {
+    try {
+      const response = await api.post(`/list-lands/${id}/request-changes`, { reason });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Admin: reject listing
+  rejectListing: async (id, reason) => {
+    try {
+      const response = await api.post(`/list-lands/${id}/reject`, { reason });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Admin: soft delete listing
+  softDeleteListing: async (id, reason) => {
+    try {
+      const response = await api.post(`/list-lands/${id}/soft-delete`, { reason });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Delete listing
   deleteListing: async (id) => {
     try {

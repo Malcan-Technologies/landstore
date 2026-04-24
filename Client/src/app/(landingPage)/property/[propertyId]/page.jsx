@@ -238,6 +238,7 @@ const mapPropertyToDetails = (property) => {
     description: property?.description || "No description provided.",
     images: galleryImages.length > 0 ? galleryImages : [fallbackGalleryImage],
     isApproximate: property?.location?.isApproximate !== false,
+    isMine: Boolean(property?.isMine),
   };
 };
 
@@ -291,6 +292,10 @@ const PropertyPage = () => {
   };
 
   const handleSubmitInterestClick = () => {
+    if (propertyDetails?.isMine) {
+      return;
+    }
+
     if (!isLoggedIn) {
       handleRequireLogin();
       return;
@@ -1001,14 +1006,16 @@ const PropertyPage = () => {
                   <p className="text-xs leading-5 text-gray7">All enquiries are vetted to ensure genuine interest and professional conduct.</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleSubmitInterestClick}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-primary text-sm font-semibold text-white"
-              >
-                <Plus size={16} color="white" />
-                Submit interest
-              </button>
+              {!propertyDetails?.isMine ? (
+                <button
+                  type="button"
+                  onClick={handleSubmitInterestClick}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-primary text-sm font-semibold text-white"
+                >
+                  <Plus size={16} color="white" />
+                  Submit interest
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={isShortlisted ? handleUnshortlistClick : handleShortlistClick}

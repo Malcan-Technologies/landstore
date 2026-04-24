@@ -290,12 +290,51 @@ const getDistanceKm = (lat1, lng1, lat2, lng2) => {
   return earthRadiusKm * c;
 };
 
-const extractListingItems = (response) => {
-  if (Array.isArray(response?.data?.items)) return response.data.items;
-  if (Array.isArray(response?.items)) return response.items;
-  if (Array.isArray(response?.data)) return response.data;
-  if (Array.isArray(response)) return response;
-  return [];
+const extractListingItems = (response, filters = {}) => {
+  const normalizedItems = [];
+
+  if (Array.isArray(response?.data?.items)) {
+    normalizedItems.push(...response.data.items);
+  } else if (Array.isArray(response?.items)) {
+    normalizedItems.push(...response.items);
+  } else if (Array.isArray(response?.data)) {
+    normalizedItems.push(...response.data);
+  } else if (Array.isArray(response)) {
+    normalizedItems.push(...response);
+  }
+
+  if (normalizedItems.length > 0) {
+    return normalizedItems;
+  }
+
+  const selectedSummaryKeys = [
+    ["myListings", "myListings"],
+    ["myShortlistings", "myShortlistings"],
+    ["myEnquiries", "myEnquiries"],
+  ]
+    .filter(([filterKey]) => filters?.[filterKey] === true)
+    .map(([, responseKey]) => responseKey);
+
+  const summaryItems = selectedSummaryKeys.flatMap((summaryKey) => {
+    const items = response?.data?.userFilters?.[summaryKey]?.items;
+    return Array.isArray(items) ? items : [];
+  });
+
+  if (summaryItems.length === 0) {
+    return [];
+  }
+
+  const dedupedItems = new Map();
+  summaryItems.forEach((item) => {
+    const key = item?.id || item?.listingCode;
+    if (!key || dedupedItems.has(key)) {
+      return;
+    }
+
+    dedupedItems.set(key, item);
+  });
+
+  return Array.from(dedupedItems.values());
 };
 
 const formatPrice = (value) => {
@@ -670,7 +709,7 @@ const ExplorePage = () => {
           return;
         }
 
-        const items = extractListingItems(response);
+        const items = extractListingItems(response, activeFilters);
         const mappedListings = items
           .map(mapListingToExploreCard)
           .filter((item) => item !== null);
