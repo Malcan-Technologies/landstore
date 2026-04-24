@@ -46,7 +46,7 @@ export const getListingStatistics = async () => {
       db.propertyEnquiry.count({
         where: {
           status: {
-            in: ["pending", "pending_matching"],
+            in: ["PENDING_MATCHING"],
           },
         },
       }),
@@ -54,7 +54,7 @@ export const getListingStatistics = async () => {
       db.propertyEnquiry.count({
         where: {
           status: {
-            in: ["need_more_info", "need more info"],
+            in: ["NEED_MORE_INFO"],
           },
         },
       }),
@@ -2085,6 +2085,150 @@ export const getListingStatusCounts = async () => {
 			})),
 		};
 	} catch (error: unknown) {
+		throw error;
+	}
+};
+
+export const softDeleteListLand = async (
+	propertyId: string,
+	adminId: string,
+	reason: string
+) => {
+	if (!propertyId || propertyId.trim().length === 0) {
+		throw createHttpError("Property ID is required", 400);
+	}
+	if (!reason || reason.trim().length === 0) {
+		throw createHttpError("Reason is required", 400);
+	}
+	try {
+		const property = await db.property.findUnique({
+			where: { id: propertyId },
+			select: {
+				id: true,
+				title: true,
+				listingCode: true,
+				status: true,
+				userId: true,
+				user: {
+					select: {
+						id: true,
+						email: true,
+					},
+				},
+			},
+		});
+		if (!property) {
+			throw createHttpError("Property not found", 404);
+		}
+		const trimmedReason = reason.trim();
+		const result = await db.$transaction(async (trx) => {
+			const updatedProperty = await trx.property.update({
+				where: { id: propertyId },
+				data: {
+					status: "deleted",
+					isLocked: true,
+				},
+				include: includePropertyRelations,
+			});
+			const notificationContent = [
+				`Your listing \"${property.title}\" (Listing Code: ${property.listingCode}) has been permanently deleted for extreme policy violations.`,
+				`Administrative reason: ${trimmedReason}`,
+			].join(" ");
+			const notification = await trx.notification.create({
+				data: {
+					userId: property.userId,
+					type: "urgent",
+					content: notificationContent,
+					isRead: false,
+				},
+			});
+			// Optionally: Record in audit log (not implemented here)
+			return {
+				property: updatedProperty,
+				notification,
+				adminId,
+			};
+		});
+		return result;
+	} catch (error: unknown) {
+		if (error instanceof Prisma.PrismaClientKnownRequestError) {
+			if (error.code === "P2003") {
+				throw createHttpError("Invalid relation id in payload", 400);
+			}
+		}
+		throw error;
+	}
+};
+/**
+ * Reject a property listing
+ * Sets status to 'rejected' and notifies the owner. Locks the listing.
+ */
+export const rejectListLand = async (
+	propertyId: string,
+	adminId: string,
+	reason: string
+) => {
+	if (!propertyId || propertyId.trim().length === 0) {
+		throw createHttpError("Property ID is required", 400);
+	}
+	if (!reason || reason.trim().length === 0) {
+		throw createHttpError("Reason is required", 400);
+	}
+	try {
+		const property = await db.property.findUnique({
+			where: { id: propertyId },
+			select: {
+				id: true,
+				title: true,
+				listingCode: true,
+				status: true,
+				userId: true,
+				user: {
+					select: {
+						id: true,
+						email: true,
+					},
+				},
+			},
+		});
+		if (!property) {
+			throw createHttpError("Property not found", 404);
+		}
+		const trimmedReason = reason.trim();
+		const result = await db.$transaction(async (trx) => {
+			const updatedProperty = await trx.property.update({
+				where: { id: propertyId },
+				data: {
+					status: "rejected",
+					isLocked: true,
+				},
+				include: includePropertyRelations,
+			});
+			const notificationContent = [
+				`Your listing "${property.title}" (Listing Code: ${property.listingCode}) has been rejected and locked.`,
+				`Administrative reason: ${trimmedReason}`,
+			].join(" ");
+			const notification = await trx.notification.create({
+				data: {
+					userId: property.userId,
+					type: "urgent",
+					content: notificationContent,
+					isRead: false,
+				},
+			});
+			return {
+				property: updatedProperty,
+				notification,
+				adminId,
+			};
+		});
+		return result;
+	} catch (error: unknown) {
+		if (error instanceof Prisma.PrismaClientKnownRequestError) {
+			if (error.code === "P2003") {
+				throw createHttpError("Invalid relation id in payload", 400);
+			}
+		}
 		throw error;
 	}
 };

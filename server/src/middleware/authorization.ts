@@ -4,9 +4,9 @@ import db from "../../config/prisma.js";
 
 /**
  * Middleware to check user role
- * @param role - The required role: 'admin' or 'user'
+ * @param role - The required role: 'admin' or 'user' or 'superadmin'
  */
-export const requireRole = (role: "admin" | "user") => 
+export const requireRole = (role: "superadmin" | "admin" | "user") => 
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user;
@@ -24,8 +24,6 @@ export const requireRole = (role: "admin" | "user") =>
         where: { id: user.id },
         select: { id: true, userType: true, email: true },
       });
-
-      console.log(dbUser);
       // Check if user exists in database
       if (!dbUser) {
         console.warn(`User with ID ${user.id} not found in database`);
@@ -64,6 +62,7 @@ export const requireRole = (role: "admin" | "user") =>
  * Alias middleware for requiring admin role
  */
 export const requireAdmin = requireRole("admin");
+export const requireSuperAdmin = requireRole("superadmin");
 
 /**
  * Middleware to check if user is either admin or regular user (always passes if authenticated)
@@ -97,7 +96,7 @@ export const requireUser = async (
     }
 
     // Verify user is either admin or user (validation check)
-    if (!["admin", "user"].includes(dbUser.userType)) {
+    if (!["superadmin","admin", "user"].includes(dbUser.userType)) {
       console.error(`Invalid user type '${dbUser.userType}' for user ${dbUser.email}`);
       return res.status(403).json({ 
         error: "Forbidden",

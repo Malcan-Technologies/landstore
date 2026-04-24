@@ -1,3 +1,4 @@
+
 import type { Request, Response } from "express";
 import {
 	createListLand,
@@ -15,6 +16,8 @@ import {
 	getActiveListingsOverTime,
 	getListingStatusCounts,
 	getListingStatistics,
+	rejectListLand,
+	softDeleteListLand,
 	type CreateListLandPayload,
 } from "../services/listLand.js";
 import type { GetLandsQuery } from "../../types/express/land.types.js";
@@ -689,5 +692,61 @@ export const getListingStatisticsController = async (req: Request, res: Response
 			success: false,
 			message,
 		});
+	}
+};
+
+/**
+ * Reject a property listing
+ * Admin only: sets the listing status to 'rejected' and notifies the owner
+ */
+export const rejectListLandController = async (req: Request, res: Response) => {
+	try {
+		const requester = getRequesterUserOrThrow(req);
+		const propertyId = getPropertyIdParamOrThrow(req);
+		const reason = typeof req.body.reason === "string" ? req.body.reason.trim() : "";
+
+		if (!reason) {
+			return res.status(400).json({
+				message: "reason is required",
+			});
+		}
+
+		const result = await rejectListLand(propertyId, requester.id, reason);
+
+		return res.status(200).json({
+			message: "Listing rejected and locked. User cannot republish without major revisions.",
+			data: result,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ message });
+	}
+};
+
+/**
+ * Permanently (soft) delete a property listing
+ * Admin only: sets the listing status to 'deleted' and notifies the owner
+ */
+export const softDeleteListLandController = async (req: Request, res: Response) => {
+	try {
+		const requester = getRequesterUserOrThrow(req);
+		const propertyId = getPropertyIdParamOrThrow(req);
+		const reason = typeof req.body.reason === "string" ? req.body.reason.trim() : "";
+
+		if (!reason) {
+			return res.status(400).json({
+				message: "reason is required",
+			});
+		}
+
+		const result = await softDeleteListLand(propertyId, requester.id, reason);
+
+		return res.status(200).json({
+			message: "Listing deleted for extreme policy violations. Action recorded in audit log.",
+			data: result,
+		});
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ message });
 	}
 };

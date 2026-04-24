@@ -290,7 +290,7 @@ export const loginController = async (req: Request, res: Response) => {
 
 		if (user.status === "suspended") {
 			return res.status(403).json({
-				
+
 				success: false,
 				message: "Your account is suspended. Contact admin",
 			});
@@ -617,17 +617,36 @@ export const deleteUserController = async (req: Request, res: Response) => {
 		}
 
 		const userId = getUserIdParamOrThrow(req);
-
-		// Users can only delete their own account
-		if (requester.id !== userId) {
+		if (requester.id === userId && (requester.userType === "admin" || requester.userType === "superadmin")) {
 			return res.status(403).json({
 				error: "Forbidden",
-				message: "You can only delete your own account."
+				message: "Admins and superadmins cannot delete themselves."
 			});
 		}
 
-		const result = await deleteUserById(userId);
-		return res.status(200).json(result);
+		// Fetch target user
+		const targetUser = await getUserById(userId);
+		if (!targetUser) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		// Superadmin can delete admin or user
+		if (requester.userType === "superadmin") {
+			if (["admin", "user"].includes(targetUser.userType)) {
+				const result = await deleteUserById(userId);
+				return res.status(200).json(result);
+			} else {
+				return res.status(403).json({ message: "Superadmin can only delete admin or user." });
+			}
+		}
+
+		// Admin can delete other admin or user (but not themselves)
+		if (requester.userType === "admin" && requester.id !== userId && ["admin", "user"].includes(targetUser.userType)) {
+			const result = await deleteUserById(userId);
+			return res.status(200).json(result);
+		}
+
+		return res.status(403).json({ message: "You do not have permission to delete this user." });
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
 		return res.status(statusCode).json({ message });

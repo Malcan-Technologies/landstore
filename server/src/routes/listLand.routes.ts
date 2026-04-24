@@ -12,6 +12,8 @@ import {
 	getAllListingsController,
 	updateListLandController,
 	requestListLandChangesController,
+	rejectListLandController,
+	softDeleteListLandController,
 	searchPropertiesByRadiusController,
 	getActiveListingsOverTimeController,
 	getListingStatusCountsController,
@@ -43,6 +45,12 @@ listLandRouter.get("/", requireApiAuth, getListLandsController);
 
 // Request changes for a property listing (admin only)
 listLandRouter.post("/:id/request-changes", requireApiAuth, requireAdmin, requestListLandChangesController);
+
+// Reject a property listing (admin only)
+listLandRouter.post("/:id/reject", requireApiAuth, requireAdmin, rejectListLandController);
+
+// Permanently (soft) delete a property listing (admin only)
+listLandRouter.post("/:id/soft-delete", requireApiAuth, requireAdmin, softDeleteListLandController);
 
 // Get single property (public active-only, owner/admin can see all statuses)
 listLandRouter.get("/:id", optionalApiAuth, authorizeListLandVisibility, getListLandByIdController);
