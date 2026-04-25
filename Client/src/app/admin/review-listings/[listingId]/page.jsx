@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Loading from "@/components/common/Loading";
 import MapView from "@/components/userDashboard/explore/MapView";
@@ -41,6 +42,13 @@ const toTitleCase = (value) =>
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
+
+const maskUserId = (value) => {
+  const normalized = String(value || "").trim();
+  if (!normalized || normalized === "-") return "-";
+  if (normalized.length <= 5) return normalized;
+  return `${normalized.slice(0, 5)}...`;
+};
 
 const mapApiToDetail = (data) => {
   const p = data?.property ?? data;
@@ -86,6 +94,7 @@ const verificationChecklist = [
 ];
 
 export default function ReviewListingDetailPage({ params }) {
+  const router = useRouter();
   const resolvedParams = use(params);
   const listingId = resolvedParams?.listingId;
 
@@ -93,6 +102,8 @@ export default function ReviewListingDetailPage({ params }) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [activeModal, setActiveModal] = useState(null);
+  const [isActionSubmitting, setIsActionSubmitting] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     if (!listingId) return;
@@ -268,7 +279,18 @@ export default function ReviewListingDetailPage({ params }) {
               <p className={infoLabelClass}>Owner Identity</p>
               <div className="flex h-full flex-col justify-start rounded-[10px] border border-white/6 bg-[#153127] p-4">
                 <div className="text-[13px] font-semibold text-white sm:text-[14px]">{detail.owner}</div>
-                <div className="mt-1 text-[12px] text-white/50">User ID: {detail.userId}</div>
+                <div className="mt-1 text-[12px] text-white/50">
+                  <span className="lg:hidden">User ID: {detail.userId}</span>
+                  <span className="hidden lg:inline">
+                    User ID:{" "}
+                    <span
+                      title={detail.userId !== "-" ? detail.userId : ""}
+                      className="cursor-help text-white/70 transition hover:text-white"
+                    >
+                      {maskUserId(detail.userId)}
+                    </span>
+                  </span>
+                </div>
                 <div className="flex flex-col">
                   <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green-logo px-1.5 py-0.5 text-[11px] font-medium text-activebg w-fit">
                     <Sheild size={14} color="#ffff" />
@@ -341,31 +363,51 @@ export default function ReviewListingDetailPage({ params }) {
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <button type="button" className="inline-flex items-center justify-center rounded-lg bg-greenbg px-4 py-3 text-[13px] font-medium text-font2-green transition hover:opacity-90">
-              Approve
+            <button
+              type="button"
+              disabled={isActionSubmitting}
+              onClick={async () => {
+                try {
+                  setActionError("");
+                  setIsActionSubmitting(true);
+                  await landService.approveListing(detail.id);
+                  router.push("/admin/review-listings");
+                } catch (error) {
+                  setActionError(error?.message || "Failed to approve listing.");
+                } finally {
+                  setIsActionSubmitting(false);
+                }
+              }}
+              className="inline-flex items-center justify-center rounded-lg bg-greenbg px-4 py-3 text-[13px] font-medium text-font2-green transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isActionSubmitting ? "Processing..." : "Approve"}
             </button>
             <button
               type="button"
+              disabled={isActionSubmitting}
               onClick={() => setActiveModal("requestChanges")}
-              className="inline-flex items-center justify-center rounded-lg bg-[#134635] px-4 py-3 text-[13px] font-medium text-white transition hover:bg-[#184D39]"
+              className="inline-flex items-center justify-center rounded-lg bg-[#134635] px-4 py-3 text-[13px] font-medium text-white transition hover:bg-[#184D39] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Request changes
             </button>
             <button
               type="button"
+              disabled={isActionSubmitting}
               onClick={() => setActiveModal("reject")}
-              className="inline-flex items-center justify-center rounded-lg bg-[#134635] px-4 py-3 text-[13px] font-medium text-white transition hover:bg-[#184D39]"
+              className="inline-flex items-center justify-center rounded-lg bg-[#134635] px-4 py-3 text-[13px] font-medium text-white transition hover:bg-[#184D39] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Reject
             </button>
             <button
               type="button"
+              disabled={isActionSubmitting}
               onClick={() => setActiveModal("permanentDelete")}
-              className="inline-flex items-center justify-center rounded-lg bg-[#30201D] px-4 py-3 text-[13px] font-medium text-[#F87171] transition hover:bg-[#382623]"
+              className="inline-flex items-center justify-center rounded-lg bg-[#30201D] px-4 py-3 text-[13px] font-medium text-[#F87171] transition hover:bg-[#382623] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Permanent Delete
+              Soft Delete
             </button>
           </div>
+          {actionError ? <p className="mt-3 text-[12px] text-[#FCA5A5]">{actionError}</p> : null}
         </div>
       </section>
 
@@ -373,16 +415,58 @@ export default function ReviewListingDetailPage({ params }) {
         open={activeModal === "requestChanges"}
         onClose={() => setActiveModal(null)}
         listingId={detail.code}
+        onConfirm={async (reason) => {
+          setActionError("");
+          setIsActionSubmitting(true);
+          try {
+            await landService.requestListingChanges(detail.id, reason);
+            router.push("/admin/review-listings");
+          } catch (error) {
+            const nextError = error?.message || "Failed to request listing changes.";
+            setActionError(nextError);
+            throw new Error(nextError);
+          } finally {
+            setIsActionSubmitting(false);
+          }
+        }}
       />
       <RejectListingModal
         open={activeModal === "reject"}
         onClose={() => setActiveModal(null)}
         listingId={detail.code}
+        onConfirm={async (reason) => {
+          setActionError("");
+          setIsActionSubmitting(true);
+          try {
+            await landService.rejectListing(detail.id, reason);
+            router.push("/admin/review-listings");
+          } catch (error) {
+            const nextError = error?.message || "Failed to reject listing.";
+            setActionError(nextError);
+            throw new Error(nextError);
+          } finally {
+            setIsActionSubmitting(false);
+          }
+        }}
       />
       <PermanentDeleteModal
         open={activeModal === "permanentDelete"}
         onClose={() => setActiveModal(null)}
         listingId={detail.code}
+        onConfirm={async (reason) => {
+          setActionError("");
+          setIsActionSubmitting(true);
+          try {
+            await landService.softDeleteListing(detail.id, reason);
+            router.push("/admin/review-listings");
+          } catch (error) {
+            const nextError = error?.message || "Failed to soft delete listing.";
+            setActionError(nextError);
+            throw new Error(nextError);
+          } finally {
+            setIsActionSubmitting(false);
+          }
+        }}
       />
     </main>
   );

@@ -111,7 +111,9 @@ export const authService = {
   // Verify email
   verifyEmail: async (token) => {
     try {
-      const response = await api.get('/auth/verify-email', token ? { params: { token } } : {});
+      const response = await api.post('/users/verify-email', { token }, {
+        skipAuthRedirectOn401: true,
+      });
       return response.data;
     } catch (error) {
       throw error;

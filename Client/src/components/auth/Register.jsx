@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { authService } from "@/services/authService";
+import { adminService } from "@/services/adminService";
 import { validateForm, registerValidation } from "@/validators";
 import Button from "@/components/common/Button";
-import EmailConfirmationModal from "@/components/auth/modals/EmailConfirmationModal";
 import PillCheckbox from "@/components/common/PillCheckbox";
 import Arrow from "@/components/svg/Arrow";
 import EyeClose from "@/components/svg/EyeClose";
@@ -21,27 +21,15 @@ const entityOptions = [
   { key: "individual", label: "Individual", Icon: Person },
 ];
 
-const interestOptions = [
-  "Landowner",
-  "Interested to sell/rent/JV",
-  "Real estate agent",
-  "Interested to rent a land",
-  "Interested to purchase a land",
-  "Represent a financial institution",
-  "Real estate developer",
-];
-
 const Register = ({ onRegisterSuccess }) => {
   const [entityType, setEntityType] = useState("individual");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedInterests, setSelectedInterests] = useState([
-    "Landowner",
-    "Interested to sell/rent/JV",
-  ]);
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [entityTypeOptions, setEntityTypeOptions] = useState([]);
+  const [entityTypeOptionsError, setEntityTypeOptionsError] = useState("");
+  const [selectedEntityTypeIds, setSelectedEntityTypeIds] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const phoneFieldRef = useRef(null);
@@ -133,11 +121,49 @@ const Register = ({ onRegisterSuccess }) => {
     };
   }, [isCountryDropdownOpen]);
 
-  const toggleInterest = (option) => {
-    setSelectedInterests((current) =>
-      current.includes(option)
-        ? current.filter((item) => item !== option)
-        : [...current, option]
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEntityTypes = async () => {
+      try {
+        setEntityTypeOptionsError("");
+        const response = await adminService.getEntityTypes({ page: 1, limit: 100 });
+        const items = Array.isArray(response?.data) ? response.data : [];
+
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedItems = items
+          .map((item) => ({
+            id: item?.id ? String(item.id) : "",
+            name: item?.name ? String(item.name).trim() : "",
+          }))
+          .filter((item) => item.id && item.name);
+
+        setEntityTypeOptions(normalizedItems);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setEntityTypeOptions([]);
+        setEntityTypeOptionsError(error?.message || "Failed to load entity types.");
+      }
+    };
+
+    loadEntityTypes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const toggleEntityType = (entityTypeId) => {
+    setSelectedEntityTypeIds((current) =>
+      current.includes(entityTypeId)
+        ? current.filter((item) => item !== entityTypeId)
+        : [...current, entityTypeId]
     );
   };
 
@@ -198,6 +224,10 @@ const Register = ({ onRegisterSuccess }) => {
       payload.registrationNo = formData.registrationNo.trim();
     }
 
+    if (selectedEntityTypeIds.length > 0) {
+      payload.entityTypes = selectedEntityTypeIds;
+    }
+
     return payload;
   };
 
@@ -256,10 +286,7 @@ const Register = ({ onRegisterSuccess }) => {
     setIsCountryDropdownOpen(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
-    setSelectedInterests([
-      "Landowner",
-      "Interested to sell/rent/JV",
-    ]);
+    setSelectedEntityTypeIds([]);
     setIsLoading(false);
     setErrors({});
     setFormData({
@@ -293,7 +320,8 @@ const Register = ({ onRegisterSuccess }) => {
       const registerResponse = await authService.register(registerPayload);
 
       if (registerResponse?.success || registerResponse?.profile || registerResponse?.user) {
-        setIsEmailModalOpen(true);
+        resetRegisterState();
+        onRegisterSuccess?.({ email: registerPayload.email });
       } else {
         setErrors({ submit: registerResponse?.message || 'Registration failed' });
       }
@@ -302,18 +330,6 @@ const Register = ({ onRegisterSuccess }) => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCloseEmailModal = () => setIsEmailModalOpen(false);
-
-  const handleConfirmEmailModal = () => {
-    setIsEmailModalOpen(false);
-    resetRegisterState();
-    onRegisterSuccess?.();
-  };
-
-  const handleResendEmail = () => {
-    console.info("Resend verification email clicked");
   };
 
   return (
@@ -537,21 +553,24 @@ const Register = ({ onRegisterSuccess }) => {
 
       <div>
         <p className="mb-2 block text-[13px] font-medium text-gray7 md:text-[14px]">
-          Entity type (What you are and what is your interests?)
+          Entity types (Select all that apply)
         </p>
         <div className="flex flex-wrap gap-2">
-          {interestOptions.map((option) => {
-            const isSelected = selectedInterests.includes(option);
+          {entityTypeOptions.map((option) => {
+            const isSelected = selectedEntityTypeIds.includes(option.id);
             return (
               <PillCheckbox
-                key={option}
+                key={option.id}
                 checked={isSelected}
-                label={option}
-                onChange={() => toggleInterest(option)}
+                label={option.name}
+                onChange={() => toggleEntityType(option.id)}
               />
             );
           })}
         </div>
+        {entityTypeOptionsError ? (
+          <p className="mt-1 text-xs text-red-500">{entityTypeOptionsError}</p>
+        ) : null}
       </div>
 
         <div className="pt-1">
@@ -576,12 +595,6 @@ const Register = ({ onRegisterSuccess }) => {
         </div>
       </form>
 
-      <EmailConfirmationModal
-        open={isEmailModalOpen}
-        onClose={handleCloseEmailModal}
-        onConfirm={handleConfirmEmailModal}
-        onResend={handleResendEmail}
-      />
     </>
   );
 };

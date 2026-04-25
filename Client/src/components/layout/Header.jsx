@@ -16,14 +16,18 @@ import NotificationPopup from "@/components/userDashboard/notifications/Notifica
 import { notificationService } from "@/services/notificationService";
 import { logoutUser } from "@/store/authSlice";
 
-const HeaderSearchParamsHandler = ({ onToken }) => {
+const HeaderSearchParamsHandler = ({ onToken, pathname }) => {
   const searchParams = useSearchParams();
   useEffect(() => {
+    if (pathname !== "/") {
+      return;
+    }
+
     const tokenFromUrl = searchParams?.get("token") || "";
     if (tokenFromUrl) {
       onToken();
     }
-  }, [searchParams, onToken]);
+  }, [searchParams, onToken, pathname]);
   return null;
 };
 
@@ -308,7 +312,10 @@ const Header = () => {
       </div>
 
       <Suspense fallback={null}>
-        <HeaderSearchParamsHandler onToken={() => { setAuthTab("login"); setIsLoginOpen(true); }} />
+        <HeaderSearchParamsHandler
+          pathname={pathname}
+          onToken={() => { setAuthTab("login"); setIsLoginOpen(true); }}
+        />
       </Suspense>
       <LoginModal open={isLoginOpen} onClose={() => setIsLoginOpen(false)} initialTab={authTab} />
       <LoginRequiredModal open={isLoginRequiredOpen} onClose={() => setIsLoginRequiredOpen(false)} />
