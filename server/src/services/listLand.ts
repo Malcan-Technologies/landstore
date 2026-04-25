@@ -1221,9 +1221,9 @@ export const searchPropertiesByRadius = async (
 		const maxLon = lon + dX;
 
 		// Build WHERE clause with filters
-		// Public users: active listings only. Authenticated users: all statuses.
+		// Geo search always returns active listings.
 		const whereCondition: Prisma.PropertyWhereInput = {
-			...(userId ? {} : { status: "active" }),
+			status: "active",
 			location: {
 				latitude: {
 					gte: new Prisma.Decimal(minLat),
@@ -1610,9 +1610,9 @@ export const searchPropertiesByBoundingBox = async (
 		}
 
 		// Build WHERE clause with filters
-		// Public users: active listings only. Authenticated users: all statuses.
+		// Geo search always returns active listings.
 		const whereCondition: Prisma.PropertyWhereInput = {
-			...(userId ? {} : { status: "active" }),
+			status: "active",
 			location: {
 				latitude: {
 					gte: new Prisma.Decimal(minLatNum),

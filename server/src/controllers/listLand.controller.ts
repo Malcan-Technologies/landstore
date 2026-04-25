@@ -468,13 +468,6 @@ export const searchPropertiesByRadiusController = async (
 		const hasBboxParams = minLat !== undefined && maxLat !== undefined && minLon !== undefined && maxLon !== undefined;
 		const hasRadiusParams = latitude !== undefined && longitude !== undefined && radiusKm !== undefined;
 
-		if (!hasBboxParams && !hasRadiusParams) {
-			return res.status(400).json({
-				success: false,
-				message: "Either provide bounding box (minLat, maxLat, minLon, maxLon) OR radius search (latitude, longitude, radiusKm) parameters",
-			});
-		}
-
 		const page = toNumberOrUndefined(req.query.page) || 1;
 		const limit = toNumberOrUndefined(req.query.limit) || 10;
 		
@@ -486,12 +479,20 @@ export const searchPropertiesByRadiusController = async (
 		const myListings = req.query.myListings === "true";
 		const myShortlistings = req.query.myShortlistings === "true";
 		const myEnquiries = req.query.myEnquiries === "true";
+		const hasUserFilters = myListings || myShortlistings || myEnquiries;
 
 		// If any user-specific filter is requested, user must be authenticated
-		if ((myListings || myShortlistings || myEnquiries) && !userId) {
+		if (hasUserFilters && !userId) {
 			return res.status(401).json({
 				success: false,
 				message: "Authentication required to use user-specific filters (myListings, myShortlistings, myEnquiries)",
+			});
+		}
+
+		if (!hasUserFilters && !hasBboxParams && !hasRadiusParams) {
+			return res.status(400).json({
+				success: false,
+				message: "Either provide bounding box (minLat, maxLat, minLon, maxLon) OR radius search (latitude, longitude, radiusKm) parameters",
 			});
 		}
 		
@@ -541,7 +542,24 @@ export const searchPropertiesByRadiusController = async (
 		let searchType: string;
 
 		// Execute appropriate search based on parameters provided
-		if (hasBboxParams) {
+		if (hasUserFilters) {
+			searchType = "user_filters";
+			// Geo parameters are intentionally ignored when user-specific filters are enabled.
+			result = await searchPropertiesByRadius(
+				0,
+				0,
+				1,
+				page,
+				limit,
+				userId,
+				filters,
+				{
+					myListings,
+					myShortlistings,
+					myEnquiries,
+				}
+			);
+		} else if (hasBboxParams) {
 			searchType = "bounding_box";
 			result = await searchPropertiesByBoundingBox(
 				minLat,
@@ -555,10 +573,10 @@ export const searchPropertiesByRadiusController = async (
 				{
 					myListings,
 					myShortlistings,
-					myEnquiries
+					myEnquiries,
 				}
 			);
-		} else {
+		} else if (hasRadiusParams) {
 			searchType = "radius";
 			result = await searchPropertiesByRadius(
 				latitude,
@@ -571,16 +589,21 @@ export const searchPropertiesByRadiusController = async (
 				{
 					myListings,
 					myShortlistings,
-					myEnquiries
+					myEnquiries,
 				}
 			);
+		} else {
+			return res.status(400).json({
+				success: false,
+				message: "Either provide bounding box (minLat, maxLat, minLon, maxLon) OR radius search (latitude, longitude, radiusKm) parameters",
+			});
 		}
 
 		return res.status(200).json({
 			success: true,
 			message: "Properties found",
 			searchType,
-			data: myListings || myShortlistings || myEnquiries ? result.userFilters : result,
+			data: hasUserFilters ? result.userFilters : result,
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
