@@ -9,6 +9,7 @@ import { auth } from "./config/auth.js";
 import { attachSocketServer } from "./src/socket/server.js";
 import requireApiAuth from "./src/middleware/requireApiAuth.js";
 import userRoutes from "./src/routes/user.routes.js";
+import adminRoutes from "./src/routes/admin.routes.js";
 import listLandRoutes from "./src/routes/listLand.routes.js";
 import folderRoutes from "./src/routes/folders.routes.js";
 import categoryRoutes from "./src/routes/category.routes.js";
@@ -97,6 +98,9 @@ app.get("/", (req: express.Request, res: express.Response) => {
 
 // User routes (protected and unprotected)
 app.use("/api/users", userRoutes);
+
+// Admin routes (protected - super admin & admin only)
+app.use("/api/admins", requireApiAuth, adminRoutes);
 
 // Public routes (list-lands has auth on individual routes)
 app.use("/api/list-lands", listLandRoutes);

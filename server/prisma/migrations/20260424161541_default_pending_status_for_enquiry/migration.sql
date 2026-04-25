@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "PropertyEnquiry" ALTER COLUMN "status" SET DEFAULT 'PENDING_MATCHING';

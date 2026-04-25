@@ -255,18 +255,97 @@ const normalizeBoolean = (value: boolean | null | undefined): boolean | null => 
 };
 
 const includePropertyRelations = {
+	user: {
+		select: {
+			id: true,
+			email: true,
+			name: true,
+			phone: true,
+			image: true,
+			userType: true,
+			status: true,
+			individuals: {
+				select: {
+					fullName: true,
+				},
+			},
+			companies: {
+				select: {
+					companyName: true,
+				},
+			},
+			koperasi: {
+				select: {
+					koperasiName: true,
+				},
+			},
+		},
+	},
 	category: true,
 	ownershipType: true,
 	utilization: true,
 	titleType: true,
 	location: true,
 	leaseholdDetails: true,
-	media: {
+	media: true,
+	documents: {
 		include: {
-			documents: true,
-		},
-	},
+			media: true
+		}
+	}
 } as const;
+
+const getShortlistedState = async (propertyId: string, userId?: string) => {
+	if (!userId) return false;
+
+	const shortlistedProperty = await db.shortlistProperty.findFirst({
+		where: {
+			propertyId,
+			folder: {
+				userId,
+			},
+		},
+	});
+
+	return !!shortlistedProperty;
+};
+
+const enrichListingResult = async (
+	property: any,
+	userId?: string,
+	options?: { isShortListed?: boolean }
+) => {
+	let transformedProperty = property;
+
+	try {
+		transformedProperty = await transformPropertyWithSignedUrls(property);
+	} catch (signingError) {
+		console.error("Error transforming listing with signed URLs, returning raw listing:", signingError);
+	}
+
+	const isShortListed =
+		typeof options?.isShortListed === "boolean"
+			? options.isShortListed
+			: await getShortlistedState(transformedProperty.id, userId);
+
+	return {
+		...transformedProperty,
+		isShortListed,
+		isMine: !!userId && transformedProperty.userId === userId,
+	};
+};
+
+const enrichListingCollection = async (
+	properties: any[],
+	userId?: string,
+	concurrency: number = 5
+) => {
+	return processConcurrently(
+		properties,
+		(property) => enrichListingResult(property, userId),
+		concurrency
+	);
+};
 
 /**
  * Get uploaded media and documents with their file URLs
@@ -509,6 +588,15 @@ export const createListLand = async (
 			);
 		}
 
+		if (payload.documentIds && payload.documentIds.length > 0) {
+			operations.push(
+				db.document.updateMany({
+					where: { id: { in: payload.documentIds } },
+					data: { propertyId },
+				})
+			);
+		}
+
 		if (payload.location) {
 			operations.push(
 				db.location.create({
@@ -602,43 +690,8 @@ export const getListLands = async (
 		db.property.count({ where }),
 	]);
 
-	// Transform items with signed URLs using concurrency control and add isShortListed
-	let itemsWithSignedUrls;
-	try {
-		console.log(`📦 Transforming ${items.length} properties with concurrency limit`);
-		const transformed = await processConcurrently(
-			items,
-			(item) => transformPropertyWithSignedUrls(item),
-			5 // Max concurrent property transformations
-		);
-		
-		// Add isShortListed status for each property
-		itemsWithSignedUrls = await Promise.all(
-			transformed.map(async (item) => {
-				const shortlistedProperty = await db.shortlistProperty.findFirst({
-					where: {
-						propertyId: item.id,
-						folder: {
-							userId: userId
-						}
-					},
-				});
-				return {
-					...item,
-					isShortListed: !!shortlistedProperty,
-					isMine: item.userId === userId
-				};
-			})
-		);
-	} catch (signingError) {
-		console.error("Error transforming items with signed URLs in getListLands:", signingError);
-		// Fallback: return items without signed URLs
-		itemsWithSignedUrls = items.map(item => ({
-			...item,
-			isShortListed: false,
-			isMine: item.userId === userId
-		}));
-	}
+	console.log(`📦 Transforming ${items.length} properties with reusable listing enricher`);
+	const itemsWithSignedUrls = await enrichListingCollection(items, userId, 5);
 
 	return {
 		items: itemsWithSignedUrls,
@@ -700,43 +753,7 @@ export const getAllListings = async (query: GetLandsQuery, userId?: string) => {
 
 	console.log("Items returned:", items.length, "Total count:", total);
 
-	// Transform items with signed URLs and add isShortListed
-	let itemsWithSignedUrls;
-	try {
-		itemsWithSignedUrls = await Promise.all(
-			items.map(async (item) => {
-				const transformed = await transformPropertyWithSignedUrls(item);
-				
-				// Check if property is shortlisted by user
-				let isShortListed = false;
-				if (userId) {
-					const shortlistedProperty = await db.shortlistProperty.findFirst({
-						where: {
-							propertyId: item.id,
-							folder: {
-								userId: userId
-							}
-						},
-					});
-					isShortListed = !!shortlistedProperty;
-				}
-				
-				return {
-					...transformed,
-					isShortListed,
-					isMine: !!userId && item.userId === userId
-				};
-			})
-		);
-	} catch (signingError) {
-		console.error("Error transforming items with signed URLs in getAllListings:", signingError);
-		// Fallback: return items without signed URLs but with isShortListed
-		itemsWithSignedUrls = items.map(item => ({
-			...item,
-			isShortListed: false,
-			isMine: !!userId && item.userId === userId
-		}));
-	}
+	const itemsWithSignedUrls = await enrichListingCollection(items, userId);
 
 	return {
 		items: itemsWithSignedUrls,
@@ -765,37 +782,7 @@ export const getListLandById = async (
 		throw createHttpError("Property not found", 404);
 	}
 
-	// Check if property is shortlisted by user
-	let isShortListed = false;
-	if (userId) {
-		const shortlistedProperty = await db.shortlistProperty.findFirst({
-			where: {
-				propertyId: propertyId,
-				folder: {
-					userId: userId
-				}
-			},
-		});
-		isShortListed = !!shortlistedProperty;
-	}
-
-	// Transform property with signed URLs
-	try {
-		const transformed = await transformPropertyWithSignedUrls(property);
-		return {
-			...transformed,
-			isShortListed,
-			isMine: !!userId && property.userId === userId
-		};
-	} catch (signingError) {
-		console.error("Error transforming property with signed URLs in getListLandById:", signingError);
-		// Fallback: return property without signed URLs
-		return {
-			...property,
-			isShortListed,
-			isMine: !!userId && property.userId === userId
-		};
-	}
+	return enrichListingResult(property, userId);
 };
 
 /**
@@ -842,18 +829,6 @@ export const updateListLandById = async (
 				// Delete old media files if provided
 				if (payload.oldMediaIds && payload.oldMediaIds.length > 0) {
 					console.log("🗑️ Deleting old media IDs:", payload.oldMediaIds);
-					// Delete documents associated with old media first (explicit by ID)
-					const documentsToDelete = await trx.document.findMany({
-						where: { media: { id: { in: payload.oldMediaIds } } },
-						select: { id: true },
-					});
-					if (documentsToDelete.length > 0) {
-						const docIds = documentsToDelete.map(d => d.id);
-						console.log("🗑️ Deleting documents:", docIds);
-						await trx.document.deleteMany({
-							where: { id: { in: docIds } },
-						});
-					}
 					// Delete old media
 					console.log("🗑️ Deleting old media files");
 					await trx.media.deleteMany({
@@ -879,8 +854,13 @@ export const updateListLandById = async (
 						where: { id: { in: payload.oldDocumentIds } },
 					});
 				}
-				// New documents are already created with their media in the controller
-				// Just ensure they're properly associated (they should be via uploadPropertyDocuments)
+				if (payload.documentIds && payload.documentIds.length > 0) {
+					console.log("🔗 Associating new document IDs:", payload.documentIds);
+					await trx.document.updateMany({
+						where: { id: { in: payload.documentIds } },
+						data: { propertyId },
+					});
+				}
 			}
 
 			if (payload.tanahRizabMelayu !== undefined) {
@@ -1473,33 +1453,16 @@ export const searchPropertiesByRadius = async (
 			]);
 
 			const transformPropertyList = async (properties: any[]) => {
-				const transformed = await Promise.all(
-					properties.map((property) => transformPropertyWithSignedUrls(property))
-				);
-
-				return Promise.all(
-					transformed.map(async (item) => ({
-						...item,
-						isShortListed: !!(await db.shortlistProperty.findFirst({
-							where: {
-								propertyId: item.id,
-								folder: { userId },
-							},
-						})),
-						isMine: item.userId === userId,
-					}))
-				);
+				return enrichListingCollection(properties, userId);
 			};
 
 			const transformShortlistEntries = async (shortlists: any[]) => {
 				return Promise.all(
 					shortlists.map(async (shortlist) => ({
 						...shortlist,
-						property: {
-							...await transformPropertyWithSignedUrls(shortlist.property),
+						property: await enrichListingResult(shortlist.property, userId, {
 							isShortListed: true,
-							isMine: shortlist.property.userId === userId,
-						},
+						}),
 					}))
 				);
 			};
@@ -1509,16 +1472,7 @@ export const searchPropertiesByRadius = async (
 					enquiries.map(async (enquiry) => ({
 						...enquiry,
 						budget: enquiry.budget?.toString() ?? null,
-						property: {
-							...await transformPropertyWithSignedUrls(enquiry.property),
-							isShortListed: !!(await db.shortlistProperty.findFirst({
-								where: {
-									propertyId: enquiry.propertyId,
-									folder: { userId },
-								},
-							})),
-							isMine: enquiry.property.userId === userId,
-						},
+						property: await enrichListingResult(enquiry.property, userId),
 					}))
 				);
 			};
@@ -1536,44 +1490,7 @@ export const searchPropertiesByRadius = async (
 			};
 		}
 		
-		// Transform results with signed URLs and add isShortListed with error handling
-		let resultsWithSignedUrls;
-		try {
-			const transformed = await Promise.all(
-				results.map((item) => transformPropertyWithSignedUrls(item))
-			);
-			
-			// Add isShortListed status for each property
-			resultsWithSignedUrls = await Promise.all(
-				transformed.map(async (item) => {
-					let isShortListed = false;
-					if (userId) {
-						const shortlistedProperty = await db.shortlistProperty.findFirst({
-							where: {
-								propertyId: item.id,
-								folder: {
-									userId: userId
-								}
-							},
-						});
-						isShortListed = !!shortlistedProperty;
-					}
-					return {
-						...item,
-						isShortListed,
-						isMine: !!userId && item.userId === userId
-					};
-				})
-			);
-		} catch (signingError) {
-			console.error("Error during batch URL signing, returning results without signed URLs:", signingError);
-			// Fallback: return results without signed URLs but with isShortListed
-			resultsWithSignedUrls = results.map(item => ({
-				...item,
-				isShortListed: false,
-				isMine: !!userId && item.userId === userId
-			}));
-		}
+		const resultsWithSignedUrls = await enrichListingCollection(results, userId);
 
 		return {
 			items: resultsWithSignedUrls,
@@ -1902,33 +1819,16 @@ export const searchPropertiesByBoundingBox = async (
 			]);
 
 			const transformPropertyList = async (properties: any[]) => {
-				const transformed = await Promise.all(
-					properties.map((property) => transformPropertyWithSignedUrls(property))
-				);
-
-				return Promise.all(
-					transformed.map(async (item) => ({
-						...item,
-						isShortListed: !!(await db.shortlistProperty.findFirst({
-							where: {
-								propertyId: item.id,
-								folder: { userId },
-							},
-						})),
-						isMine: item.userId === userId,
-					}))
-				);
+				return enrichListingCollection(properties, userId);
 			};
 
 			const transformShortlistEntries = async (shortlists: any[]) => {
 				return Promise.all(
 					shortlists.map(async (shortlist) => ({
 						...shortlist,
-						property: {
-							...await transformPropertyWithSignedUrls(shortlist.property),
+						property: await enrichListingResult(shortlist.property, userId, {
 							isShortListed: true,
-							isMine: shortlist.property.userId === userId,
-						},
+						}),
 					}))
 				);
 			};
@@ -1938,16 +1838,7 @@ export const searchPropertiesByBoundingBox = async (
 					enquiries.map(async (enquiry) => ({
 						...enquiry,
 						budget: enquiry.budget?.toString() ?? null,
-						property: {
-							...await transformPropertyWithSignedUrls(enquiry.property),
-							isShortListed: !!(await db.shortlistProperty.findFirst({
-								where: {
-									propertyId: enquiry.propertyId,
-									folder: { userId },
-								},
-							})),
-							isMine: enquiry.property.userId === userId,
-						},
+						property: await enrichListingResult(enquiry.property, userId),
 					}))
 				);
 			};
@@ -1965,42 +1856,7 @@ export const searchPropertiesByBoundingBox = async (
 			};
 		}
 
-		// Transform results with signed URLs
-		let resultsWithSignedUrls;
-		try {
-			const transformed = await Promise.all(
-				results.map((item) => transformPropertyWithSignedUrls(item))
-			);
-
-			resultsWithSignedUrls = await Promise.all(
-				transformed.map(async (item) => {
-					let isShortListed = false;
-					if (userId) {
-						const shortlistedProperty = await db.shortlistProperty.findFirst({
-							where: {
-								propertyId: item.id,
-								folder: {
-									userId: userId
-								}
-							},
-						});
-						isShortListed = !!shortlistedProperty;
-					}
-					return {
-						...item,
-						isShortListed,
-						isMine: !!userId && item.userId === userId
-					};
-				})
-			);
-		} catch (signingError) {
-			console.error("Error during batch URL signing, returning results without signed URLs:", signingError);
-			resultsWithSignedUrls = results.map(item => ({
-				...item,
-				isShortListed: false,
-				isMine: !!userId && item.userId === userId
-			}));
-		}
+		const resultsWithSignedUrls = await enrichListingCollection(results, userId);
 
 		return {
 			items: resultsWithSignedUrls,

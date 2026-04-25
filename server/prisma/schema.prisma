@@ -7,14 +7,378 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//////////////////////////////////////////////////////
-// ENUMS
-//////////////////////////////////////////////////////
+model User {
+  id                String                  @id @default(uuid())
+  email             String                  @unique
+  phone             String?
+  userType          UserType                @default(user)
+  profileMediaId    String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  name              String?
+  image             String?
+  emailVerified     Boolean                 @default(false)
+  status            UserStatus              @default(active)
+  accounts          Account[]
+  companies         Company?
+  individuals       Individual?
+  koperasi          Koperasi?
+  media             Media[]                 @relation("UserMedia")
+  receivedMessages  Message[]               @relation("Receiver")
+  sentMessages      Message[]               @relation("Sender")
+  notifications     Notification[]
+  notificationPrefs NotificationPreference?
+  properties        Property[]
+  enquiries         PropertyEnquiry[]
+  sessions          Session[]
+  shortlistFolders  ShortlistFolder[]
+  profileMedia      Media?                  @relation("UserProfileMedia", fields: [profileMediaId], references: [id])
+  entityTypes       UserEntityType[]
+}
+
+model Account {
+  id           String    @id @default(uuid())
+  userId       String
+  accountId    String
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  password     String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerId, accountId])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  token      String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, token])
+}
+
+model Individual {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  fullName   String
+  identityNo String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  companyName    String
+  registrationNo String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Koperasi {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  koperasiName   String
+  registrationNo String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EntityType {
+  id        String           @id @default(uuid())
+  name      String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  users     UserEntityType[]
+}
+
+model UserEntityType {
+  id           String     @id @default(uuid())
+  userId       String
+  entityTypeId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  entityType   EntityType @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityTypeId])
+}
+
+model Media {
+  id            String     @id @default(uuid())
+  userId        String
+  fileUrl       String
+  mediaType     String
+  mediaCategory String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  propertyId    String?
+  documents     Document[]
+  property      Property?  @relation("PropertyMedia", fields: [propertyId], references: [id], onDelete: Cascade)
+  user          User       @relation("UserMedia", fields: [userId], references: [id], onDelete: Cascade)
+  profileUsers  User[]     @relation("UserProfileMedia")
+
+  @@index([userId])
+  @@index([propertyId])
+}
+
+model Document {
+  id                 String    @id @default(uuid())
+  mediaId            String
+  propertyId         String?
+  verificationStatus String
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  media              Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  property           Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  emailEnabled Boolean  @default(true)
+  pushEnabled  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  content   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Property {
+  id                  String                @id @default(uuid())
+  userId              String
+  title               String
+  categoryId          String
+  ownershipTypeId     String
+  utilizationId       String
+  titleTypeId         String
+  landMediaId         String?
+  tanahRizabMelayu    Boolean?
+  dealTypes           DealType[]
+  terrainChips        TerrainType[]
+  featureTags         FeatureTag[]
+  landArea            Decimal               @db.Decimal(12, 2)
+  landAreaUnit        String
+  estimatedValuation  Decimal?              @db.Decimal(12, 2)
+  description         String?
+  listingCode         String                @unique
+  price               Decimal               @db.Decimal(12, 2)
+  pricePerSqrft       Decimal               @db.Decimal(12, 2)
+  viewsCount          Int                   @default(0)
+  clicksCount         Int                   @default(0)
+  agreementAccepted   Boolean               @default(false)
+  agreementAcceptedAt DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  status              PropertyStatus?
+  leaseholdDetails    LeaseholdDetail?
+  location            Location?
+  media               Media[]               @relation("PropertyMedia")
+  documents           Document[]            
+  category            PropertyCategory      @relation(fields: [categoryId], references: [id])
+  ownershipType       PropertyOwnershipType @relation(fields: [ownershipTypeId], references: [id])
+  titleType           LandTitleType         @relation(fields: [titleTypeId], references: [id])
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  utilization         Utilization           @relation(fields: [utilizationId], references: [id])
+  enquiries           PropertyEnquiry[]
+  shortlistedBy       ShortlistProperty[]
+
+  @@index([userId])
+}
+
+model LeaseholdDetail {
+  id               String   @id @default(uuid())
+  propertyId       String   @unique
+  startYear        Int
+  leasePeriodYears Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  property         Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Location {
+  id            String   @id @default(uuid())
+  propertyId    String   @unique
+  state         String
+  district      String
+  mukim         String?
+  section       String?
+  latitude      Decimal  @db.Decimal(11, 8)
+  longitude     Decimal  @db.Decimal(11, 8)
+  isApproximate Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model PropertyCategory {
+  id         String     @id @default(uuid())
+  name       String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  properties Property[]
+}
+
+model PropertyOwnershipType {
+  id         String     @id @default(uuid())
+  name       String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  properties Property[]
+}
+
+model Utilization {
+  id         String     @id @default(uuid())
+  name       String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  properties Property[]
+}
+
+model LandTitleType {
+  id         String     @id @default(uuid())
+  name       String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  properties Property[]
+}
+
+model InterestType {
+  id        String            @id @default(uuid())
+  name      String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  enquiries PropertyEnquiry[]
+}
+
+model PropertyEnquiry {
+  id             String         @id @default(uuid())
+  propertyId     String
+  userId         String
+  interestTypeId String
+  message        String?
+  budget         Decimal?       @db.Decimal(12, 2)
+  timeline       String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  status         enquiryStatus? @default(PENDING_MATCHING)
+  roles          EnquiryRole[]
+  messages       Message[]
+  interestType   InterestType   @relation(fields: [interestTypeId], references: [id])
+  property       Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([propertyId])
+}
+
+model Role {
+  id           String        @id @default(uuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  enquiryRoles EnquiryRole[]
+}
+
+model EnquiryRole {
+  id        String          @id @default(uuid())
+  enquiryId String
+  roleId    String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  enquiry   PropertyEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  role      Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([enquiryId, roleId])
+}
+
+model Message {
+  id         String          @id @default(uuid())
+  senderId   String
+  receiverId String
+  enquiryId  String
+  content    String
+  createdAt  DateTime        @default(now())
+  enquiry    PropertyEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  receiver   User            @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User            @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model ShortlistFolder {
+  id             String              @id @default(uuid())
+  userId         String
+  name           String
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  parentFolderId String?
+  parentFolder   ShortlistFolder?    @relation("SubFolders", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  subFolders     ShortlistFolder[]   @relation("SubFolders")
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  properties     ShortlistProperty[]
+
+  @@index([userId])
+  @@index([parentFolderId])
+}
+
+model ShortlistProperty {
+  id         String          @id @default(uuid())
+  folderId   String
+  propertyId String
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  folder     ShortlistFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  property   Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, propertyId])
+}
 
 enum UserType {
-  superadmin
   admin
   user
+  superadmin
 }
 
 enum UserStatus {
@@ -46,13 +410,13 @@ enum FeatureTag {
 }
 
 enum PropertyStatus {
-  deleted
-  rejected
   draft
   active
   pending
-  under_review @map("under review")
+  under_review   @map("under review")
   need_more_info @map("need more info")
+  rejected
+  deleted
 }
 
 enum enquiryStatus {
@@ -63,496 +427,4 @@ enum enquiryStatus {
   NEED_MORE_INFO
   CLOSED_NOT_PROCEEDING
   CLOSED_SUCCESSFUL
-}
-
-//////////////////////////////////////////////////////
-// USERS
-//////////////////////////////////////////////////////
-
-model User {
-  id                String                 @id @default(uuid())
-  
-  // Better Auth fields
-  email             String                 @unique
-  name              String?
-  image             String?
-  emailVerified     Boolean                @default(false)
-  
-  // Custom business fields
-  phone             String?
-  userType          UserType               @default(user)
-  status            UserStatus             @default(active)
-  profileMediaId    String?
-
-  profileMedia      Media?                 @relation("UserProfileMedia", fields: [profileMediaId], references: [id])
-  media             Media[]                @relation("UserMedia")
-
-  individuals       Individual?
-  companies         Company?
-  koperasi          Koperasi?
-
-  notifications     Notification[]
-  notificationPrefs NotificationPreference?
-
-  entityTypes       UserEntityType[]
-
-  properties        Property[]
-  enquiries         PropertyEnquiry[]
-
-  sentMessages      Message[]              @relation("Sender")
-  receivedMessages  Message[]              @relation("Receiver")
-
-  shortlistFolders  ShortlistFolder[]
-
-  // Better Auth relations
-  accounts          Account[]
-  sessions          Session[]
-
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-}
-
-//////////////////////////////////////////////////////
-// BETTER AUTH
-//////////////////////////////////////////////////////
-
-model Account {
-  id                String                 @id @default(uuid())
-  userId            String                 // Changed to String
-  accountId         String
-  providerId        String
-  password          String?                // Required for emailAndPassword authentication (hashed by Better Auth)
-  accessToken       String?
-  refreshToken      String?
-  idToken           String?
-  expiresAt         DateTime?
-
-  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-
-  @@unique([userId, providerId, accountId])
-  @@index([userId])
-}
-
-model Session {
-  id                String                 @id @default(uuid())
-  userId            String                 // Changed to String
-  token             String                 @unique
-  expiresAt         DateTime
-  ipAddress         String?
-  userAgent         String?
-
-  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-
-  @@index([userId])
-}
-
-model Verification {
-  id                String                 @id @default(uuid())
-  identifier        String
-  value             String
-  expiresAt         DateTime
-  token             String                 @unique
-
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-
-  @@unique([identifier, token])
-}
-
-//////////////////////////////////////////////////////
-// USER TYPES DETAILS
-//////////////////////////////////////////////////////
-
-model Individual {
-  id         String   @id @default(uuid())
-  userId     String   @unique             // Changed to String
-  fullName   String
-  identityNo String?
-
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model Company {
-  id             String   @id @default(uuid())
-  userId         String   @unique             // Changed to String
-  companyName    String
-  registrationNo String?
-
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-}
-
-model Koperasi {
-  id             String   @id @default(uuid())
-  userId         String   @unique             // Changed to String
-  koperasiName   String
-  registrationNo String?
-
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-}
-
-//////////////////////////////////////////////////////
-// ENTITY TYPES
-//////////////////////////////////////////////////////
-
-model EntityType {
-  id        String           @id @default(uuid())
-  name      String
-
-  users     UserEntityType[]
-
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-}
-
-model UserEntityType {
-  id           String     @id @default(uuid())
-  userId       String     // Changed to String
-  entityTypeId String     // Changed to String
-
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entityType   EntityType @relation(fields: [entityTypeId], references: [id], onDelete: Cascade)
-
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  @@unique([userId, entityTypeId])
-}
-
-//////////////////////////////////////////////////////
-// MEDIA
-//////////////////////////////////////////////////////
-
-model Media {
-  id            String     @id @default(uuid())
-  userId        String     // Changed to String
-  propertyId    String?    // Property this media is associated with (for listing images)
-  fileUrl       String
-  mediaType     String
-  mediaCategory String
-
-  user          User       @relation("UserMedia", fields: [userId], references: [id], onDelete: Cascade)
-  profileUsers  User[]     @relation("UserProfileMedia")
-  property      Property?  @relation("PropertyMedia", fields: [propertyId], references: [id], onDelete: Cascade)
-
-  documents     Document[]
-
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  @@index([userId])
-  @@index([propertyId])
-}
-
-model Document {
-  id                 String    @id @default(uuid())
-  mediaId            String    // Changed to String
-  verificationStatus String
-  verifiedBy         String?   // Changed to String
-  verifiedAt         DateTime?
-
-  media              Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
-
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-}
-
-//////////////////////////////////////////////////////
-// NOTIFICATIONS
-//////////////////////////////////////////////////////
-
-model NotificationPreference {
-  id           String   @id @default(uuid())
-  userId       String   @unique // Changed to String
-  emailEnabled Boolean  @default(true)
-  pushEnabled  Boolean  @default(true)
-
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model Notification {
-  id        String           @id @default(uuid())
-  userId    String           // Changed to String
-  type      NotificationType
-  content   String
-  isRead    Boolean          @default(false)
-
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
-  @@index([userId])
-}
-
-//////////////////////////////////////////////////////
-// PROPERTY CORE
-//////////////////////////////////////////////////////
-
-model Property {
-  id                   String            @id @default(uuid())
-  userId               String            // Changed to String
-  title                String
-  categoryId           String            // Changed to String
-  ownershipTypeId      String            // Changed to String
-  utilizationId        String            // Changed to String
-  titleTypeId          String            // Changed to String
-  landMediaId          String?           // Changed to String
-
-  tanahRizabMelayu     Boolean?
-
-  dealTypes            DealType[]
-  terrainChips         TerrainType[]
-  featureTags          FeatureTag[]
-
-  landArea             Decimal           @db.Decimal(12,2)
-  landAreaUnit         String
-
-  estimatedValuation   Decimal?          @db.Decimal(12,2)
-
-  description          String?
-  listingCode          String            @unique
-
-  price                Decimal           @db.Decimal(12,2)
-  pricePerSqrft        Decimal           @db.Decimal(12,2)
-
-  status               PropertyStatus?
-
-  viewsCount           Int               @default(0)
-  clicksCount          Int               @default(0)
-
-  agreementAccepted    Boolean           @default(false)
-  agreementAcceptedAt  DateTime?
-
-  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media                Media[]           @relation("PropertyMedia")  // All media for this property
-
-  category             PropertyCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  ownershipType        PropertyOwnershipType @relation(fields: [ownershipTypeId], references: [id], onDelete: Restrict)
-  utilization          Utilization       @relation(fields: [utilizationId], references: [id], onDelete: Restrict)
-  titleType            LandTitleType     @relation(fields: [titleTypeId], references: [id], onDelete: Restrict)
-
-  leaseholdDetails     LeaseholdDetail?
-  location             Location?
-
-  enquiries            PropertyEnquiry[]
-  shortlistedBy        ShortlistProperty[]
-
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-
-  @@index([userId])
-}
-
-//////////////////////////////////////////////////////
-// PROPERTY SUPPORT
-//////////////////////////////////////////////////////
-
-model LeaseholdDetail {
-  id               String   @id @default(uuid())
-  propertyId       String   @unique // Changed to String
-  startYear        Int
-  leasePeriodYears Int
-
-  property         Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-}
-
-model Location {
-  id            String   @id @default(uuid())
-  propertyId    String   @unique // Changed to String
-  state         String
-  district      String
-  mukim         String?
-  section       String?
-
-  latitude      Decimal  @db.Decimal(11,8)
-  longitude     Decimal  @db.Decimal(11,8)
-
-  isApproximate Boolean  @default(false)
-
-  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-//////////////////////////////////////////////////////
-// LOOKUP TABLES
-//////////////////////////////////////////////////////
-
-model PropertyCategory {
-  id         String     @id @default(uuid())
-  name       String
-
-  properties Property[]
-
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-}
-
-model PropertyOwnershipType {
-  id         String     @id @default(uuid())
-  name       String
-
-  properties Property[]
-
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-}
-
-model Utilization {
-  id         String     @id @default(uuid())
-  name       String
-
-  properties Property[]
-
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-}
-
-model LandTitleType {
-  id         String     @id @default(uuid())
-  name       String
-
-  properties Property[]
-
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-}
-
-//////////////////////////////////////////////////////
-// ENQUIRIES & MESSAGING
-//////////////////////////////////////////////////////
-
-model InterestType {
-  id        String            @id @default(uuid())
-  name      String
-
-  enquiries PropertyEnquiry[]
-
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-}
-
-model PropertyEnquiry {
-  id             String        @id @default(uuid())
-  propertyId     String        // Changed to String
-  userId         String        // Changed to String
-  interestTypeId String        // Changed to String
-
-  message        String?
-  budget         Decimal?      @db.Decimal(12,2)
-  timeline       String?
-  status         enquiryStatus?
-
-  property       Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  interestType   InterestType  @relation(fields: [interestTypeId], references: [id], onDelete: Restrict)
-
-  roles          EnquiryRole[]
-  messages       Message[]
-
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  @@index([userId])
-  @@index([propertyId])
-}
-
-model Role {
-  id           String        @id @default(uuid())
-  name         String
-
-  enquiryRoles EnquiryRole[]
-
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-}
-
-model EnquiryRole {
-  id        String          @id @default(uuid())
-  enquiryId String          // Changed to String
-  roleId    String          // Changed to String
-
-  enquiry   PropertyEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
-  role      Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-
-  @@unique([enquiryId, roleId])
-}
-
-model Message {
-  id         String          @id @default(uuid())
-  senderId   String          // Changed to String
-  receiverId String          // Changed to String
-  enquiryId  String          // Changed to String
-
-  content    String
-
-  sender     User            @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User            @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  enquiry    PropertyEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
-
-  createdAt  DateTime        @default(now())
-
-  @@index([senderId])
-  @@index([receiverId])
-}
-
-//////////////////////////////////////////////////////
-// SHORTLIST
-//////////////////////////////////////////////////////
-
-model ShortlistFolder {
-  id              String              @id @default(uuid())
-  userId          String              // Changed to String
-  name            String
-  parentFolderId  String?             // Parent folder for nested structure
-  
-  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parentFolder    ShortlistFolder?    @relation("SubFolders", fields: [parentFolderId], references: [id], onDelete: Cascade)
-  subFolders      ShortlistFolder[]   @relation("SubFolders")
-  properties      ShortlistProperty[]
-
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  
-  @@index([userId])
-  @@index([parentFolderId])
-}
-
-model ShortlistProperty {
-  id         String          @id @default(uuid())
-  folderId   String          // Changed to String
-  propertyId String          // Changed to String
-
-  folder     ShortlistFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  property   Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-
-  @@unique([folderId, propertyId])
 }

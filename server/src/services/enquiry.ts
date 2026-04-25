@@ -15,6 +15,24 @@ const parseDecimal = (value: string | number, fieldName: string) => {
 	}
 };
 
+const ENQUIRY_STATUSES = [
+	"SCHEDULED",
+	"MATCHED_INPROGRESS",
+	"PENDING_MATCHING",
+	"UNDER_REVIEW",
+	"NEED_MORE_INFO",
+	"CLOSED_NOT_PROCEEDING",
+	"CLOSED_SUCCESSFUL",
+] as const;
+
+const normalizeEnquiryStatus = (status: string) => status.trim().toUpperCase();
+
+const isValidEnquiryStatus = (
+	status: string
+): status is (typeof ENQUIRY_STATUSES)[number] => {
+	return ENQUIRY_STATUSES.includes(status as (typeof ENQUIRY_STATUSES)[number]);
+};
+
 export type CreateEnquiryPayload = {
 	propertyId: string;
 	userId: string;
@@ -22,7 +40,6 @@ export type CreateEnquiryPayload = {
 	message?: string | null;
 	budget?: string | number | null;
 	timeline?: string | null;
-	status?: string | null;
 };
 
 export type UpdateEnquiryPayload = {
@@ -158,7 +175,7 @@ export const createEnquiry = async (payload: CreateEnquiryPayload) => {
 						? null
 						: parseDecimal(payload.budget, "budget"),
 				timeline: payload.timeline ?? null,
-				status: payload.status ?? "pending",
+				status: "PENDING_MATCHING",
 			},
 			include: includeEnquiryRelations,
 		});
@@ -184,7 +201,12 @@ export const getEnquiries = async (query: GetEnquiriesQuery) => {
 		const where: Prisma.PropertyEnquiryWhereInput = {};
 
 		if (query.status) {
-			where.status = query.status;
+			const normalizedStatus = normalizeEnquiryStatus(query.status);
+			if (!isValidEnquiryStatus(normalizedStatus)) {
+				throw createHttpError("Invalid enquiry status", 400);
+			}
+
+			where.status = normalizedStatus;
 		}
 
 		const [enquiries, total] = await Promise.all([
@@ -416,7 +438,16 @@ export const updateEnquiry = async (
 		}
 
 		if (payload.status !== undefined) {
-			updateData.status = payload.status;
+			if (payload.status === null) {
+				updateData.status = null;
+			} else {
+				const normalizedStatus = normalizeEnquiryStatus(payload.status);
+				if (!isValidEnquiryStatus(normalizedStatus)) {
+					throw createHttpError("Invalid enquiry status", 400);
+				}
+
+				updateData.status = normalizedStatus;
+			}
 		}
 
 		const updatedEnquiry = await db.propertyEnquiry.update({
@@ -486,6 +517,11 @@ export const updateEnquiryStatus = async (
 		throw createHttpError("Status is required", 400);
 	}
 
+	const normalizedStatus = normalizeEnquiryStatus(status);
+	if (!isValidEnquiryStatus(normalizedStatus)) {
+		throw createHttpError("Invalid enquiry status", 400);
+	}
+
 	try {
 		// Verify enquiry exists
 		const enquiry = await db.propertyEnquiry.findUnique({
@@ -499,7 +535,7 @@ export const updateEnquiryStatus = async (
 		await db.propertyEnquiry.update({
 			where: { id: enquiryId },
 			data: {
-				status: status.trim(),
+				status: normalizedStatus,
 			},
 		});
 	} catch (error: unknown) {

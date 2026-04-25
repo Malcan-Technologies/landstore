@@ -47,7 +47,7 @@ const getEnquiryIdParamOrThrow = (req: Request): string => {
 /**
  * Create a new property enquiry
  * POST /api/enquiries
- * Body: { propertyId, userId, interestTypeId, message?, budget?, timeline?, status? }
+ * Body: { propertyId, userId, interestTypeId, message?, budget?, timeline? }
  */
 export const createEnquiryController = async (
 	req: Request,
@@ -58,8 +58,7 @@ export const createEnquiryController = async (
 		const user = getRequesterUserOrThrow(req);
 		const userId = user.id;
 
-		const { propertyId, interestTypeId, message, budget, timeline, status } =
-			req.body;
+		const { propertyId, interestTypeId, message, budget, timeline } = req.body;
 
 		if (!propertyId || !interestTypeId) {
 			const badRequestError = new Error(
@@ -76,7 +75,6 @@ export const createEnquiryController = async (
 			message,
 			budget,
 			timeline,
-			status,
 		});
 
 		res.status(201).json({

@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    // \"email\": \"basitshykh@gmail.com\",\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
+              "raw": "{\r\n    // \"email\": \"basitshykh@gmail.com\",\r\n    // \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -98,7 +98,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitshykh8@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Abdul Basit\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Abdul Basit\",\r\n    \"identityNo\": \"123456789\"\r\n}",
+              "raw": "{\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Abdul Basit\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Abdul Basit\",\r\n    \"identityNo\": \"123456789\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -782,25 +782,25 @@
                 },
                 {
                   "key": "categoryId",
-                  "value": "f5f08f98-ba32-4c19-bfa1-82d5804275e6",
+                  "value": "b6e38839-e43a-43f7-bd55-268c7d74681a",
                   "type": "text",
                   "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e"
                 },
                 {
                   "key": "ownershipTypeId",
-                  "value": "8e38179d-52f3-4ee9-89c0-b92e940b8f61",
+                  "value": "8e835e31-929a-4a39-87df-e131d40101b3",
                   "type": "text",
                   "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e"
                 },
                 {
                   "key": "utilizationId",
-                  "value": "1b9766f1-b04b-4658-8a3d-243d15b1f72e",
+                  "value": "f8f93086-4e2b-42a3-9dce-858ea3221d84",
                   "type": "text",
                   "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391"
                 },
                 {
                   "key": "titleTypeId",
-                  "value": "5484127d-5157-4db2-8fb2-fcf94b235708",
+                  "value": "b63798d3-81ee-4dbf-9f6a-0e487780fac4",
                   "type": "text",
                   "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad"
                 },
@@ -833,11 +833,11 @@
                   "type": "file",
                   "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
                   "src": [
-                    "/C:/Users/Lenovo/OneDrive/Desktop/F50.avif",
                     "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
                     "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/images (1).jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/images.jpeg"
+                    "/C:/Users/Lenovo/OneDrive/Desktop/images (2).jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile.jpeg",
+                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile2.jpeg"
                   ]
                 },
                 {
@@ -1115,7 +1115,7 @@
               "formdata": []
             },
             "url": {
-              "raw": "{{baseUrl}}/list-lands/all-listings?page=1&limit=5",
+              "raw": "{{baseUrl}}/list-lands/all-listings?page=1&limit=10",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1129,10 +1129,6 @@
                   "value": "1"
                 },
                 {
-                  "key": "limit",
-                  "value": "5"
-                },
-                {
                   "key": "recentlyApproved",
                   "value": "true",
                   "description": "ture or false",
@@ -1142,6 +1138,10 @@
                   "key": "status",
                   "value": "active",
                   "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
                 }
               ]
             }
@@ -2581,7 +2581,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2608,7 +2608,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending_matching\"   // \"SCHEDULED\",\"MATCHED_INPROGRESS\",\"PENDING_MATCHING\",\"UNDER_REVIEW\",\"NEED_MORE_INFO\",\"CLOSED_NOT_PROCEEDING\",\"CLOSED_SUCCESSFUL\",\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2641,7 +2641,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"pending\" \r\n}",
+              "raw": "{\r\n    \"propertyId\": \"{{propertyId}}\" ,\r\n    \"userId\" : \"{{userId}}\",\r\n    \"interestTypeId\" : \"{{interestTypeId}}\",\r\n    \"message\" : \"Hello, I am interested in your property. Please contact me at your earliest convenience.\",\r\n    \"budget\" : \"12300\",\r\n    \"timeline\" : \"2 years\",\r\n    \"status\" : \"PENDING_MATCHING\" // \"SCHEDULED\",\"MATCHED_INPROGRESS\",\"PENDING_MATCHING\",\"UNDER_REVIEW\",\"NEED_MORE_INFO\",\"CLOSED_NOT_PROCEEDING\",\"CLOSED_SUCCESSFUL\",\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3239,6 +3239,137 @@
                   "value": "7days",
                   "description": "12months | 30days | 7days | 24hours (default: 12months)",
                   "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admins",
+      "item": [
+        {
+          "name": "Create Admin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"admin@example.com\",\r\n    \"phone\": \"+1234567890\",\r\n    \"name\": \"Admin Name\",\r\n    \"firstName\": \"Admin\",\r\n    \"lastName\": \"User\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admins/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admins",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All admins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admins/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admins",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admins/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admins",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Admin",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admins/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admins",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Admin",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"newemail@example.com\",\r\n    \"phone\": \"+1234567890\",\r\n    \"name\": \"New Name\",\r\n    \"status\": \"active\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admins/::id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admins",
+                "::id"
+              ],
+              "variable": [
+                {
+                  "key": ":id",
+                  "value": ""
                 }
               ]
             }

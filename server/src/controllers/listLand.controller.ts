@@ -274,11 +274,8 @@ export const updateListLandController = async (req: Request, res: Response) => {
 		const existingPropertyRaw = await db.property.findUnique({
 			where: { id: propertyId },
 			include: {
-				media: {
-					include: {
-						documents: true,
-					},
-				},
+				media: true,
+				documents: true,
 			},
 		});
 
@@ -324,14 +321,10 @@ export const updateListLandController = async (req: Request, res: Response) => {
 
 		// If new documents are being uploaded, collect old document IDs for deletion
 		if (documentFiles.length > 0) {
-			// Collect all document IDs from existing media
-			if (existingPropertyRaw.media && existingPropertyRaw.media.length > 0) {
-				for (const media of existingPropertyRaw.media) {
-					if (media.documents && media.documents.length > 0) {
-						oldDocumentIds.push(...media.documents.map((d) => d.id));
-					}
-				}
-			}
+			// Collect all current property document IDs
+			const existingDocuments =
+				(existingPropertyRaw as { documents?: Array<{ id: string }> }).documents ?? [];
+			oldDocumentIds = existingDocuments.map((d) => d.id);
 			// Upload new documents
 			documentIds = await uploadPropertyDocuments(requester.id, documentFiles);
 		}

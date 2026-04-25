@@ -65,6 +65,61 @@ export const requireAdmin = requireRole("admin");
 export const requireSuperAdmin = requireRole("superadmin");
 
 /**
+ * Middleware to check if user is either admin or super admin
+ * Used for operations where both admin and super admin can perform actions
+ */
+export const requireAdminOrSuperAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const user = (req as any).user;
+
+    if (!user || !user.id) {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Authentication required. Valid user session not found. Please log in again.",
+      });
+    }
+
+    const dbUser = await db.user.findUnique({
+      where: { id: user.id },
+      select: { id: true, userType: true, email: true },
+    });
+
+    if (!dbUser) {
+      console.warn(`User with ID ${user.id} not found in database`);
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "User account not found. Your account may have been deleted or suspended.",
+      });
+    }
+
+    // Check if user is admin or superadmin
+    if (dbUser.userType !== "admin" && dbUser.userType !== "superadmin") {
+      console.warn(
+        `Access denied: User ${dbUser.email} (${dbUser.id}) must be admin or superadmin, but is '${dbUser.userType}'`
+      );
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Access denied. This resource requires 'admin' or 'superadmin' permissions.",
+        userRole: dbUser.userType,
+      });
+    }
+
+    (req as any).dbUser = dbUser;
+    next();
+  } catch (error) {
+    console.error("Authorization middleware error:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      message: "An unexpected error occurred during authorization. Please try again later.",
+    });
+  }
+};
+
+/**
  * Middleware to check if user is either admin or regular user (always passes if authenticated)
  */
 export const requireUser = async (
