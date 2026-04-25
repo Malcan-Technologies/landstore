@@ -59,7 +59,7 @@ const authorizeListLandVisibility = async (
 			});
 		}
 
-		if (dbUser.userType === "admin") {
+		if (dbUser.userType === "admin" || dbUser.userType === "superadmin") {
 			(req as any).viewerScope = "admin";
 			return next();
 		}
