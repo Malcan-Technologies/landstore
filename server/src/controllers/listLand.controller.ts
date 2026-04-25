@@ -559,7 +559,6 @@ export const searchPropertiesByRadiusController = async (
 				}
 			);
 		} else {
-			console.log("else")
 			searchType = "radius";
 			result = await searchPropertiesByRadius(
 				latitude,
@@ -581,7 +580,7 @@ export const searchPropertiesByRadiusController = async (
 			success: true,
 			message: "Properties found",
 			searchType,
-			data: result,
+			data: myListings || myShortlistings || myEnquiries ? result.userFilters : result,
 		});
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);

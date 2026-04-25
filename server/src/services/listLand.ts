@@ -1062,6 +1062,7 @@ export const requestListLandChanges = async (
 				where: { id: propertyId },
 				data: {
 					status: "draft",
+					adminAction: trimmedReason,
 				},
 				include: includePropertyRelations,
 			});
@@ -2115,6 +2116,7 @@ export const softDeleteListLand = async (
 				data: {
 					status: "deleted",
 					isLocked: true,
+					adminAction: trimmedReason,
 				},
 				include: includePropertyRelations,
 			});
@@ -2189,6 +2191,7 @@ export const rejectListLand = async (
 				data: {
 					status: "rejected",
 					isLocked: true,
+					adminAction: trimmedReason,
 				},
 				include: includePropertyRelations,
 			});

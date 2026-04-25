@@ -74,7 +74,6 @@ export const transformPropertyWithSignedUrls = async (property: any) => {
 	if (!property) {
 		return property;
 	}
-	console.log(property);
 
 	const mediaRelation = property.media;
 	const documentsRelation = property.documents;

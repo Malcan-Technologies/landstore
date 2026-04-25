@@ -151,12 +151,12 @@ model Media {
 model Document {
   id                 String    @id @default(uuid())
   mediaId            String
-  propertyId         String?
   verificationStatus String
   verifiedBy         String?
   verifiedAt         DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+  propertyId         String?
   media              Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   property           Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 }
@@ -194,6 +194,7 @@ model Property {
   titleTypeId         String
   landMediaId         String?
   tanahRizabMelayu    Boolean?
+  adminAction         String?
   dealTypes           DealType[]
   terrainChips        TerrainType[]
   featureTags         FeatureTag[]
@@ -211,10 +212,10 @@ model Property {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   status              PropertyStatus?
+  documents           Document[]
   leaseholdDetails    LeaseholdDetail?
   location            Location?
   media               Media[]               @relation("PropertyMedia")
-  documents           Document[]            
   category            PropertyCategory      @relation(fields: [categoryId], references: [id])
   ownershipType       PropertyOwnershipType @relation(fields: [ownershipTypeId], references: [id])
   titleType           LandTitleType         @relation(fields: [titleTypeId], references: [id])
