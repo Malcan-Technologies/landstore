@@ -75,7 +75,7 @@ export const createEnquiryController = async (
 			message,
 			budget,
 			timeline,
-		});
+		}, userId);
 
 		res.status(201).json({
 			success: true,
@@ -101,7 +101,7 @@ export const getEnquiriesController = async (
 ): Promise<void> => {
 	try {
 		// Verify user is authenticated
-		getRequesterUserOrThrow(req);
+		const user = getRequesterUserOrThrow(req);
 
 		const status =
 			typeof req.query.status === "string" ? req.query.status : undefined;
@@ -112,7 +112,7 @@ export const getEnquiriesController = async (
 			status,
 			page,
 			limit,
-		});
+		}, user.id);
 
 		res.status(200).json({
 			success: true,
@@ -138,11 +138,10 @@ export const getEnquiryByIdController = async (
 ): Promise<void> => {
 	try {
 		// Verify user is authenticated
-		getRequesterUserOrThrow(req);
-
+		const user = getRequesterUserOrThrow(req);
 		const enquiryId = getEnquiryIdParamOrThrow(req);
 
-		const enquiry = await getEnquiryById(enquiryId);
+		const enquiry = await getEnquiryById(enquiryId, user.id);
 
 		res.status(200).json({
 			success: true,
@@ -167,13 +166,12 @@ export const getEnquiriesByPropertyIdController = async (
 ): Promise<void> => {
 	try {
 		// Verify user is authenticated
-		getRequesterUserOrThrow(req);
-
+		const user = getRequesterUserOrThrow(req);
 		const propertyId = req.params.propertyId as string;
 		const page = req.query.page ? Number(req.query.page) : undefined;
 		const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
-		const result = await getEnquiriesByPropertyId(propertyId, page, limit);
+		const result = await getEnquiriesByPropertyId(propertyId, page, limit, user.id);
 
 		res.status(200).json({
 			success: true,
@@ -231,13 +229,12 @@ export const getEnquiriesByUserIdController = async (
 ): Promise<void> => {
 	try {
 		// Verify user is authenticated
-		getRequesterUserOrThrow(req);
-
+		const requestingUser = getRequesterUserOrThrow(req);
 		const userId = req.params.userId as string;
 		const page = req.query.page ? Number(req.query.page) : undefined;
 		const limit = req.query.limit ? Number(req.query.limit) : undefined;
 
-		const result = await getEnquiriesByUserId(userId, page, limit);
+		const result = await getEnquiriesByUserId(userId, page, limit, requestingUser.id);
 
 		res.status(200).json({
 			success: true,
@@ -264,8 +261,7 @@ export const updateEnquiryController = async (
 ): Promise<void> => {
 	try {
 		// Verify user is authenticated
-		getRequesterUserOrThrow(req);
-
+		const user = getRequesterUserOrThrow(req);
 		const enquiryId = getEnquiryIdParamOrThrow(req);
 
 		const { message, budget, timeline, status } = req.body;
@@ -275,7 +271,7 @@ export const updateEnquiryController = async (
 			budget,
 			timeline,
 			status,
-		});
+		}, user.id);
 
 		res.status(200).json({
 			success: true,

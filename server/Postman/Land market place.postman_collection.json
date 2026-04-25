@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    // \"email\": \"basitshykh@gmail.com\",\r\n    // \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
+              "raw": "{\r\n    \"email\": \"meesumabbas891@gmail.com\",\r\n    // \"email\": \"basitshykh@gmail.com\",\r\n    // \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -98,7 +98,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Abdul Basit\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Abdul Basit\",\r\n    \"identityNo\": \"123456789\"\r\n}",
+              "raw": "{\r\n    \"email\": \"meesumabbas891@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Abdul Basit\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Abdul Basit\",\r\n    \"identityNo\": \"123456789\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -782,25 +782,25 @@
                 },
                 {
                   "key": "categoryId",
-                  "value": "b6e38839-e43a-43f7-bd55-268c7d74681a",
+                  "value": "a1b19549-644c-47c3-a948-91613842ead8",
                   "type": "text",
                   "uuid": "82acddb7-80ff-4e06-a6a7-2d83aa9f9d9e"
                 },
                 {
                   "key": "ownershipTypeId",
-                  "value": "8e835e31-929a-4a39-87df-e131d40101b3",
+                  "value": "8a2e1585-e49c-47a0-95cf-01de60033742",
                   "type": "text",
                   "uuid": "97027197-cacb-41b4-a2c3-2df07729ac6e"
                 },
                 {
                   "key": "utilizationId",
-                  "value": "f8f93086-4e2b-42a3-9dce-858ea3221d84",
+                  "value": "9553b26d-5800-4a15-8978-eb435b35aa3b",
                   "type": "text",
                   "uuid": "c0b60d39-2143-4d3b-b2a8-9174de7c2391"
                 },
                 {
                   "key": "titleTypeId",
-                  "value": "b63798d3-81ee-4dbf-9f6a-0e487780fac4",
+                  "value": "ec875d1b-13d8-4e42-b63e-4070d3ff84f0",
                   "type": "text",
                   "uuid": "6e0786d8-1b69-4938-a41c-e1ec12e9b6ad"
                 },
@@ -833,18 +833,18 @@
                   "type": "file",
                   "uuid": "230126b5-3497-4ed1-b3a1-8976d7a7d328",
                   "src": [
+                    "/C:/Users/Lenovo/OneDrive/Desktop/F50.avif",
                     "/C:/Users/Lenovo/OneDrive/Desktop/hotel1.jpeg",
                     "/C:/Users/Lenovo/OneDrive/Desktop/hotel2.jpeg",
                     "/C:/Users/Lenovo/OneDrive/Desktop/images (2).jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile.jpeg",
-                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile2.jpeg"
+                    "/C:/Users/Lenovo/OneDrive/Desktop/mobile.jpeg"
                   ]
                 },
                 {
                   "key": "documents",
                   "type": "file",
                   "uuid": "625f394d-38e2-459a-9dca-278290853ba4",
-                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Database Students.pdf"
+                  "src": "/C:/Users/Lenovo/OneDrive/Desktop/Docker Docs.pdf"
                 },
                 {
                   "key": "tanahRizabMelayu",
@@ -882,16 +882,9 @@
                 },
                 {
                   "key": "description",
-                  "value": "this is description",
+                  "value": "this is description flan tamkan ght a dkshfs kdsfh shiw lsfhds",
                   "type": "text",
                   "uuid": "2b76bf15-3406-42fd-adc0-41a736d6821a"
-                },
-                {
-                  "key": "status",
-                  "value": "draft",
-                  "type": "text",
-                  "uuid": "3efa3826-7cf3-45e6-8364-52f35ec8e024",
-                  "disabled": true
                 }
               ]
             },
@@ -1198,7 +1191,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "39d6fd15-f083-4c73-a237-a5494d01a64f"
+                  "value": "8c88afbc-1807-416b-8f5f-8021d850b2e0"
                 }
               ]
             }
@@ -1248,7 +1241,7 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/list-lands/search/by-radius?state=Selangor&myListings=true",
+              "raw": "{{baseUrl}}/list-lands/search/by-radius",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1260,8 +1253,9 @@
               "query": [
                 {
                   "key": "state",
-                  "value": "Selangor",
-                  "description": "any state"
+                  "value": "kelantan",
+                  "description": "any state",
+                  "disabled": true
                 },
                 {
                   "key": "dealTypes",
@@ -1311,7 +1305,8 @@
                 },
                 {
                   "key": "myListings",
-                  "value": "true"
+                  "value": "true",
+                  "disabled": true
                 },
                 {
                   "key": "myShortlistings",
@@ -2736,7 +2731,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "e8928627-605d-4e1a-9e0c-1432f3bc51e9"
+                  "value": "1a5d2432-f243-4b13-8087-64c479f2c356"
                 }
               ]
             }
@@ -3369,6 +3364,454 @@
               "variable": [
                 {
                   "key": ":id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Create Message",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"enquiryId\": \"0b1f7c30-2e77-4fd7-86ce-88ec7198d251\",\r\n    \"content\": \"Hi admin, I want to proceed with this land enquiry.\",\r\n    \"receiverId\": \"d2d08e8a-31f5-4662-9bb2-3ffb5e5f6309\"           // Any admin Id\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/messages/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Message By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/messages/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Message",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"content\": \"Hi admin, I want to proceed with this land enquiry.\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/messages/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Message",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/messages/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Message By inquiry",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/messages/enquiry/:enquiryId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                "enquiry",
+                ":enquiryId"
+              ],
+              "variable": [
+                {
+                  "key": "enquiryId",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Enquiry Role",
+      "item": [
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"enquiryId\": \"{{enquiryId}}\",\r\n    \"roleId\": \"{{roleId}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enquiry-roles/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiry-roles",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"enquiryId\": \"0b1f7c30-2e77-4fd7-86ce-88ec7198d251\",\r\n    \"roleId\": \"6d4f9c61-9c32-4a5d-8d7c-3e4f7e2a9f10\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enquiry-roles/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiry-roles",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"enquiryId\": \"0b1f7c30-2e77-4fd7-86ce-88ec7198d251\",\r\n    \"roleId\": \"6d4f9c61-9c32-4a5d-8d7c-3e4f7e2a9f10\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enquiry-roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiry-roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get By Id",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"enquiryId\": \"0b1f7c30-2e77-4fd7-86ce-88ec7198d251\",\r\n    \"roleId\": \"6d4f9c61-9c32-4a5d-8d7c-3e4f7e2a9f10\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/enquiry-roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiry-roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/enquiry-roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "enquiry-roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Buyer\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"enquiryId\": \"0b1f7c30-2e77-4fd7-86ce-88ec7198d251\",\r\n    \"roleId\": \"6d4f9c61-9c32-4a5d-8d7c-3e4f7e2a9f10\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Buyer\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get By Id",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"enquiryId\": \"0b1f7c30-2e77-4fd7-86ce-88ec7198d251\",\r\n    \"roleId\": \"6d4f9c61-9c32-4a5d-8d7c-3e4f7e2a9f10\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
                   "value": ""
                 }
               ]

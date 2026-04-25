@@ -310,7 +310,7 @@ const getShortlistedState = async (propertyId: string, userId?: string) => {
 	return !!shortlistedProperty;
 };
 
-const enrichListingResult = async (
+export const enrichListingResult = async (
 	property: any,
 	userId?: string,
 	options?: { isShortListed?: boolean }
@@ -335,7 +335,7 @@ const enrichListingResult = async (
 	};
 };
 
-const enrichListingCollection = async (
+export const enrichListingCollection = async (
 	properties: any[],
 	userId?: string,
 	concurrency: number = 5

@@ -20,7 +20,11 @@ export const SOCKET_EVENTS = {
 		JOIN_ENQUIRY: "chat:join-enquiry",
 		LEAVE_ENQUIRY: "chat:leave-enquiry",
 		SEND_MESSAGE: "chat:send-message",
+		UPDATE_MESSAGE: "chat:update-message",
+		DELETE_MESSAGE: "chat:delete-message",
 		NEW_MESSAGE: "chat:new-message",
+		UPDATED_MESSAGE: "chat:message-updated",
+		DELETED_MESSAGE: "chat:message-deleted",
 		HISTORY: "chat:history",
 	},
 } as const;
@@ -28,4 +32,5 @@ export const SOCKET_EVENTS = {
 export const ROOM_PREFIX = {
 	USER: "user",
 	ENQUIRY: "enquiry",
+	ADMIN: "admin",
 } as const;

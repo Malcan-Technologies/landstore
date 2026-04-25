@@ -31,6 +31,14 @@ export type ChatMessageRealtimePayload = {
 	createdAt: string;
 };
 
+export type ChatMessageDeletedRealtimePayload = {
+	id: string;
+	enquiryId: string;
+	senderId: string;
+	receiverId: string;
+	deletedAt: string;
+};
+
 export interface ClientToServerEvents {
 	"notification:subscribe": (ack?: (response: AckResponse) => void) => void;
 	"notification:unsubscribe": (ack?: (response: AckResponse) => void) => void;
@@ -51,6 +59,14 @@ export interface ClientToServerEvents {
 		payload: { enquiryId: string; receiverId?: string; content: string },
 		ack?: (response: AckResponse<ChatMessageRealtimePayload>) => void
 	) => void;
+	"chat:update-message": (
+		payload: { messageId: string; content?: string; receiverId?: string },
+		ack?: (response: AckResponse<ChatMessageRealtimePayload>) => void
+	) => void;
+	"chat:delete-message": (
+		payload: { messageId: string },
+		ack?: (response: AckResponse<{ id: string; enquiryId: string }>) => void
+	) => void;
 }
 
 export interface ServerToClientEvents {
@@ -62,6 +78,8 @@ export interface ServerToClientEvents {
 	"notification:deleted": (payload: { id: string; userId: string }) => void;
 	"notification:unread-count": (payload: { userId: string; unreadCount: number }) => void;
 	"chat:new-message": (payload: ChatMessageRealtimePayload) => void;
+	"chat:message-updated": (payload: ChatMessageRealtimePayload) => void;
+	"chat:message-deleted": (payload: ChatMessageDeletedRealtimePayload) => void;
 	"chat:history": (payload: { enquiryId: string; messages: ChatMessageRealtimePayload[] }) => void;
 }
 

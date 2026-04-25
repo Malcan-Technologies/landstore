@@ -1,87 +1,30 @@
-import db from "../../../config/prisma.js";
 import { SOCKET_EVENTS } from "../constants/events.js";
-import { emitChatMessage } from "../emitters/chat.emitter.js";
 import { isSocketEventAllowed } from "../middleware/rateLimit.middleware.js";
 import {
 	getEnquiryRoomName,
 	joinEnquiryRoom,
 	leaveEnquiryRoom,
 } from "../rooms/room.manager.js";
+import {
+	canAccessEnquiryMessages,
+	createMessage,
+	deleteMessage,
+	getEnquiryMessageHistoryForSocket,
+	updateMessage,
+} from "../../services/message.js";
 import type {
 	AckResponse,
 	AppSocket,
 	ChatMessageRealtimePayload,
 } from "../types/socket.types.js";
 
-const canAccessEnquiry = async (
-	enquiryId: string,
-	userId: string
-): Promise<{ canAccess: boolean; enquiryUserId?: string; propertyOwnerId?: string }> => {
-	const enquiry = await db.propertyEnquiry.findUnique({
-		where: { id: enquiryId },
-		select: {
-			id: true,
-			userId: true,
-			property: {
-				select: {
-					userId: true,
-				},
-			},
-		},
-	});
-
-	if (!enquiry) {
-		return { canAccess: false };
-	}
-
-	const enquiryUserId = enquiry.userId;
-	const propertyOwnerId = enquiry.property.userId;
-	const canAccess = userId === enquiryUserId || userId === propertyOwnerId;
-
-	return {
-		canAccess,
-		enquiryUserId,
-		propertyOwnerId,
-	};
-};
-
-const toMessagePayload = (message: {
-	id: string;
-	enquiryId: string;
-	senderId: string;
-	receiverId: string;
-	content: string;
-	createdAt: Date;
-}): ChatMessageRealtimePayload => {
-	return {
-		id: message.id,
-		enquiryId: message.enquiryId,
-		senderId: message.senderId,
-		receiverId: message.receiverId,
-		content: message.content,
-		createdAt: message.createdAt.toISOString(),
-	};
-};
-
-const inferReceiverId = (
-	senderId: string,
-	enquiryUserId?: string,
-	propertyOwnerId?: string
-): string | null => {
-	if (enquiryUserId && enquiryUserId !== senderId) {
-		return enquiryUserId;
-	}
-
-	if (propertyOwnerId && propertyOwnerId !== senderId) {
-		return propertyOwnerId;
-	}
-
-	return null;
-};
-
 export const registerChatHandler = (socket: AppSocket): void => {
 	const userId = socket.data.user?.id;
 	if (!userId) return;
+	const requester = {
+		id: userId,
+		userType: socket.data.user?.userType,
+	};
 
 	socket.on(SOCKET_EVENTS.CHAT.JOIN_ENQUIRY, async (payload, ack) => {
 		try {
@@ -96,22 +39,14 @@ export const registerChatHandler = (socket: AppSocket): void => {
 				return;
 			}
 
-			const access = await canAccessEnquiry(enquiryId, userId);
-			if (!access.canAccess) {
-				ack?.({ success: false, message: "Forbidden to join this enquiry room" });
-				return;
-			}
+			await canAccessEnquiryMessages(requester, enquiryId);
 
 			await joinEnquiryRoom(socket, enquiryId);
-			const messages = await db.message.findMany({
-				where: { enquiryId },
-				orderBy: { createdAt: "asc" },
-				take: 100,
-			});
+			const messages = await getEnquiryMessageHistoryForSocket(requester, enquiryId, 100);
 
 			socket.emit(SOCKET_EVENTS.CHAT.HISTORY, {
 				enquiryId,
-				messages: messages.map(toMessagePayload),
+				messages,
 			});
 
 			ack?.({ success: true, data: { enquiryId, room: getEnquiryRoomName(enquiryId) } });
@@ -161,40 +96,98 @@ export const registerChatHandler = (socket: AppSocket): void => {
 				return;
 			}
 
-			const access = await canAccessEnquiry(enquiryId, userId);
-			if (!access.canAccess) {
-				respond({ success: false, message: "Forbidden to send message" });
-				return;
-			}
-
-			const receiverId = payload.receiverId?.trim()
-				? payload.receiverId.trim()
-				: inferReceiverId(userId, access.enquiryUserId, access.propertyOwnerId);
-
-			if (!receiverId) {
-				respond({ success: false, message: "Unable to resolve receiverId" });
-				return;
-			}
-
-			if (receiverId === userId) {
-				respond({ success: false, message: "receiverId cannot be the sender" });
-				return;
-			}
-
-			const created = await db.message.create({
-				data: {
-					enquiryId,
-					senderId: userId,
-					receiverId,
-					content,
-				},
+			const created = await createMessage(requester, {
+				enquiryId,
+				content,
+				receiverId: payload.receiverId,
 			});
 
-			const messagePayload = toMessagePayload(created);
-			emitChatMessage(messagePayload);
-			respond({ success: true, data: messagePayload });
-		} catch {
-			respond({ success: false, message: "Failed to send message" });
+			respond({
+				success: true,
+				data: {
+					id: created.id,
+					enquiryId: created.enquiryId,
+					senderId: created.senderId,
+					receiverId: created.receiverId,
+					content: created.content,
+					createdAt: created.createdAt.toISOString(),
+				},
+			});
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : "Failed to send message";
+			respond({ success: false, message });
+		}
+	});
+
+	socket.on(SOCKET_EVENTS.CHAT.UPDATE_MESSAGE, async (payload, ack) => {
+		const respond = (response: AckResponse<ChatMessageRealtimePayload>) => {
+			ack?.(response);
+		};
+
+		try {
+			if (!isSocketEventAllowed(socket, SOCKET_EVENTS.CHAT.UPDATE_MESSAGE, 60)) {
+				respond({ success: false, message: "Rate limit exceeded" });
+				return;
+			}
+
+			const messageId = payload.messageId?.trim();
+			if (!messageId) {
+				respond({ success: false, message: "messageId is required" });
+				return;
+			}
+
+			const updated = await updateMessage(requester, messageId, {
+				content: payload.content,
+				receiverId: payload.receiverId,
+			});
+
+			respond({
+				success: true,
+				data: {
+					id: updated.id,
+					enquiryId: updated.enquiryId,
+					senderId: updated.senderId,
+					receiverId: updated.receiverId,
+					content: updated.content,
+					createdAt: updated.createdAt.toISOString(),
+				},
+			});
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : "Failed to update message";
+			respond({ success: false, message });
+		}
+	});
+
+	socket.on(SOCKET_EVENTS.CHAT.DELETE_MESSAGE, async (payload, ack) => {
+		const respond = (response: AckResponse<{ id: string; enquiryId: string }>) => {
+			ack?.(response);
+		};
+
+		try {
+			if (!isSocketEventAllowed(socket, SOCKET_EVENTS.CHAT.DELETE_MESSAGE, 60)) {
+				respond({ success: false, message: "Rate limit exceeded" });
+				return;
+			}
+
+			const messageId = payload.messageId?.trim();
+			if (!messageId) {
+				respond({ success: false, message: "messageId is required" });
+				return;
+			}
+
+			const messageRecord = await deleteMessage(requester, messageId);
+
+			respond({
+				success: true,
+				data: {
+					id: messageRecord.id,
+					enquiryId: messageRecord.enquiryId,
+				},
+				message: messageRecord.message,
+			});
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : "Failed to delete message";
+			respond({ success: false, message });
 		}
 	});
 };

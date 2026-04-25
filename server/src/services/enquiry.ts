@@ -1,5 +1,6 @@
 import db from "../../config/prisma.js";
 import { Prisma } from "@prisma/client";
+import { enrichListingResult, enrichListingCollection } from "./listLand.js";
 
 const createHttpError = (message: string, statusCode: number) => {
 	const error = new Error(message) as Error & { statusCode?: number };
@@ -57,12 +58,14 @@ type GetEnquiriesQuery = {
 
 const includeEnquiryRelations = {
 	property: {
-		select: {
-			id: true,
-			title: true,
-			listingCode: true,
-			price: true,
-		},
+		include: {
+			media: true,
+			documents: {
+				include: {
+					media: true
+				}
+			}
+		}
 	},
 	user: {
 		select: {
@@ -98,7 +101,7 @@ const includeEnquiryRelations = {
 /**
  * Create a new property enquiry
  */
-export const createEnquiry = async (payload: CreateEnquiryPayload) => {
+export const createEnquiry = async (payload: CreateEnquiryPayload, userId?: string) => {
 	try {
 		// Validate required fields
 		const requiredFields: Array<keyof CreateEnquiryPayload> = [
@@ -180,8 +183,12 @@ export const createEnquiry = async (payload: CreateEnquiryPayload) => {
 			include: includeEnquiryRelations,
 		});
 
+		// Enrich property with signed URLs
+		const enrichedProperty = await enrichListingResult(enquiry.property, userId);
+
 		return {
 			...enquiry,
+			property: enrichedProperty,
 			budget: enquiry.budget?.toString(),
 		};
 	} catch (error: unknown) {
@@ -192,7 +199,7 @@ export const createEnquiry = async (payload: CreateEnquiryPayload) => {
 /**
  * Get all enquiries with optional filters and pagination
  */
-export const getEnquiries = async (query: GetEnquiriesQuery) => {
+export const getEnquiries = async (query: GetEnquiriesQuery, userId?: string) => {
 	try {
 		const pageSize = query.limit ?? 10;
 		const pageNumber = query.page ?? 1;
@@ -222,12 +229,18 @@ export const getEnquiries = async (query: GetEnquiriesQuery) => {
 			db.propertyEnquiry.count({ where }),
 		]);
 
-		return {
-			data: enquiries.map((enquiry) => ({
+		// Enrich properties with signed URLs
+		const enrichedEnquiries = await Promise.all(
+			enquiries.map(async (enquiry) => ({
 				...enquiry,
+				property: await enrichListingResult(enquiry.property, userId),
 				budget: enquiry.budget?.toString(),
 				messagesCount: enquiry.messages.length,
-			})),
+			}))
+		);
+
+		return {
+			data: enrichedEnquiries,
 			pagination: {
 				page: pageNumber,
 				pageSize,
@@ -243,7 +256,7 @@ export const getEnquiries = async (query: GetEnquiriesQuery) => {
 /**
  * Get a single enquiry by ID
  */
-export const getEnquiryById = async (enquiryId: string) => {
+export const getEnquiryById = async (enquiryId: string, userId?: string) => {
 	if (!enquiryId || enquiryId.trim().length === 0) {
 		throw createHttpError("Enquiry ID is required", 400);
 	}
@@ -265,8 +278,12 @@ export const getEnquiryById = async (enquiryId: string) => {
 			throw createHttpError("Enquiry not found", 404);
 		}
 
+		// Enrich property with signed URLs
+		const enrichedProperty = await enrichListingResult(enquiry.property, userId);
+
 		return {
 			...enquiry,
+			property: enrichedProperty,
 			budget: enquiry.budget?.toString(),
 		};
 	} catch (error: unknown) {
@@ -280,7 +297,8 @@ export const getEnquiryById = async (enquiryId: string) => {
 export const getEnquiriesByPropertyId = async (
 	propertyId: string,
 	page?: number,
-	limit?: number
+	limit?: number,
+	userId?: string
 ) => {
 	if (!propertyId || propertyId.trim().length === 0) {
 		throw createHttpError("Property ID is required", 400);
@@ -314,12 +332,18 @@ export const getEnquiriesByPropertyId = async (
 			db.propertyEnquiry.count({ where: { propertyId } }),
 		]);
 
-		return {
-			data: enquiries.map((enquiry) => ({
+		// Enrich properties with signed URLs
+		const enrichedEnquiries = await Promise.all(
+			enquiries.map(async (enquiry) => ({
 				...enquiry,
+				property: await enrichListingResult(enquiry.property, userId),
 				budget: enquiry.budget?.toString(),
 				messagesCount: enquiry.messages.length,
-			})),
+			}))
+		);
+
+		return {
+			data: enrichedEnquiries,
 			pagination: {
 				page: pageNumber,
 				pageSize,
@@ -338,7 +362,8 @@ export const getEnquiriesByPropertyId = async (
 export const getEnquiriesByUserId = async (
 	userId: string,
 	page?: number,
-	limit?: number
+	limit?: number,
+	requestingUserId?: string
 ) => {
 	if (!userId || userId.trim().length === 0) {
 		throw createHttpError("User ID is required", 400);
@@ -372,12 +397,18 @@ export const getEnquiriesByUserId = async (
 			db.propertyEnquiry.count({ where: { userId } }),
 		]);
 
-		return {
-			data: enquiries.map((enquiry) => ({
+		// Enrich properties with signed URLs
+		const enrichedEnquiries = await Promise.all(
+			enquiries.map(async (enquiry) => ({
 				...enquiry,
+				property: await enrichListingResult(enquiry.property, requestingUserId),
 				budget: enquiry.budget?.toString(),
 				messagesCount: enquiry.messages.length,
-			})),
+			}))
+		);
+
+		return {
+			data: enrichedEnquiries,
 			pagination: {
 				page: pageNumber,
 				pageSize,
@@ -395,7 +426,8 @@ export const getEnquiriesByUserId = async (
  */
 export const updateEnquiry = async (
 	enquiryId: string,
-	payload: UpdateEnquiryPayload
+	payload: UpdateEnquiryPayload,
+	userId?: string
 ) => {
 	if (!enquiryId || enquiryId.trim().length === 0) {
 		throw createHttpError("Enquiry ID is required", 400);
@@ -456,8 +488,12 @@ export const updateEnquiry = async (
 			include: includeEnquiryRelations,
 		});
 
+		// Enrich property with signed URLs
+		const enrichedProperty = await enrichListingResult(updatedEnquiry.property, userId);
+
 		return {
 			...updatedEnquiry,
+			property: enrichedProperty,
 			budget: updatedEnquiry.budget?.toString(),
 		};
 	} catch (error: unknown) {

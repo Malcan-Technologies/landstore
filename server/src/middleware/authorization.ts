@@ -33,8 +33,10 @@ export const requireRole = (role: "superadmin" | "admin" | "user") =>
         });
       }
 
-      // Check if user has required role
-      if (dbUser.userType.toLowerCase() !== role) {
+      const userRole = dbUser.userType.toLowerCase();
+
+      // Superadmin is a universal override for all role-gated routes.
+      if (userRole !== role && userRole !== "superadmin") {
         console.warn(
           `Access denied: User ${dbUser.email} (${dbUser.id}) has role '${dbUser.userType}', required '${role}'`
         );

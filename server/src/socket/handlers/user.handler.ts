@@ -1,5 +1,5 @@
 import { SOCKET_EVENTS } from "../constants/events.js";
-import { joinUserRoom } from "../rooms/room.manager.js";
+import { joinAdminRoom, joinUserRoom } from "../rooms/room.manager.js";
 import type { AppServer, AppSocket } from "../types/socket.types.js";
 
 export const registerUserHandler = async (
@@ -16,6 +16,11 @@ export const registerUserHandler = async (
 	}
 
 	await joinUserRoom(socket, userId);
+
+	if (socket.data.user?.userType && ["admin", "superadmin"].includes(socket.data.user.userType.toLowerCase())) {
+		await joinAdminRoom(socket);
+	}
+
 	socket.emit(SOCKET_EVENTS.USER.CONNECTED, { userId });
 
 	socket.on("disconnect", () => {
