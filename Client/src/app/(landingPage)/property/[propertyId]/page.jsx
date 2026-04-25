@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import Loading from "@/components/common/Loading";
 import ChooseFolder from "@/components/userDashboard/explore/ChooseFolder";
 import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
+import SelectDropdown from "@/components/common/SelectDropdown";
 import PropertyGallery from "@/components/landingPage/property/PropertyGallery";
 import MapView from "@/components/userDashboard/explore/MapView";
 import Bag from "@/components/svg/Bag";
@@ -23,8 +24,10 @@ import Plus from "@/components/svg/Plus";
 import Sheild from "@/components/svg/Sheild";
 import Person from "@/components/svg/Person";
 import { enquiryService } from "@/services/enquiryService";
+import { enquiryRoleService } from "@/services/enquiryRoleService";
 import { folderService } from "@/services/folderService";
 import { landService } from "@/services/landService";
+import { roleService } from "@/services/roleService";
 import { checkAuth } from "@/utils/auth";
 
 const fallbackGalleryImage = "/Land.jpg";
@@ -48,8 +51,6 @@ const featureTagLabelMap = {
   electricity: "Electricity",
 };
 
-const interestTypeOptions = ["Buy", "JV", "Financing"];
-const roleOptions = ["Developer", "Buyer", "Financier", "Representative"];
 const descriptionPreviewSteps = [1000, 2000];
 
 const extractProperty = (response) => {
@@ -108,11 +109,27 @@ const formatStatusLabel = (value) =>
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-const normalizeOptionText = (value) =>
-  String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+const getStatusStyle = (status) => {
+  const normalizedStatus = typeof status === "string" ? status.trim().toLowerCase() : "";
+
+  if (normalizedStatus === "pending") {
+    return "bg-[#FFF7E8] text-[#F59E0B]";
+  }
+  if (normalizedStatus === "draft") {
+    return "bg-[#F3F4F6] text-gray5";
+  }
+  if (normalizedStatus === "review" || normalizedStatus === "under review" || normalizedStatus === "under_review") {
+    return "bg-[#FFF7E8] text-[#F59E0B]";
+  }
+  if (normalizedStatus === "active") {
+    return "bg-[#EAF8F1] text-green-secondary";
+  }
+  if (normalizedStatus === "inactive" || normalizedStatus === "reserved") {
+    return "bg-[#EEF4FF] text-[#2563EB]";
+  }
+
+  return "bg-activebg text-active";
+};
 
 const formatEnquiryCode = (enquiryId) => {
   if (!enquiryId || typeof enquiryId !== "string") {
@@ -165,6 +182,41 @@ const extractInterestTypeItems = (response) => {
           item?.interestType?.name ||
           item?.type?.name ||
           "",
+      };
+    })
+    .filter((item) => typeof item?.name === "string" && item.name.trim());
+};
+
+const extractRoleItems = (response) => {
+  const rawItems = Array.isArray(response?.data)
+    ? response.data
+    : Array.isArray(response?.result)
+      ? response.result
+      : Array.isArray(response?.items)
+        ? response.items
+        : Array.isArray(response?.data?.items)
+          ? response.data.items
+          : Array.isArray(response?.data?.data)
+            ? response.data.data
+            : Array.isArray(response?.result?.items)
+              ? response.result.items
+              : Array.isArray(response?.result?.data)
+                ? response.result.data
+                : [];
+
+  return rawItems
+    .map((item) => {
+      if (typeof item === "string") {
+        return { id: null, name: item };
+      }
+
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      return {
+        id: item.id || item._id || item.roleId || item?.role?.id || null,
+        name: item.name || item.label || item.title || item.value || item?.role?.name || "",
       };
     })
     .filter((item) => typeof item?.name === "string" && item.name.trim());
@@ -239,28 +291,34 @@ const mapPropertyToDetails = (property) => {
     images: galleryImages.length > 0 ? galleryImages : [fallbackGalleryImage],
     isApproximate: property?.location?.isApproximate !== false,
     isMine: Boolean(property?.isMine),
+    adminAction: property?.adminAction || null,
   };
 };
 
 const PropertyPage = () => {
   const router = useRouter();
-  const { isAuth, hydrated, user } = useSelector((state) => state.auth);
+  const { isAuth, hydrated } = useSelector((state) => state.auth);
   const params = useParams();
   const searchParams = useSearchParams();
   const propertyId = Array.isArray(params?.propertyId) ? params.propertyId[0] : params?.propertyId;
   const openedFromListings = searchParams.get("source") === "listings";
-  const showMatchmakingAside = !openedFromListings;
   const backRoute = openedFromListings ? "/user-dashboard/listings" : "/explore";
 
   const [propertyDetails, setPropertyDetails] = useState(null);
   const [isPropertyLoading, setIsPropertyLoading] = useState(true);
   const [propertyLoadError, setPropertyLoadError] = useState("");
   const [showInterestForm, setShowInterestForm] = useState(false);
-  const [interestType, setInterestType] = useState(interestTypeOptions[0]);
+  const [interestType, setInterestType] = useState("");
+  const [budget, setBudget] = useState("");
+  const [timeline, setTimeline] = useState("");
   const [message, setMessage] = useState("");
-  const [selectedRole, setSelectedRole] = useState(roleOptions[0]);
+  const [selectedRoleId, setSelectedRoleId] = useState("");
   const [isLoginRequiredOpen, setIsLoginRequiredOpen] = useState(false);
+  const [isOwnListing, setIsOwnListing] = useState(false);
+
+  const showMatchmakingAside = !openedFromListings || isOwnListing;
   const [interestTypes, setInterestTypes] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [interestSubmitError, setInterestSubmitError] = useState("");
   const [interestSubmitSuccess, setInterestSubmitSuccess] = useState("");
   const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
@@ -450,31 +508,24 @@ const PropertyPage = () => {
     router.push("/user-dashboard/enquiries");
   };
 
-  const currentUserId = user?.id || user?.user?.id || user?._id || null;
-
   const availableInterestTypeOptions = useMemo(() => {
-    const names = interestTypes
-      .map((item) => item?.name)
-      .filter((name) => typeof name === "string" && name.trim());
-
-    return names.length > 0 ? names : interestTypeOptions;
+    return interestTypes
+      .map((item) => ({ value: item?.id || item?.name, label: item?.name }))
+      .filter((option) => option.label && typeof option.label === "string" && option.label.trim());
   }, [interestTypes]);
 
-  const selectedInterestTypeId = useMemo(() => {
-    const normalizedSelected = normalizeOptionText(interestType);
-    const matchedType =
-      interestTypes.find((item) => normalizeOptionText(item?.name) === normalizedSelected) ||
-      interestTypes.find((item) => {
-        const normalizedName = normalizeOptionText(item?.name);
-        return normalizedName.includes(normalizedSelected) || normalizedSelected.includes(normalizedName);
-      });
+  const availableRoleOptions = useMemo(() => {
+    return roles
+      .map((item) => ({ value: item?.id || item?.name, label: item?.name }))
+      .filter((option) => option.label && typeof option.label === "string" && option.label.trim());
+  }, [roles]);
 
-    if (!matchedType?.id) {
-      const firstAvailableType = interestTypes.find((item) => item?.id);
-      return firstAvailableType?.id || null;
+  const selectedInterestTypeId = useMemo(() => {
+    if (!interestType) {
+      return interestTypes.find((item) => item?.id)?.id || null;
     }
 
-    return matchedType?.id || null;
+    return interestTypes.find((item) => String(item?.id) === String(interestType))?.id || null;
   }, [interestType, interestTypes]);
 
   const handleConfirmSelection = async () => {
@@ -491,35 +542,26 @@ const PropertyPage = () => {
       return;
     }
 
-    if (!currentUserId) {
-      setInterestSubmitError("User id is missing. Please login again.");
+    const numericBudget = Number(budget);
+    if (!Number.isFinite(numericBudget) || numericBudget <= 0) {
+      setInterestSubmitError("Please enter a valid estimated budget.");
+      return;
+    }
+
+    if (!timeline.trim()) {
+      setInterestSubmitError("Please enter your acquisition timeline.");
+      return;
+    }
+
+    if (!selectedRoleId) {
+      setInterestSubmitError("Please select your role.");
       return;
     }
 
     try {
       setIsSubmittingInterest(true);
 
-      let resolvedInterestTypeId = selectedInterestTypeId;
-
-      if (!resolvedInterestTypeId) {
-        const response = await enquiryService.getInterestTypes({ page: 1, limit: 100 });
-        const refreshedItems = extractInterestTypeItems(response);
-
-        const normalizedSelected = normalizeOptionText(interestType);
-        const matchedType =
-          refreshedItems.find((item) => normalizeOptionText(item?.name) === normalizedSelected) ||
-          refreshedItems.find((item) => {
-            const normalizedName = normalizeOptionText(item?.name);
-            return normalizedName.includes(normalizedSelected) || normalizedSelected.includes(normalizedName);
-          });
-
-        if (refreshedItems.length > 0) {
-          setInterestTypes(refreshedItems);
-        }
-
-        resolvedInterestTypeId = matchedType?.id || refreshedItems.find((item) => item?.id)?.id || null;
-      }
-
+      const resolvedInterestTypeId = selectedInterestTypeId;
       if (!resolvedInterestTypeId) {
         setInterestSubmitError("Please select a valid interest type.");
         return;
@@ -527,20 +569,35 @@ const PropertyPage = () => {
 
       const enquiryPayload = {
         propertyId,
-        userId: currentUserId,
         interestTypeId: resolvedInterestTypeId,
         message: message.trim() || "Hello, I am interested in your property. Please contact me at your earliest convenience.",
-        budget: "12300",
-        timeline: selectedRole || "2 years",
-        status: "pending",
+        budget: String(numericBudget),
+        timeline: timeline.trim(),
       };
 
       const response = await enquiryService.createEnquiry(enquiryPayload);
       const enquiryId = response?.data?.id || response?.result?.id || response?.id || "";
 
-      setInterestSubmitSuccess("Enquiry submitted successfully.");
+      if (!enquiryId) {
+        throw new Error("Enquiry was created, but the server did not return an enquiry id.");
+      }
+
+      let successDescription = `Your enquiry (${formatEnquiryCode(enquiryId)}) has been logged. Our land specialists will review your profile for matching with the seller.`;
+
+      try {
+        await enquiryRoleService.createEnquiryRole({
+          enquiryId,
+          roleId: selectedRoleId,
+        });
+      } catch {
+        successDescription = `Your enquiry (${formatEnquiryCode(enquiryId)}) has been logged, but we could not save the selected role.`;
+      }
+
+      setInterestSubmitSuccess(successDescription);
       setShowInterestForm(false);
       setMessage("");
+      setBudget("");
+      setTimeline("");
       setSubmittedEnquiryId(enquiryId);
       setIsEnquirySuccessOpen(true);
     } catch (error) {
@@ -557,22 +614,34 @@ const PropertyPage = () => {
 
     let isMounted = true;
 
-    const loadInterestTypes = async () => {
-      try {
-        const response = await enquiryService.getInterestTypes({ page: 1, limit: 100 });
-        const items = extractInterestTypeItems(response);
+    const loadFormOptions = async () => {
+      const [interestResult, roleResult] = await Promise.allSettled([
+        enquiryService.getInterestTypes({ page: 1, limit: 100 }),
+        roleService.getRoles({ page: 1, limit: 100 }),
+      ]);
 
-        if (isMounted) {
-          setInterestTypes(items);
-        }
-      } catch {
-        if (isMounted) {
-          setInterestTypes([]);
-        }
+      if (!isMounted) {
+        return;
+      }
+
+      if (interestResult.status === "fulfilled") {
+        const items = extractInterestTypeItems(interestResult.value);
+        setInterestTypes(items);
+        setInterestType((currentValue) => currentValue || items[0]?.id || items[0]?.name || "");
+      } else {
+        setInterestTypes([]);
+      }
+
+      if (roleResult.status === "fulfilled") {
+        const items = extractRoleItems(roleResult.value);
+        setRoles(items);
+        setSelectedRoleId((currentValue) => currentValue || items[0]?.id || items[0]?.name || "");
+      } else {
+        setRoles([]);
       }
     };
 
-    loadInterestTypes();
+    loadFormOptions();
 
     return () => {
       isMounted = false;
@@ -580,10 +649,16 @@ const PropertyPage = () => {
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!availableInterestTypeOptions.includes(interestType)) {
-      setInterestType(availableInterestTypeOptions[0] || "");
+    if (availableInterestTypeOptions.length > 0 && !interestType) {
+      setInterestType(availableInterestTypeOptions[0]?.value || "");
     }
   }, [availableInterestTypeOptions, interestType]);
+
+  useEffect(() => {
+    if (availableRoleOptions.length > 0 && !selectedRoleId) {
+      setSelectedRoleId(availableRoleOptions[0]?.value || "");
+    }
+  }, [availableRoleOptions, selectedRoleId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -608,6 +683,7 @@ const PropertyPage = () => {
         }
 
         setPropertyDetails(mapPropertyToDetails(property));
+        setIsOwnListing(Boolean(property?.isMine));
         if (property?.isShortListed) {
           setIsShortlisted(true);
         }
@@ -702,7 +778,7 @@ const PropertyPage = () => {
 
             <h2 className="mt-8 text-[40px] font-semibold leading-tight text-gray2">Interest Submitted</h2>
             <p className="mt-4 max-w-110 text-[16px] leading-7 text-gray7">
-              Your enquiry ({formatEnquiryCode(submittedEnquiryId)}) has been logged. Our land specialists will review your profile for matching with the seller.
+              {interestSubmitSuccess || `Your enquiry (${formatEnquiryCode(submittedEnquiryId)}) has been logged. Our land specialists will review your profile for matching with the seller.`}
             </p>
 
             <button
@@ -820,9 +896,11 @@ const PropertyPage = () => {
                     <span
                       key={`${item.label}-${value.text}`}
                       className={`rounded-full  px-3 py-1 text-xs font-medium ${
-                        value.active
-                          ? " bg-activebg text-active"
-                          : "border border-border-card text-gray7"
+                        item.label === "Status"
+                          ? getStatusStyle(value.text)
+                          : value.active
+                            ? " bg-activebg text-active"
+                            : "border border-border-card text-gray7"
                       }`}
                     >
                       {value.text}
@@ -914,23 +992,52 @@ const PropertyPage = () => {
           {showInterestForm ? (
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray7">Interest type</label>
-                <div className="relative">
-                  <select
-                    value={interestType}
-                    onChange={(event) => setInterestType(event.target.value)}
-                    className="h-11 w-full appearance-none rounded-xl border border-border-input bg-white px-4 text-sm font-semibold text-gray2 outline-none"
-                  >
-                    {availableInterestTypeOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray5">
-                    <ChevronDownIcon />
-                  </span>
+                <SelectDropdown
+                  label="Interest type"
+                  value={interestType}
+                  onChange={setInterestType}
+                  options={availableInterestTypeOptions}
+                  placeholder="Select interest type"
+                  buttonClassName="h-11"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray7">Estimated budget</label>
+                <div className="rounded-xl border border-border-input bg-white px-4">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={budget}
+                    onChange={(event) => setBudget(event.target.value.replace(/[^\d.]/g, ""))}
+                    placeholder="Enter your budget in MYR"
+                    className="h-11 w-full border-none bg-transparent text-sm text-gray2 outline-none placeholder:text-gray5"
+                  />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray7">Acquisition timeline</label>
+                <div className="rounded-xl border border-border-input bg-white px-4">
+                  <input
+                    type="text"
+                    value={timeline}
+                    onChange={(event) => setTimeline(event.target.value.slice(0, 100))}
+                    placeholder="e.g. 2 years"
+                    className="h-11 w-full border-none bg-transparent text-sm text-gray2 outline-none placeholder:text-gray5"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <SelectDropdown
+                  label="Your role"
+                  value={selectedRoleId}
+                  onChange={setSelectedRoleId}
+                  options={availableRoleOptions}
+                  placeholder="Select your role"
+                  buttonClassName="h-11"
+                />
               </div>
 
               <div className="space-y-2">
@@ -945,30 +1052,6 @@ const PropertyPage = () => {
                     className="h-24 w-full resize-none border-none bg-transparent text-sm text-gray2 outline-none placeholder:text-gray5"
                   />
                   <p className="text-right text-sm text-gray5">Max 500 chars</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray7">Your role</label>
-                <div className="flex flex-wrap gap-3">
-                  {roleOptions.map((role) => {
-                    const active = selectedRole === role;
-                    return (
-                      <button
-                        key={role}
-                        type="button"
-                        onClick={() => setSelectedRole(role)}
-                        className={`inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
-                          active
-                            ? "border-border-green bg-activebg text-green-secondary"
-                            : "border-border-input bg-white text-gray2"
-                        }`}
-                      >
-                        {active ? <Check size={16} className="mr-2 text-green-secondary" /> : null}
-                        {role}
-                      </button>
-                    );
-                  })}
                 </div>
               </div>
 
@@ -1015,6 +1098,11 @@ const PropertyPage = () => {
                   <Plus size={16} color="white" />
                   Submit interest
                 </button>
+              ) : propertyDetails?.adminAction ? (
+                <div className="rounded-lg border border-[#FFF7E8] bg-[#FFF7E8] px-4 py-3">
+                  <p className="text-xs font-semibold text-[#F59E0B] mb-1">Admin Revision</p>
+                  <p className="text-sm text-gray2">{propertyDetails.adminAction}</p>
+                </div>
               ) : null}
               <button
                 type="button"

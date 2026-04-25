@@ -440,7 +440,7 @@ const CreateListingPage = () => {
     };
   }, [isEditMode, editingListingId]);
 
-  const createListingFormData = () => {
+  const createListingFormData = (statusOverride = null) => {
     const payload = new FormData();
 
     const listingCode = formData.listingCode || buildListingCode();
@@ -460,7 +460,7 @@ const CreateListingPage = () => {
     payload.append("price", String(estimatedValuation));
     payload.append("pricePerSqrft", String(pricePerSqrft));
     payload.append("tanahRizabMelayu", String(formData.rizabMalayu === "yes"));
-    payload.append("status", formData.status || "draft");
+    payload.append("status", statusOverride || formData.status || "draft");
     payload.append("estimatedValuation", String(estimatedValuation));
     payload.append("agreementAccepted", String(Boolean(formData.acceptedTerms)));
 
@@ -527,7 +527,7 @@ const CreateListingPage = () => {
     return payload;
   };
 
-  const submitListing = async () => {
+  const submitListing = async (status = "pending") => {
     setSubmitError("");
     setSubmitSuccess("");
 
@@ -536,7 +536,7 @@ const CreateListingPage = () => {
     const step3Errors = getStepFieldErrors(3);
     const finalFieldErrors = { ...step1Errors, ...step2Errors, ...step3Errors };
 
-    if (Object.keys(finalFieldErrors).length > 0) {
+    if (Object.keys(finalFieldErrors).length > 0 && status !== "draft") {
       setFieldErrors(finalFieldErrors);
 
       if (Object.keys(step1Errors).length > 0) {
@@ -552,7 +552,7 @@ const CreateListingPage = () => {
 
     try {
       setIsSubmitting(true);
-      const payload = createListingFormData();
+      const payload = createListingFormData(status);
 
       const requestConfig = {
         headers: {
@@ -624,12 +624,16 @@ const CreateListingPage = () => {
       return;
     }
 
-    submitListing();
+    submitListing("pending");
   };
 
   const handleBack = () => {
     if (isSubmitting || isListingLoading) return;
     setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleSaveDraft = async () => {
+    await submitListing("draft");
   };
 
   if (isReferenceLoading || isListingLoading) {
@@ -641,6 +645,7 @@ const CreateListingPage = () => {
       currentStep={currentStep}
       onBack={handleBack}
       onNext={handleNext}
+      onSaveDraft={handleSaveDraft}
       isLastStep={currentStep === 3}
       nextLabel={
         currentStep === 3

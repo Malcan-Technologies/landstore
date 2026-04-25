@@ -3,7 +3,6 @@
 import { use, useEffect, useState } from "react";
 import Image from "next/image";
 import Loading from "@/components/common/Loading";
-import Person from "@/components/svg/Person";
 import Sheild from "@/components/svg/Sheild";
 import Pointer from "@/components/svg/Pointer";
 import Building from "@/components/svg/Building";
@@ -11,21 +10,18 @@ import Bag from "@/components/svg/Bag";
 import Telephone from "@/components/svg/Telephone";
 import Envelop from "@/components/svg/Envelop";
 import Calendar from "@/components/svg/Calendar";
-import Send from "@/components/svg/Send";
-import Controls from "@/components/svg/Controls";
-import Mic from "@/components/svg/Mic";
-import Plus from "@/components/svg/Plus";
 import Note from "@/components/svg/Note";
 import UpRight from "@/components/svg/UpRight";
-import Chat2 from "@/components/svg/Chat2";
 import ArrowDown from "@/components/svg/ArrowDown";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import ChatSection from "@/components/userDashboard/enquiries/ChatSection";
 import Bag2 from "@/components/svg/Bag2";
 import Bag3 from "@/components/svg/Bag3";
 import Clock2 from "@/components/svg/Clock2";
 import Profile from "@/components/svg/Profile";
 import Verify from "@/components/svg/Verify";
 import { enquiryService } from "@/services/enquiryService";
+import { messageService } from "@/services/messageService";
 
 const fallbackEnquiryImage = "/Land.jpg";
 
@@ -125,23 +121,63 @@ const formatBudget = (value) => {
 const toStatusLabel = (value) => {
   const normalized = String(value || "").trim().toLowerCase();
 
-  if (normalized === "pending") {
+  if (normalized === "pending" || normalized === "pending_matching") {
     return "Pending matching";
   }
-  if (normalized === "under_review" || normalized === "under review") {
+  if (normalized === "under_review" || normalized === "under review" || normalized === "underreview") {
     return "Under review";
   }
   if (normalized === "need_more_info" || normalized === "need more info") {
     return "Need more info";
   }
-  if (normalized === "in_progress" || normalized === "in progress") {
+  if (
+    normalized === "in_progress"
+    || normalized === "in progress"
+    || normalized === "matched_inprogress"
+    || normalized === "matched inprogress"
+    || normalized === "matched in progress"
+  ) {
     return "In progress";
   }
   if (normalized === "scheduled") {
     return "Scheduled";
   }
+  if (normalized === "closed_successful") {
+    return "Closed successful";
+  }
+  if (normalized === "closed_not_proceeding") {
+    return "Closed not proceeding";
+  }
 
   return "Pending matching";
+};
+
+const toStatusApiValue = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "pending matching") {
+    return "PENDING_MATCHING";
+  }
+  if (normalized === "under review") {
+    return "UNDER_REVIEW";
+  }
+  if (normalized === "need more info") {
+    return "NEED_MORE_INFO";
+  }
+  if (normalized === "scheduled") {
+    return "SCHEDULED";
+  }
+  if (normalized === "in progress") {
+    return "MATCHED_INPROGRESS";
+  }
+  if (normalized === "closed successful") {
+    return "CLOSED_SUCCESSFUL";
+  }
+  if (normalized === "closed not proceeding") {
+    return "CLOSED_NOT_PROCEEDING";
+  }
+
+  return "";
 };
 
 const getRequesterProfile = (user) => {
@@ -215,6 +251,7 @@ const buildEnquiryDetailModel = (item) => {
   return {
     id: item?.id || "",
     enquiryId: formatEnquiryCode(item?.id),
+    requesterId: item?.user?.id || item?.userId || "",
     listingCode: item?.property?.listingCode || item?.propertyId || "-",
     listingTitle: item?.property?.title || "Property details pending",
     listingCategory: item?.property?.category?.name || item?.property?.category || "-",
@@ -241,7 +278,73 @@ const buildEnquiryDetailModel = (item) => {
   };
 };
 
-const mediationStatusOptions = ["Pending matching", "Need more info", "Scheduled", "In progress"];
+const extractMessageItems = (payload) => {
+  const resolved = payload?.data ?? payload?.result?.data ?? payload ?? [];
+
+  if (Array.isArray(resolved)) {
+    return resolved;
+  }
+
+  if (Array.isArray(resolved?.items)) {
+    return resolved.items;
+  }
+
+  return [];
+};
+
+const normalizeCreatedMessage = (payload) => payload?.data ?? payload?.result?.data ?? payload ?? null;
+
+const sortChatMessages = (messages) => {
+  return [...messages].sort((left, right) => {
+    const leftTime = new Date(left?.createdAt || 0).getTime();
+    const rightTime = new Date(right?.createdAt || 0).getTime();
+    return leftTime - rightTime;
+  });
+};
+
+const mapMessageToChatMessage = (message, requesterId) => {
+  const senderId = message?.senderId || message?.sender?.id || "";
+  const content = typeof message?.content === "string" ? message.content.trim() : "";
+
+  if (!content) {
+    return null;
+  }
+
+  return {
+    id: message?.id || `${senderId}-${message?.createdAt || content}`,
+    content,
+    sender: String(senderId) === String(requesterId || "") ? "user" : "admin",
+    createdAt: message?.createdAt || new Date().toISOString(),
+  };
+};
+
+const buildChatMessages = (enquiry, messagesPayload) => {
+  const requesterId = enquiry?.userId || enquiry?.user?.id || "";
+  const originalMessage = typeof enquiry?.message === "string" ? enquiry.message.trim() : "";
+  const chatMessages = [];
+
+  if (originalMessage) {
+    chatMessages.push({
+      id: `original-${enquiry?.id || requesterId || "enquiry"}`,
+      content: originalMessage,
+      sender: "user",
+      createdAt: enquiry?.createdAt || new Date().toISOString(),
+    });
+  }
+
+  extractMessageItems(messagesPayload)
+    .map((message) => mapMessageToChatMessage(message, requesterId))
+    .filter(Boolean)
+    .forEach((message) => {
+      if (!chatMessages.some((item) => item.id === message.id)) {
+        chatMessages.push(message);
+      }
+    });
+
+  return sortChatMessages(chatMessages);
+};
+
+const mediationStatusOptions = ["Pending matching", "Under review", "Need more info", "Scheduled", "In progress", "Closed successful", "Closed not proceeding"];
 const mediationStatusDropdownOptions = mediationStatusOptions.map((option) => ({
   label: option,
   value: option,
@@ -258,7 +361,11 @@ export default function EnquiryHubDetailPage({ params }) {
   const [enquiryLoadError, setEnquiryLoadError] = useState("");
   const [mediationStatus, setMediationStatus] = useState("");
   const [adminNote, setAdminNote] = useState("");
-  const [message, setMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatError, setChatError] = useState("");
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [statusError, setStatusError] = useState("");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   useEffect(() => {
     if (!normalizedRouteId) {
@@ -274,9 +381,18 @@ export default function EnquiryHubDetailPage({ params }) {
       try {
         setIsLoadingEnquiry(true);
         setEnquiryLoadError("");
+        setChatError("");
 
-        const response = await enquiryService.getEnquiryById(normalizedRouteId);
-        const normalizedEnquiry = normalizeEnquiryPayload(response);
+        const [enquiryResult, messageResult] = await Promise.allSettled([
+          enquiryService.getEnquiryById(normalizedRouteId),
+          messageService.getMessagesByEnquiry(normalizedRouteId, { page: 1, limit: 100 }),
+        ]);
+
+        if (enquiryResult.status !== "fulfilled") {
+          throw enquiryResult.reason;
+        }
+
+        const normalizedEnquiry = normalizeEnquiryPayload(enquiryResult.value);
 
         if (!isMounted) {
           return;
@@ -291,6 +407,14 @@ export default function EnquiryHubDetailPage({ params }) {
         const mappedEnquiry = buildEnquiryDetailModel(normalizedEnquiry);
         setEnquiryDetail(mappedEnquiry);
         setMediationStatus(mappedEnquiry.mediationStatus);
+        setStatusError("");
+
+        if (messageResult.status === "fulfilled") {
+          setChatMessages(buildChatMessages(normalizedEnquiry, messageResult.value));
+        } else {
+          setChatMessages(buildChatMessages(normalizedEnquiry, { data: normalizedEnquiry?.messages || [] }));
+          setChatError(messageResult.reason?.message || "Failed to load chat history.");
+        }
       } catch (error) {
         if (!isMounted) {
           return;
@@ -312,6 +436,66 @@ export default function EnquiryHubDetailPage({ params }) {
       isMounted = false;
     };
   }, [normalizedRouteId]);
+
+  const handleSendMessage = async (content) => {
+    if (!normalizedRouteId || !enquiryDetail?.requesterId) {
+      setChatError("Unable to send the message right now.");
+      return false;
+    }
+
+    try {
+      setIsSendingMessage(true);
+      setChatError("");
+
+      const response = await messageService.createMessage({
+        enquiryId: normalizedRouteId,
+        content,
+        receiverId: enquiryDetail.requesterId,
+      });
+
+      const createdMessage = normalizeCreatedMessage(response);
+      const mappedMessage = mapMessageToChatMessage(createdMessage, enquiryDetail.requesterId);
+
+      if (mappedMessage) {
+        setChatMessages((prev) => sortChatMessages([...prev.filter((item) => item.id !== mappedMessage.id), mappedMessage]));
+      }
+
+      return true;
+    } catch (apiError) {
+      setChatError(apiError?.message || "Failed to send message.");
+      return false;
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
+  const handleMediationStatusChange = async (nextStatus) => {
+    if (!normalizedRouteId) {
+      setStatusError("Unable to update mediation status.");
+      return;
+    }
+
+    const apiStatus = toStatusApiValue(nextStatus);
+    if (!apiStatus) {
+      setStatusError("Selected status is not supported.");
+      return;
+    }
+
+    const previousStatus = mediationStatus;
+    setMediationStatus(nextStatus);
+    setStatusError("");
+
+    try {
+      setIsUpdatingStatus(true);
+      await enquiryService.updateEnquiryStatus(normalizedRouteId, { status: apiStatus });
+      setEnquiryDetail((prev) => (prev ? { ...prev, mediationStatus: nextStatus } : prev));
+    } catch (apiError) {
+      setMediationStatus(previousStatus);
+      setStatusError(apiError?.message || "Failed to update mediation status.");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   if (isLoadingEnquiry) {
     return <Loading />;
@@ -405,110 +589,14 @@ export default function EnquiryHubDetailPage({ params }) {
             </div>
           </div>
 
-          <div className="py-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-[#111827]">
-                <Chat2 size={16} color="#2F855A" />
-                <h2 className="text-[12px] sm:text-[16px] lg:text-[14px] xl:text-[16px] font-semibold">Mediation Log</h2>
-              </div>
-              <div className="flex items-center gap-2 text-[9px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">
-                <Sheild size={14} color="#10B981" />
-                <span>Secure Admin Mediation</span>
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-[18px] bg-[#FAFAFA] p-5 md:h-125 xl:h-auto">
-              <div className="flex gap-4">
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#18181B] text-white">
-                  <Person size={14} color="#FFFFFF" />
-                </span>
-                <div className="flex-1 rounded-2xl border border-[#E5E7EB] bg-white">
-                  <div className="flex items-start justify-between gap-3 px-4 py-4">
-                    <div>
-                      <div className="flex justify-between">
-                      <h3 className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] font-semibold text-[#111827]">Original Submission</h3>
-                    <span className="text-[11px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">{enquiryDetail.originalDate}</span>
-
-                      </div>
-                      <p className="mt-3 max-w-107.5 text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] italic leading-6 text-[#71717A]">“{enquiryDetail.originalMessage}”</p>
-                    </div>
-                  </div>
-                  <div className="mx-4 border-t border-[#E5E7EB]" />
-                  <div className="flex flex-wrap items-center gap-3 px-4 py-3 text-[9px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#71717A]">
-                    <span>
-                      Interest: <span className="font-semibold text-[#111827]">Buy</span>
-                    </span>
-                    <span className="text-[#D4D4D8]">|</span>
-                    <span>
-                      Entity: <span className="font-semibold text-[#111827]">{enquiryDetail.requesterType}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 mb-7 flex items-start gap-4">
-                <div className="flex-1 rounded-2xl border border-[#C9F7E8] bg-[#F1FFFA] px-4 py-3">
-                  <div className="flex items-start justify-between gap-3 text-[9px] sm:text-[13px] lg:text-[11px] xl:text-[13px] text-[#2F855A]">
-                    <span>{enquiryDetail.adminDate}</span>
-                    <span className="font-semibold text-end">Admin notification</span>
-                  </div>
-                  <p className="mt-2 max-w-105 text-right text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] italic leading-6 text-[#2F855A]">“{enquiryDetail.adminMessage}”</p>
-                </div>
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2F855A] text-white transition hover:opacity-90"
-                  aria-label="Refresh mediation"
-                >
-                  <Sheild />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="">
-            <div className="rounded-2xl border border-border-card bg-background-primary p-4">
-              <textarea
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder="Type a follow-up note to LandStore admin..."
-                className="h-24 w-full resize-none border-0 bg-transparent text-[11px] sm:text-[15px] lg:text-[13px] xl:text-[15px] text-[#111827] outline-none placeholder:text-[#A1A1AA]"
-              />
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] text-[#71717A] transition hover:bg-[#F4F4F5]"
-                  aria-label="Adjust settings"
-                >
-                  <Controls size={14} color="currentColor" />
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] text-[#71717A] transition hover:bg-[#F4F4F5]"
-                  aria-label="Attach audio"
-                >
-                  <Mic size={14} color="#71717A" />
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] text-[#71717A] transition hover:bg-[#F4F4F5]"
-                  aria-label="Add item"
-                >
-                  <Plus size={14} color="#71717A" />
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#2F855A] text-white transition hover:opacity-90"
-                  aria-label="Send note"
-                >
-                  <Send size={16} color="white" />
-                </button>
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-2 text-[10px] sm:text-[12px] lg:text-[10px] xl:text-[12px] text-[#A1A1AA]">
-              <LockIcon />
-              <span>Encrypted communication</span>
-            </div>
-          </div>
+          <ChatSection 
+            enquiryId={normalizedRouteId}
+            existingMessages={chatMessages}
+            onSendMessage={handleSendMessage}
+            variant="admin"
+            isSending={isSendingMessage}
+            sendError={chatError}
+          />
         </div>
 
         <div className="space-y-4 lg:w-[35%]">
@@ -595,9 +683,10 @@ export default function EnquiryHubDetailPage({ params }) {
                 <div className="mt-3 relative">
                   <SelectDropdown
                     value={mediationStatus}
-                    onChange={setMediationStatus}
+                    onChange={handleMediationStatusChange}
                     options={mediationStatusDropdownOptions}
                     placeholder="Select mediation status"
+                    disabled={isUpdatingStatus}
                     className=""
                     buttonBorderClassName="border-[#2D6A56]"
                     buttonBgClassName="bg-[#134635]"
@@ -612,6 +701,8 @@ export default function EnquiryHubDetailPage({ params }) {
                     buttonClassName="h-11 rounded-[10px] px-4 text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] focus-visible:border-[#2D6A56] focus-visible:ring-0"
                     optionClassName="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px]"
                   />
+                  {isUpdatingStatus ? <p className="mt-2 text-[11px] text-[#A7F3D0]">Updating status...</p> : null}
+                  {statusError ? <p className="mt-2 text-[11px] text-[#FCA5A5]">{statusError}</p> : null}
                 </div>
               </div>
 
@@ -659,11 +750,3 @@ export default function EnquiryHubDetailPage({ params }) {
     </main>
   );
 }
-
-const LockIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    <path d="M3.5 5V4C3.5 2.61929 4.61929 1.5 6 1.5C7.38071 1.5 8.5 2.61929 8.5 4V5" stroke="#A1A1AA" strokeWidth="1.1" strokeLinecap="round" />
-    <rect x="2.5" y="5" width="7" height="5.5" rx="1.5" stroke="#A1A1AA" strokeWidth="1.1" />
-  </svg>
-);
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Loading from "@/components/common/Loading";
 import Table from "@/components/common/Table";
 import UserViewModal from "@/components/adminDashboard/modals/UserViewModal";
@@ -15,23 +15,22 @@ import Plus from "@/components/svg/Plus";
 import Button from "@/components/common/Button";
 import DeleteAdminModal from "@/components/adminDashboard/modals/DeleteAdminModal";
 import CreateAdminModal from "@/components/adminDashboard/modals/CreateAdminModal";
+import EditAdminModal from "@/components/adminDashboard/modals/EditAdminModal";
 import Delete from "@/components/svg/Delete";
-
-const FAKE_ADMINS = [
-  { id: "a1", name: "Alice Tan", email: "alice.tan@example.com", emailVerified: true },
-  { id: "a2", name: "Bob Lee", email: "bob.lee@example.com", emailVerified: false },
-  { id: "a3", name: "Cindy Ong", email: "cindy.ong@example.com", emailVerified: true },
-];
+import { adminService } from "@/services/adminService";
 
 const mapApiAdminToTableUser = (user) => {
   const rawId = String(user?.id || user?.email || "");
-  const status = user?.emailVerified ? "Active" : "Suspended";
+  const status = user?.status === "active" ? "Active" : user?.status === "inactive" ? "Inactive" : "Suspended";
 
   return {
     id: rawId,
     userId: rawId ? `#${rawId.slice(0, 8).toUpperCase()}` : "-",
     name: user?.name || "-",
     email: user?.email || "-",
+    phone: user?.phone || "-",
+    firstName: user?.firstName || "-",
+    lastName: user?.lastName || "-",
     status,
     actionVariant: status === "Active" ? "deactivate" : "reactivate",
     avatar: user?.image || null,
@@ -46,30 +45,88 @@ const statusStyles = {
 const actionButtonBase = "inline-flex h-8 w-8 items-center justify-center rounded-[6px] transition border-0";
 
 export default function AdminManagementPage() {
-  const [admins, setAdmins] = useState(FAKE_ADMINS.map(mapApiAdminToTableUser));
+  const [admins, setAdmins] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState("");
 
-  const openDeleteModal = (user) => setDeleteTarget(user);
-  const closeDeleteModal = () => setDeleteTarget(null);
+  const openDeleteModal = (user) => {
+    setDeleteTarget(user);
+    setDeleteError("");
+  };
+  const closeDeleteModal = () => {
+    setDeleteTarget(null);
+    setDeleteError("");
+  };
+  const openEditModal = (user) => setEditTarget(user);
+  const closeEditModal = () => setEditTarget(null);
+
+  const loadAdmins = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      const response = await adminService.getAdmins();
+      const items = Array.isArray(response?.admins) ? response.admins : Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+      setAdmins(items.map(mapApiAdminToTableUser));
+    } catch (err) {
+      setError(err?.message || "Failed to load admins");
+      setAdmins([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAdmins();
+  }, []);
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
+    setDeleteError("");
 
-    // Remove row locally (no API call as requested)
-    setAdmins((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-
-    if (selectedUserId === deleteTarget.id) {
-      setSelectedUserId(null);
+    try {
+      await adminService.deleteAdmin(deleteTarget.id);
+      setAdmins((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+      if (selectedUserId === deleteTarget.id) {
+        setSelectedUserId(null);
+      }
+      closeDeleteModal();
+    } catch (err) {
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete admin";
+      setDeleteError(errorMessage);
+    } finally {
+      setIsDeleting(false);
     }
+  };
 
-    setIsDeleting(false);
-    setDeleteTarget(null);
+  const handleCreateAdmin = async (payload) => {
+    try {
+      await adminService.createAdmin(payload);
+      await loadAdmins();
+      setIsCreateOpen(false);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleUpdateAdmin = async (payload) => {
+    if (!editTarget) return;
+    try {
+      await adminService.updateAdmin(editTarget.id, payload);
+      await loadAdmins();
+      closeEditModal();
+    } catch (err) {
+      throw err;
+    }
   };
 
   const selectedUser = useMemo(() => admins.find((u) => u.id === selectedUserId) ?? null, [selectedUserId, admins]);
@@ -140,6 +197,7 @@ export default function AdminManagementPage() {
 
             <button
               type="button"
+              onClick={() => openEditModal(user)}
               className={`${actionButtonBase} bg-white text-[#6B7280] border border-[#E5E7EB]`}
               aria-label="Edit admin"
             >
@@ -171,7 +229,7 @@ export default function AdminManagementPage() {
     ],
   }));
 
-  if (!admins || admins.length === 0) return <Loading />;
+  if (isLoading) return <Loading />;
 
   return (
     <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background-primary px-4 py-5 sm:px-5">
@@ -226,6 +284,7 @@ export default function AdminManagementPage() {
           onConfirm={handleConfirmDelete}
           target={deleteTarget}
           isLoading={isDeleting}
+          error={deleteError}
         />
         <CreateAdminModal
           open={isCreateOpen}
@@ -234,12 +293,23 @@ export default function AdminManagementPage() {
           onCreate={async (payload) => {
             setIsCreating(true);
             try {
-              // Append to local admins list (no API call)
-              const newAdmin = mapApiAdminToTableUser({ id: String(Date.now()), name: payload.name, email: payload.email, emailVerified: !!payload.emailVerified });
-              setAdmins((prev) => [newAdmin, ...prev]);
-              setIsCreateOpen(false);
+              await handleCreateAdmin(payload);
             } finally {
               setIsCreating(false);
+            }
+          }}
+        />
+        <EditAdminModal
+          open={Boolean(editTarget)}
+          onClose={closeEditModal}
+          isLoading={isUpdating}
+          admin={editTarget}
+          onUpdate={async (payload) => {
+            setIsUpdating(true);
+            try {
+              await handleUpdateAdmin(payload);
+            } finally {
+              setIsUpdating(false);
             }
           }}
         />

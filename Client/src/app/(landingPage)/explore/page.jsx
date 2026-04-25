@@ -18,7 +18,7 @@ import { checkAuth } from "@/utils/auth";
 
 const fallbackListingImage = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
 const defaultMapCenter = { lat: 3.0459, lng: 101.7083 };
-const defaultRadiusKm = 5;
+const defaultRadiusKm = 15;
 
 const dealTagMap = {
   buy: "Buy",
@@ -290,6 +290,24 @@ const getDistanceKm = (lat1, lng1, lat2, lng2) => {
   return earthRadiusKm * c;
 };
 
+const normalizeSummaryListingItem = (item, summaryKey) => {
+  const nestedProperty = item?.property ?? item?.listing ?? item?.land ?? null;
+
+  if (!nestedProperty || typeof nestedProperty !== "object") {
+    return item;
+  }
+
+  return {
+    ...nestedProperty,
+    isShortListed:
+      summaryKey === "myShortlistings"
+        ? true
+        : Boolean(nestedProperty?.isShortListed),
+    folderId: item?.folderId ?? item?.folder?.id ?? nestedProperty?.folderId ?? null,
+    enquiryId: item?.enquiryId ?? item?.id ?? null,
+  };
+};
+
 const extractListingItems = (response, filters = {}) => {
   const normalizedItems = [];
 
@@ -316,8 +334,10 @@ const extractListingItems = (response, filters = {}) => {
     .map(([, responseKey]) => responseKey);
 
   const summaryItems = selectedSummaryKeys.flatMap((summaryKey) => {
-    const items = response?.data?.userFilters?.[summaryKey]?.items;
-    return Array.isArray(items) ? items : [];
+    const items = response?.data?.[summaryKey]?.items;
+    return Array.isArray(items)
+      ? items.map((item) => normalizeSummaryListingItem(item, summaryKey))
+      : [];
   });
 
   if (summaryItems.length === 0) {
@@ -326,7 +346,7 @@ const extractListingItems = (response, filters = {}) => {
 
   const dedupedItems = new Map();
   summaryItems.forEach((item) => {
-    const key = item?.id || item?.listingCode;
+    const key = item?.id || item?.propertyId || item?.listingCode;
     if (!key || dedupedItems.has(key)) {
       return;
     }
@@ -490,6 +510,8 @@ const ExplorePage = () => {
   const [userStatistics, setUserStatistics] = useState(null);
 
   const filterMenuRef = useRef(null);
+  const propertyListRef = useRef(null);
+  const mobilePropertyListRef = useRef(null);
   const lastRequestKeyRef = useRef("");
   const requestIdRef = useRef(0);
   const isInitialLoadRef = useRef(true);
@@ -667,6 +689,28 @@ const ExplorePage = () => {
     });
   }, []);
 
+  const handleMarkerClick = useCallback((markerId) => {
+    const isDesktop = window.innerWidth >= 1280;
+    const propertyElement = document.getElementById(
+      isDesktop ? `desktop-property-${markerId}` : `mobile-property-${markerId}`
+    );
+
+    if (!propertyElement) {
+      return;
+    }
+
+    if (isDesktop && propertyListRef.current) {
+      propertyElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (mobilePropertyListRef.current) {
+      const container = mobilePropertyListRef.current;
+      const containerWidth = container.clientWidth;
+      const elementLeft = propertyElement.offsetLeft;
+      const elementWidth = propertyElement.clientWidth;
+      const scrollLeft = Math.max(0, elementLeft - containerWidth / 2 + elementWidth / 2);
+      container.scrollTo({ left: scrollLeft, behavior: "smooth" });
+    }
+  }, []);
+
   useEffect(() => {
     const latitude = Number(mapViewport.center.lat.toFixed(6));
     const longitude = Number(mapViewport.center.lng.toFixed(6));
@@ -716,6 +760,18 @@ const ExplorePage = () => {
 
         setListings(mappedListings);
         setSavedPropertyIds(new Set(mappedListings.filter((item) => item.isShortListed).map((item) => item.id)));
+
+        // Set map center to first listing's lat/lon for user-specific listing filters
+        if (
+          (activeFilters.myListings || activeFilters.myShortlistings || activeFilters.myEnquiries) &&
+          mappedListings.length > 0
+        ) {
+          const firstListing = mappedListings[0];
+          setMapViewport((prev) => ({
+            ...prev,
+            center: { lat: firstListing.lat, lng: firstListing.lng },
+          }));
+        }
       } catch (error) {
         if (requestId !== requestIdRef.current) {
           return;
@@ -740,7 +796,7 @@ const ExplorePage = () => {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [activeFilterQuery, mapViewport.center.lat, mapViewport.center.lng, mapViewport.radiusKm, isApplyingFilters]);
+  }, [activeFilterQuery, mapViewport.center.lat, mapViewport.center.lng, mapViewport.radiusKm]);
 
   const listingsNearCenter = useMemo(() => {
     return [...listings].sort((first, second) => {
@@ -930,7 +986,7 @@ const ExplorePage = () => {
                 <p className="text-[24px] font-bold text-gray2">Found {listingsNearCenter.length} properties</p>
                 <p className={`text-[14px] ${fetchError ? "text-[#DC2626]" : "text-gray5"}`}>{headerDescription}</p>
               </header>
-              <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto no-scrollbar">
+              <div ref={propertyListRef} className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto no-scrollbar">
                 {isLoadingListings && listingsNearCenter.length === 0 ? (
                   <div className="flex items-center justify-center rounded-xl bg-white px-4 py-6 shadow-[0_10px_35px_rgba(15,61,46,0.05)]">
                     <span className="h-8 w-8 animate-spin rounded-full border-4 border-border-card border-t-green-secondary" />
@@ -944,16 +1000,17 @@ const ExplorePage = () => {
                 ) : null}
 
                 {listingsNearCenter.map((land) => (
-                  <PropertyCard
-                    key={land.id}
-                    land={land}
-                    enableCardClick
-                    isAuthenticated={isLoggedIn}
-                    onLoginRequired={handleLoginRequired}
-                    onLikeClick={handleLikeClick}
-                    isSaved={savedPropertyIds.has(land.id)}
-                    heartStyle="shortlist"
-                  />
+                  <div key={land.id} id={`desktop-property-${land.id}`}>
+                    <PropertyCard
+                      land={land}
+                      enableCardClick
+                      isAuthenticated={isLoggedIn}
+                      onLoginRequired={handleLoginRequired}
+                      onLikeClick={handleLikeClick}
+                      isSaved={savedPropertyIds.has(land.id)}
+                      heartStyle="shortlist"
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -996,25 +1053,28 @@ const ExplorePage = () => {
                 center={mapViewport.center}
                 markers={mapMarkers}
                 onViewportChange={handleViewportChange}
+                onMarkerClick={handleMarkerClick}
               />
               <div className="absolute inset-x-0 bottom-4 z-2 xl:hidden px-4">
                 <div
+                  ref={mobilePropertyListRef}
                   className="mx-auto flex max-w-full gap-4 overflow-x-auto no-scrollbar"
                   style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
                 >
                   {listingsNearCenter.map((land) => (
-                    <PropertyCard
-                      key={land.id}
-                      land={land}
-                      variant="compact"
-                      enableCardClick
-                      className=""
-                      isAuthenticated={isLoggedIn}
-                      onLoginRequired={handleLoginRequired}
-                      onLikeClick={handleLikeClick}
-                      isSaved={savedPropertyIds.has(land.id)}
-                      heartStyle="shortlist"
-                    />
+                    <div key={land.id} id={`mobile-property-${land.id}`}>
+                      <PropertyCard
+                        land={land}
+                        variant="compact"
+                        enableCardClick
+                        className=""
+                        isAuthenticated={isLoggedIn}
+                        onLoginRequired={handleLoginRequired}
+                        onLikeClick={handleLikeClick}
+                        isSaved={savedPropertyIds.has(land.id)}
+                        heartStyle="shortlist"
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

@@ -3,12 +3,22 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Modal from "@/components/common/Modal";
 import Button from "@/components/common/Button";
+import SelectDropdown from "@/components/common/SelectDropdown";
 import { defaultCountries, parseCountry, usePhoneInput } from "react-international-phone";
 import ArrowDown from "@/components/svg/ArrowDown";
 
-export default function CreateAdminModal({ open, onClose, onCreate, isLoading = false }) {
-  const [formData, setFormData] = useState({ email: "", phone: "", name: "", firstName: "", lastName: "" });
+export default function EditAdminModal({ open, onClose, onUpdate, admin, isLoading = false }) {
+  const [formData, setFormData] = useState({ email: "", phone: "", name: "", status: "active" });
   const [errors, setErrors] = useState({});
+
+  const statusOptions = [
+    { label: "Active", value: "active" },
+    { label: "Inactive", value: "inactive" },
+    { label: "Suspended", value: "suspended" },
+  ].map((option) => ({
+    ...option,
+    icon: ArrowDown,
+  }));
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const phoneFieldRef = useRef(null);
 
@@ -54,6 +64,17 @@ export default function CreateAdminModal({ open, onClose, onCreate, isLoading = 
     };
   }, [isCountryDropdownOpen]);
 
+  useEffect(() => {
+    if (admin) {
+      setFormData({
+        email: admin.email || "",
+        phone: admin.phone || "",
+        name: admin.name || "",
+        status: admin.status || "active",
+      });
+    }
+  }, [admin]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -73,8 +94,7 @@ export default function CreateAdminModal({ open, onClose, onCreate, isLoading = 
       if (!phoneRe.test(fullPhoneNumber.trim())) next.phone = "Enter a valid phone number";
     }
     if (!formData.name.trim()) next.name = "Name is required";
-    if (!formData.firstName.trim()) next.firstName = "First name is required";
-    if (!formData.lastName.trim()) next.lastName = "Last name is required";
+    if (!formData.status.trim()) next.status = "Status is required";
     return next;
   };
 
@@ -87,16 +107,14 @@ export default function CreateAdminModal({ open, onClose, onCreate, isLoading = 
     }
 
     try {
-      await onCreate({
+      await onUpdate({
         email: formData.email.trim(),
         phone: fullPhoneNumber.trim(),
         name: formData.name.trim(),
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        status: formData.status.trim(),
       });
-      setFormData({ email: "", phone: "", name: "", firstName: "", lastName: "" });
     } catch (err) {
-      setErrors({ submit: err?.message || "Failed to create admin" });
+      setErrors({ submit: err?.message || "Failed to update admin" });
     }
   };
 
@@ -104,7 +122,7 @@ export default function CreateAdminModal({ open, onClose, onCreate, isLoading = 
     <Modal
       open={open}
       onClose={isLoading ? () => {} : onClose}
-      title="Create admin"
+      title="Edit admin"
       panelClassName="w-full max-w-[520px] overflow-hidden rounded-3xl bg-white px-6 py-5 text-left align-middle transition-all"
       overlayClassName="bg-black/30"
       containerClassName="flex min-h-full items-center justify-center p-4"
@@ -120,7 +138,8 @@ export default function CreateAdminModal({ open, onClose, onCreate, isLoading = 
             placeholder="Enter email"
             value={formData.email}
             onChange={handleChange}
-            className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
+            readOnly
+            className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary bg-gray-50"
           />
           {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
         </div>
@@ -200,39 +219,31 @@ export default function CreateAdminModal({ open, onClose, onCreate, isLoading = 
           {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-[14px] font-medium text-gray7 md:text-[15px]">First name</label>
-            <input
-              name="firstName"
-              type="text"
-              placeholder="First name"
-              value={formData.firstName}
-              onChange={handleChange}
-              className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
-            />
-            {errors.firstName && <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>}
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-[14px] font-medium text-gray7 md:text-[15px]">Last name</label>
-            <input
-              name="lastName"
-              type="text"
-              placeholder="Last name"
-              value={formData.lastName}
-              onChange={handleChange}
-              className="h-10 w-full rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none placeholder:text-gray5 focus:border-green-primary"
-            />
-            {errors.lastName && <p className="mt-1 text-xs text-red-500">{errors.lastName}</p>}
-          </div>
+        <div>
+          <label className="mb-1.5 block text-[14px] font-medium text-gray7 md:text-[15px]">Status</label>
+          <SelectDropdown
+            value={formData.status}
+            onChange={(value) => {
+              setFormData((prev) => ({ ...prev, status: value }));
+              if (errors.status) {
+                setErrors((prev) => ({ ...prev, status: "" }));
+              }
+            }}
+            options={statusOptions}
+            placeholder="Select status"
+            className="h-10 w-full"
+            buttonClassName="rounded-xl border border-border-input px-3.5 text-[14px] text-gray2 outline-none focus:border-green-primary"
+            optionClassName="text-[14px]"
+            position="up"
+          />
+          {errors.status && <p className="mt-1 text-xs text-red-500">{errors.status}</p>}
         </div>
 
         <div className="pt-1">
           {errors.submit && <div className="mb-3 rounded-lg bg-red-50 p-3 text-xs text-red-600">{errors.submit}</div>}
           <Button type="submit" disabled={isLoading} className="h-10 w-full justify-center rounded-lg text-[14px] font-medium">
             <span className="flex items-center gap-2">
-              <span>{isLoading ? 'Creating...' : 'Create admin'}</span>
+              <span>{isLoading ? 'Updating...' : 'Update admin'}</span>
             </span>
           </Button>
         </div>

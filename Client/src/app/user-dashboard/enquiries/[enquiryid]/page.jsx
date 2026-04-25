@@ -5,20 +5,14 @@ import { use, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Loading from "@/components/common/Loading";
+import ChatSection from "@/components/userDashboard/enquiries/ChatSection";
 import Bag from "@/components/svg/Bag";
 import Calendar from "@/components/svg/Calendar";
-import Chat2 from "@/components/svg/Chat2";
-import Controls from "@/components/svg/Controls";
-import Mic from "@/components/svg/Mic";
-import Person from "@/components/svg/Person";
-import Plus from "@/components/svg/Plus";
 import Pointer from "@/components/svg/Pointer";
-import Send from "@/components/svg/Send";
-import Sheild from "@/components/svg/Sheild";
 import StepperTick from "@/components/svg/StepperTick";
 import UpRight from "@/components/svg/UpRight";
-import Exclamation from "@/components/svg/Exclamation";
 import { enquiryService } from "@/services/enquiryService";
+import { messageService } from "@/services/messageService";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
 const progressSteps = ["Submitted", "Verification", "Under negotiation", "Matched", "Completed"];
@@ -106,22 +100,36 @@ const formatArea = (landArea, landAreaUnit) => {
 const toStatusLabel = (value) => {
   const normalized = String(value || "").trim().toLowerCase();
 
-  if (normalized === "pending") {
+  if (normalized === "pending" || normalized === "pending_matching") {
     return "Pending Matching";
   }
-  if (normalized === "under_review" || normalized === "under review") {
+  if (normalized === "under_review" || normalized === "under review" || normalized === "underreview") {
     return "Under Review";
   }
   if (normalized === "need_more_info" || normalized === "need more info") {
     return "Need More Info";
   }
-  if (normalized === "in_progress" || normalized === "in progress") {
+  if (
+    normalized === "in_progress"
+    || normalized === "in progress"
+    || normalized === "matched_inprogress"
+    || normalized === "matched inprogress"
+    || normalized === "matched in progress"
+  ) {
     return "Under negotiation";
+  }
+  if (normalized === "scheduled") {
+    return "Verification";
   }
   if (normalized === "matched") {
     return "Matched";
   }
-  if (normalized === "completed" || normalized === "closed") {
+  if (
+    normalized === "completed"
+    || normalized === "closed"
+    || normalized === "closed_successful"
+    || normalized === "closed_not_proceeding"
+  ) {
     return "Completed";
   }
 
@@ -131,16 +139,34 @@ const toStatusLabel = (value) => {
 const getProgressStep = (value) => {
   const normalized = String(value || "").trim().toLowerCase();
 
-  if (normalized === "completed" || normalized === "closed") {
+  if (
+    normalized === "completed"
+    || normalized === "closed"
+    || normalized === "closed_successful"
+    || normalized === "closed_not_proceeding"
+  ) {
     return 5;
   }
   if (normalized === "matched") {
     return 4;
   }
-  if (normalized === "in_progress" || normalized === "in progress") {
+  if (
+    normalized === "in_progress"
+    || normalized === "in progress"
+    || normalized === "matched_inprogress"
+    || normalized === "matched inprogress"
+    || normalized === "matched in progress"
+    || normalized === "scheduled"
+  ) {
     return 3;
   }
-  if (normalized === "under_review" || normalized === "under review" || normalized === "need_more_info" || normalized === "need more info") {
+  if (
+    normalized === "under_review"
+    || normalized === "under review"
+    || normalized === "underreview"
+    || normalized === "need_more_info"
+    || normalized === "need more info"
+  ) {
     return 2;
   }
 
@@ -157,6 +183,7 @@ const buildEnquiryViewModel = (item) => {
 
   return {
     id: item?.id ?? item?.enquiryId ?? item?._id ?? "",
+    requesterId: item?.userId ?? item?.user?.id ?? "",
     code: formatEnquiryCode(item?.id ?? item?.enquiryId ?? item?._id),
     status: toStatusLabel(item?.status),
     statusValue: item?.status || "pending",
@@ -173,6 +200,75 @@ const buildEnquiryViewModel = (item) => {
   };
 };
 
+const extractMessageItems = (payload) => {
+  const resolved = payload?.data ?? payload?.result?.data ?? payload ?? [];
+
+  if (Array.isArray(resolved)) {
+    return resolved;
+  }
+
+  if (Array.isArray(resolved?.items)) {
+    return resolved.items;
+  }
+
+  return [];
+};
+
+const normalizeCreatedMessage = (payload) => payload?.data ?? payload?.result?.data ?? payload ?? null;
+
+const sortChatMessages = (messages) => {
+  return [...messages].sort((left, right) => {
+    const leftTime = new Date(left?.createdAt || 0).getTime();
+    const rightTime = new Date(right?.createdAt || 0).getTime();
+    return leftTime - rightTime;
+  });
+};
+
+const mapMessageToChatMessage = (message, requesterId) => {
+  const senderId = message?.senderId || message?.sender?.id || "";
+  const receiverId = message?.receiverId || message?.receiver?.id || "";
+  const content = typeof message?.content === "string" ? message.content.trim() : "";
+
+  if (!content) {
+    return null;
+  }
+
+  return {
+    id: message?.id || `${senderId}-${message?.createdAt || content}`,
+    content,
+    sender: String(senderId) === String(requesterId || "") ? "user" : "admin",
+    senderId,
+    receiverId,
+    createdAt: message?.createdAt || new Date().toISOString(),
+  };
+};
+
+const buildChatMessages = (enquiry, messagesPayload) => {
+  const requesterId = enquiry?.userId || enquiry?.user?.id || "";
+  const originalMessage = typeof enquiry?.message === "string" ? enquiry.message.trim() : "";
+  const chatMessages = [];
+
+  if (originalMessage) {
+    chatMessages.push({
+      id: `original-${enquiry?.id || requesterId || "enquiry"}`,
+      content: originalMessage,
+      sender: "user",
+      createdAt: enquiry?.createdAt || new Date().toISOString(),
+    });
+  }
+
+  extractMessageItems(messagesPayload)
+    .map((message) => mapMessageToChatMessage(message, requesterId))
+    .filter(Boolean)
+    .forEach((message) => {
+      if (!chatMessages.some((item) => item.id === message.id)) {
+        chatMessages.push(message);
+      }
+    });
+
+  return sortChatMessages(chatMessages);
+};
+
 const EnquiryDetailPage = ({ params }) => {
   const router = useRouter();
   const resolvedParams = use(params);
@@ -180,6 +276,50 @@ const EnquiryDetailPage = ({ params }) => {
   const [enquiryData, setEnquiryData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatError, setChatError] = useState("");
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+
+  const currentStep = useMemo(() => {
+    if (!enquiryData) return 1;
+    return getProgressStep(enquiryData.statusValue);
+  }, [enquiryData]);
+
+  const handleSendMessage = async (content) => {
+    if (!enquiryid || !enquiryData?.requesterId) {
+      setChatError("Unable to send your message right now.");
+      return false;
+    }
+
+    try {
+      setIsSendingMessage(true);
+      setChatError("");
+
+      const adminReceiverId = [...chatMessages]
+        .reverse()
+        .find((item) => item?.sender === "admin" && item?.senderId)?.senderId;
+
+      const response = await messageService.createMessage({
+        enquiryId: enquiryid,
+        content,
+        ...(adminReceiverId ? { receiverId: adminReceiverId } : {}),
+      });
+
+      const createdMessage = normalizeCreatedMessage(response);
+      const mappedMessage = mapMessageToChatMessage(createdMessage, enquiryData.requesterId);
+
+      if (mappedMessage) {
+        setChatMessages((prev) => sortChatMessages([...prev.filter((item) => item.id !== mappedMessage.id), mappedMessage]));
+      }
+
+      return true;
+    } catch (apiError) {
+      setChatError(apiError?.message || "Failed to send message.");
+      return false;
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
 
   useEffect(() => {
     if (!enquiryid) {
@@ -193,10 +333,19 @@ const EnquiryDetailPage = ({ params }) => {
     const loadEnquiry = async () => {
       setIsLoading(true);
       setError("");
+      setChatError("");
 
       try {
-        const response = await enquiryService.getEnquiryById(enquiryid);
-        const normalized = normalizeEnquiryPayload(response);
+        const [enquiryResult, messageResult] = await Promise.allSettled([
+          enquiryService.getEnquiryById(enquiryid),
+          messageService.getMessagesByEnquiry(enquiryid, { page: 1, limit: 100 }),
+        ]);
+
+        if (enquiryResult.status !== "fulfilled") {
+          throw enquiryResult.reason;
+        }
+
+        const normalized = normalizeEnquiryPayload(enquiryResult.value);
 
         if (mounted) {
           if (!normalized) {
@@ -206,6 +355,13 @@ const EnquiryDetailPage = ({ params }) => {
           }
 
           setEnquiryData(buildEnquiryViewModel(normalized));
+
+          if (messageResult.status === "fulfilled") {
+            setChatMessages(buildChatMessages(normalized, messageResult.value));
+          } else {
+            setChatMessages(buildChatMessages(normalized, { data: normalized?.messages || [] }));
+            setChatError(messageResult.reason?.message || "Failed to load chat history.");
+          }
         }
       } catch (apiError) {
         if (mounted) {
@@ -250,8 +406,6 @@ const EnquiryDetailPage = ({ params }) => {
       </main>
     );
   }
-
-  const currentStep = useMemo(() => getProgressStep(enquiry.statusValue), [enquiry.statusValue]);
 
   return (
     <main className="bg-background-primary py-12 md:py-14">
@@ -365,97 +519,13 @@ const EnquiryDetailPage = ({ params }) => {
             </div>
           </div>
 
-          <div className="mt-12 flex items-center justify-between gap-4 border-b border-border-card py-4">
-            <div className="flex items-center gap-2 sm:text-[14px] text-[12px] font-semibold text-gray2 md:text-[16px]">
-              <Chat2 size={20} color="var(--color-green-secondary)" />
-              Mediation Log
-            </div>
-            <div className="flex items-center gap-2 sm:text-[11px] text-[9px] font-medium text-gray5 md:text-[14px]">
-              <Sheild size={16} color="var(--color-green-secondary)" />
-              Secure Admin Mediation
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-[18px] border border-[#F1F3F2] bg-[#FAFBFA] px-3 py-5 md:px-6 md:py-6">
-            <div className="flex gap-3 md:gap-4">
-              <span className="mt-3 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F1F1F] text-white">
-                <Person size={16} color="white" />
-              </span>
-
-              <div className="min-w-0 flex-1 space-y-4">
-                <div className="flex min-w-0 items-start justify-start gap-3">
-                <article className="w-full min-w-0 rounded-2xl border border-[#D9DDE3] bg-white px-4 py-4 shadow-[0px_4px_12px_rgba(15,61,46,0.03)] md:px-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-nowrap items-center justify-between gap-2">
-                        <h2 className="text-[10px] font-semibold text-gray2 sm:text-[12px] md:text-[16px]">Original Submission</h2>
-                        <span className="text-[10px] text-gray5 sm:text-[12px] md:text-[14px]">{enquiry.submittedAt}</span>
-                      </div>
-                      <div className="mt-3">
-                        <p className="max-w-full text-[10px] italic leading-5 text-gray5 sm:text-[12px] sm:leading-6 md:text-[14px]">
-                        “{enquiry.originalMessage}”
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 border-t border-border-card pt-3 text-[10px] text-gray5 sm:text-[12px] md:text-[14px]">
-                    Interest: <span className="font-medium text-gray2">{enquiry.dealTags[0] || "General"}</span>
-                    <span className="mx-3 text-[#CACACA]">|</span>
-                    Entity: <span className="font-medium text-gray2">{enquiry.entityLabel}</span>
-                  </div>
-                </article>
-
-                </div>
-
-                <div className="flex min-w-0 items-start justify-end gap-3">
-                  <article className="w-full min-w-0 max-w-[calc(100%-2.75rem)] rounded-2xl border border-[#BFEBDD] bg-[#EDFCF6] px-4 py-4 text-right shadow-[0px_4px_12px_rgba(15,61,46,0.02)] sm:max-w-157.5 md:px-5">
-                    <div className="flex items-center justify-between gap-3 text-[10px] text-[#74A79A] sm:text-[12px] md:text-[14px]">
-                      <span>{enquiry.adminDate}</span>
-                      <span className="font-semibold text-green-secondary">Admin notification</span>
-                    </div>
-                    <p className="mt-3 text-[10px] italic leading-5 text-[#517A6E] sm:text-[12px] sm:leading-6 md:text-[14px]">
-                      “{enquiry.adminMessage}”
-                    </p>
-                  </article>
-                  <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-secondary text-white">
-                    <Sheild size={15} color="white" />
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 flex justify-center">
-            <div className="w-full max-w-200">
-              <div className="rounded-2xl border border-[#D9DDE3] bg-white px-4 py-3 shadow-[0px_4px_12px_rgba(15,61,46,0.03)]">
-                <textarea
-                  placeholder="Type a follow-up note to LandStore admin..."
-                  className="min-h-27.5 w-full resize-none bg-transparent text-[14px] text-gray2 outline-none placeholder:text-[#AEAEAE]"
-                />
-
-                <div className="mt-3 flex items-center justify-end gap-2 border-t border-border-card pt-3">
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border-card bg-[#FCFCFC] text-gray5 transition hover:bg-background-primary">
-                    <Controls size={18} color="#7D7D7D" />
-                  </button>
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border-card bg-[#FCFCFC] text-gray5 transition hover:bg-background-primary">
-                    <Mic size={18} color="#7D7D7D" />
-                  </button>
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border-card bg-[#FCFCFC] text-gray5 transition hover:bg-background-primary">
-                    <Plus size={14} color="currentColor" />
-                  </button>
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-green-secondary text-white transition hover:opacity-90">
-                    <Send size={18} color="white" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] text-[#9A9A9A] md:text-[11px]">
-                <span className="flex items-center gap-1"><Sheild size={12} color="currentColor" /> Encrypted communication</span>
-                <span className="flex items-center gap-1"><Exclamation size={12} color="currentColor" /> Replies go to admin, not seller</span>
-              </div>
-            </div>
-          </div>
+          <ChatSection 
+            enquiryId={enquiryid}
+            existingMessages={chatMessages}
+            onSendMessage={handleSendMessage}
+            isSending={isSendingMessage}
+            sendError={chatError}
+          />
         </section>
       </div>
     </main>
