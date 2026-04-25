@@ -161,8 +161,12 @@ export const updateAdmin = async (
     status?: "active" | "inactive" | "suspended";
   },
   requesterId: string,
-  requesterRole: UserType
 ) => {
+  // Get super admin
+  const superAdmin = await db.user.findUnique({
+    where: { id: requesterId },
+    select: { id: true, userType: true, email: true },
+  })
   // Get target admin
   const targetAdmin = await db.user.findUnique({
     where: { id: adminId },
@@ -182,7 +186,7 @@ export const updateAdmin = async (
   }
 
   // Check authorization: only super admin can update
-  if (requesterRole !== "superadmin") {
+  if (superAdmin?.userType !== "superadmin") {
     const error = new Error("Only super admin can update admin details");
     (error as any).statusCode = 403;
     throw error;
@@ -231,9 +235,13 @@ export const updateAdmin = async (
  */
 export const deleteAdmin = async (
   adminId: string,
-  requesterId: string,
-  requesterRole: UserType
+  requesterId: string
 ) => {
+  // Get super admin
+  const superAdmin = await db.user.findUnique({
+    where: { id: requesterId },
+    select: { id: true, userType: true, email: true },
+  })
   // Prevent self-deletion
   if (adminId === requesterId) {
     const error = new Error("You cannot delete your own admin account");
@@ -261,7 +269,7 @@ export const deleteAdmin = async (
 
   // Check authorization
   // Only super admin and admin can delete admins
-  if (requesterRole !== "superadmin" && requesterRole !== "admin") {
+  if (superAdmin?.userType !== "superadmin" ) {
     const error = new Error("Only super admin or admin can delete admin accounts");
     (error as any).statusCode = 403;
     throw error;

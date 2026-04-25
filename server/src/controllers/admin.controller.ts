@@ -184,7 +184,6 @@ export const updateAdminController = async (req: Request, res: Response) => {
       adminId,
       { email, phone, name, status },
       requester.id,
-      requester.userType
     );
 
     return res.status(200).json({
@@ -222,7 +221,7 @@ export const deleteAdminController = async (req: Request, res: Response) => {
       });
     }
 
-    const result = await deleteAdmin(adminId, requester.id, requester.userType);
+    const result = await deleteAdmin(adminId, requester.id);
 
     return res.status(200).json(result);
   } catch (error) {
