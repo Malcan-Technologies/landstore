@@ -15,6 +15,7 @@ import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
 import { notificationService } from "@/services/notificationService";
 import { logoutUser } from "@/store/authSlice";
+import { hasAdminAccess } from "@/utils/auth";
 
 const HeaderSearchParamsHandler = ({ onToken, pathname }) => {
   const searchParams = useSearchParams();
@@ -45,10 +46,10 @@ const Header = () => {
   const [notifications, setNotifications] = useState([]);
   const notificationRef = useRef(null);
   const profileMenuRef = useRef(null);
+  const notificationUserId = isAuth && user?.id ? user.id : "";
 
   useEffect(() => {
-    if (!isAuth || !user?.id) {
-      setNotifications([]);
+    if (!notificationUserId) {
       return;
     }
 
@@ -72,7 +73,7 @@ const Header = () => {
 
     (async () => {
       try {
-        const response = await notificationService.getNotifications({ page: 1, limit: 5, userId: user.id });
+        const response = await notificationService.getNotifications({ page: 1, limit: 5, userId: notificationUserId });
         const items = Array.isArray(response) ? response : response?.data;
         const mapped = Array.isArray(items) ? items.map(mapNotification).filter((n) => n?.id) : [];
         if (mounted) {
@@ -88,7 +89,7 @@ const Header = () => {
     return () => {
       mounted = false;
     };
-  }, [isAuth, user?.id]);
+  }, [notificationUserId]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -146,7 +147,7 @@ const Header = () => {
     "/user.png";
   const resolvedProfileImageSrc =
     typeof profileImageSrc === "string" && profileImageSrc.trim() ? profileImageSrc : "/user.png";
-  const isAdminUser = user?.userType === "admin";
+  const isAdminUser = hasAdminAccess(user);
   const isExploreActive = pathname === "/explore" || pathname.startsWith("/explore/");
   const isShortlistsActive =
     pathname === "/user-dashboard/shortlists" || pathname.startsWith("/user-dashboard/shortlists/");
