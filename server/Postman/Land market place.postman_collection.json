@@ -23,7 +23,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"meesumabbas891@gmail.com\",\r\n    // \"email\": \"basitshykh@gmail.com\",\r\n    // \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
+              "raw": "{\r\n    // \"email\": \"meesumabbas891@gmail.com\",\r\n    \"email\": \"af03007996639@gmail.com\",\r\n    // \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -98,7 +98,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"meesumabbas891@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Abdul Basit\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Abdul Basit\",\r\n    \"identityNo\": \"123456789\"\r\n}",
+              "raw": "{\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"password\": \"Test@1234567\",\r\n    \"name\": \"Abdul Basit\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Abdul Basit\",\r\n    \"identityNo\": \"123456789\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -332,7 +332,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"token\": \"{{token}}\",\r\n    \"newPassword\" : \"Test@123456789\"\r\n}",
+              "raw": "{\r\n    \"token\": \"{{token}}\",\r\n    \"newPassword\" : \"Test@1234567\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -420,7 +420,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": "coP4p6LVw82DR1Ds3Df0SuwzyCqfabph"
+                  "value": "MNJ2RpmhuP0mIB7FuvLGIaP1bJ4gR7sy"
                 }
               ]
             }
@@ -3252,7 +3252,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"admin@example.com\",\r\n    \"phone\": \"+1234567890\",\r\n    \"name\": \"Admin Name\",\r\n    \"firstName\": \"Admin\",\r\n    \"lastName\": \"User\"\r\n}",
+              "raw": "{\r\n    \"email\": \"{{emial}}\",\r\n    \"phone\": \"+1234567890\",\r\n    \"name\": \"Ahmad dev\",\r\n    \"firstName\": \"Ahmad\",\r\n    \"lastName\": \"Farooq\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3267,6 +3267,56 @@
               "path": [
                 "admins",
                 ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Promote to admin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admins/:userId/promote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admins",
+                ":userId",
+                "promote"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Demote to admin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admins/:userId/demote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admins",
+                ":userId",
+                "demote"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": ""
+                }
               ]
             }
           },
@@ -3331,7 +3381,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": ""
+                  "value": "MNJ2RpmhuP0mIB7FuvLGIaP1bJ4gR7sy"
                 }
               ]
             }
@@ -3345,7 +3395,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"newemail@example.com\",\r\n    \"phone\": \"+1234567890\",\r\n    \"name\": \"New Name\",\r\n    \"status\": \"active\"\r\n}",
+              "raw": "{\r\n    \"email\": \"dawartoor30@gmail.com\",\r\n    \"phone\": \"+1234567890\",\r\n    \"name\": \"changed Name\",\r\n    \"status\": \"active\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3364,7 +3414,7 @@
               "variable": [
                 {
                   "key": ":id",
-                  "value": ""
+                  "value": "MNJ2RpmhuP0mIB7FuvLGIaP1bJ4gR7sy"
                 }
               ]
             }
