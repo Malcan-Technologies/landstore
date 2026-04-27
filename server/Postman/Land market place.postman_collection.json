@@ -131,7 +131,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"company3@business.com\",\r\n    \"password\": \"CompanyPass123\",\r\n    \"name\": \"John Doe\",\r\n    \"userType\": \"user\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"company\",\r\n    \"companyName\": \"ABC Development Sdn Bhd\",\r\n    \"registrationNo\": \"REG123456\",\r\n    \"entityTypes\": [\"1790ec04-21db-49da-860a-614f0a033042\"]    // array of entity type ids\r\n}",
+              "raw": "{\r\n    \"email\": \"company3@business.com\",\r\n    \"password\": \"CompanyPass123\",\r\n    \"name\": \"John Doe\",\r\n    \"phone\": \"60312345678\",\r\n    \"profileType\": \"company\",\r\n    \"companyName\": \"ABC Development Sdn Bhd\",\r\n    \"registrationNo\": \"REG123456\",\r\n    \"entityTypes\": [\"1790ec04-21db-49da-860a-614f0a033042\"]    // array of entity type ids\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -164,7 +164,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"koperasi52@example.com\",\r\n    \"password\": \"SecurePass123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"phone\": \"1234567890\", // ← Optional\r\n    \"userType\": \"user\", // ← System role (admin or user)\r\n    \"profileType\": \"koperasi\", // ← Business profile type\r\n    \"koperasiName\": \"Koperasi ABC\",\r\n    \"registrationNo\": \"REG789\",\r\n    \"entityTypes\": [\"1790ec04-21db-49da-860a-614f0a033042\"] \r\n}",
+              "raw": "{\r\n    \"email\": \"koperasi52@example.com\",\r\n    \"password\": \"SecurePass123\",\r\n    \"name\": \"basit sheikh\",\r\n    \"phone\": \"1234567890\", // ← Optional\r\n    \"profileType\": \"koperasi\", // ← Business profile type\r\n    \"koperasiName\": \"Koperasi ABC\",\r\n    \"registrationNo\": \"REG789\",\r\n    \"entityTypes\": [\"1790ec04-21db-49da-860a-614f0a033042\"] \r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -494,7 +494,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\",\r\n    \"userType\": \"admin\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Ahmad Faiz\",\r\n    \"identityNo\": \"900101-14-5678\",\r\n    \"firstName\": \"Ahmad\",\r\n    \"lastName\": \"Faiz\"\r\n}",
+              "raw": "{\r\n    \"email\": \"basitburak@gmail.com\",\r\n    \"password\": \"basit@123!Burak\",\r\n    \"phone\": \"+60123456789\",\r\n    \"profileType\": \"individual\",\r\n    \"fullName\": \"Ahmad Faiz\",\r\n    \"identityNo\": \"900101-14-5678\",\r\n    \"firstName\": \"Ahmad\",\r\n    \"lastName\": \"Faiz\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"

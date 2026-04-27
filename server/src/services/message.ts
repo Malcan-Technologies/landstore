@@ -46,7 +46,7 @@ const createHttpError = (message: string, statusCode: number) => {
 	return error;
 };
 
-const isAdminUserType = async (userId: string): Promise<boolean> => {
+const isAdminUser = async (userId: string): Promise<boolean> => {
 	const adminRecord = await db.admin.findUnique({
 		where: { userId },
 		select: { role: true },
@@ -121,7 +121,7 @@ const getEnquiryAccessContext = async (
 		throw createHttpError("Enquiry not found", 404);
 	}
 
-const isAdmin = await isAdminUserType(requester.id);
+	const isAdmin = await isAdminUser(requester.id);
 	const isParticipant =
 		requester.id === enquiry.userId || requester.id === enquiry.property.userId;
 
@@ -161,7 +161,7 @@ const resolveReceiverId = async (
 			select: { id: true },
 		});
 
-		if (receiver && (await isAdminUserType(receiver.id))) {
+		if (receiver && (await isAdminUser(receiver.id))) {
 			return providedReceiverId;
 		}
 

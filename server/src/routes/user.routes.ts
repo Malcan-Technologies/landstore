@@ -29,7 +29,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 /**
  * REGISTRATION:
  * POST /api/users/register
- * Body: { email, password, name, phone, userType, profileType, ... }
+ * Body: { email, password, name, phone, profileType, ... }
  * Response: Full user profile with verification email sent
  */
 userRouter.post("/register", upload.single("profileImage"), registerAndCompleteProfileController);

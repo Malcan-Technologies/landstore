@@ -113,10 +113,10 @@ export const getNotificationPreferenceByIdController = async (
 ) => {
   try {
     const user = (req as any).user;
-    if (!user || user.userType !== "admin") {
+    if (!user || !user.id) {
       return res.status(403).json({
         success: false,
-        message: "Admin access required",
+        message: "Authentication required",
       });
     }
 
@@ -232,10 +232,10 @@ export const getAllNotificationPreferencesController = async (
 ) => {
   try {
     const user = (req as any).user;
-    if (!user || user.userType !== "admin") {
+    if (!user || !user.id) {
       return res.status(403).json({
         success: false,
-        message: "Admin access required",
+        message: "Authentication required",
       });
     }
 

@@ -10,7 +10,6 @@ import {
 	requestListLandChanges,
 	uploadPropertyImages,
 	uploadPropertyDocuments,
-	getUploadedMediaAndDocuments,
 	searchPropertiesByRadius,
 	searchPropertiesByBoundingBox,
 	getActiveListingsOverTime,
@@ -200,8 +199,11 @@ export const createListLandController = async (req: Request, res: Response) => {
 		// Create property with images, documents and all other details
 		const property = await createListLand(requester.id, payload);
 
-		// Fetch uploaded media and documents with their URLs
-		const uploadedAssets = await getUploadedMediaAndDocuments(mediaIds, documentIds);
+		// Creation responses should not expose document URLs.
+		const uploadedAssets = {
+			images: mediaIds,
+			documents: [],
+		};
 
 		return res.status(201).json({
 			message: "Property created successfully with images and documents",

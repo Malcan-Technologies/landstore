@@ -31,10 +31,6 @@ const normalizePhone = (phone?: string | null) => {
   return value ? value : null;
 };
 
-const isValidUserType = (value?: string): boolean => {
-  return value === "admin" || value === "user";
-};
-
 const buildDisplayName = (
   firstName?: string,
   lastName?: string,
@@ -387,7 +383,7 @@ const upsertUserProfileDetail = async (
  * 
  * This function:
  * 1. Creates user with email & hashed password via Better Auth
- * 2. Completes user profile (phone, userType, custom fields)
+ * 2. Completes user profile (phone, profile fields, custom fields)
  * 3. Returns full profile
  * 
  * Password is automatically hashed by Better Auth before database storage
@@ -811,7 +807,7 @@ export const getUserCompleteProfile = async (userId: string) => {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
 
-    // Admin role (replaces old userType field)
+    // Admin role from Admin table
     // "admin", "superadmin", or null (means regular user)
     adminRole,
 

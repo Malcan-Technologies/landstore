@@ -12,7 +12,6 @@
  *   password: "SecurePassword123!",
  *   name: "John Doe",
  *   phone: "+1234567890",
- *   userType: "user",
  *   profileType: "individual",
  *   firstName: "John",
  *   lastName: "Doe",
@@ -69,7 +68,6 @@ const getErrorPayload = (error: unknown) => {
  *   password: "SecurePassword123!",  // Will be hashed by Better Auth
  *   name: "John Doe",
  *   phone: "+1234567890",
- *   userType: "user",                // or "admin"
  *   profileType: "individual",       // or "company", "koperasi"
  *   firstName: "John",               // for individual
  *   lastName: "Doe",                 // for individual
@@ -243,7 +241,7 @@ export const completeProfileController = async (req: Request, res: Response) => 
  * - Session creation  
  * - Cookie management (httpOnly, secure, sameSite)
  * 
- * Then enriches response with userType and sends welcome email
+ * Then enriches response with adminRole and sends welcome email
  */
 export const loginController = async (req: Request, res: Response) => {
 	try {
@@ -563,10 +561,10 @@ export const updateUserController = async (req: Request, res: Response) => {
 		console.log(`🔄 Updating user profile for: ${targetUserId}`);
 
 		// Users cannot modify their own role or allow role changes
-		if (req.body.userType !== undefined) {
+		if (req.body.role !== undefined || req.body.adminRole !== undefined) {
 			return res.status(403).json({
 				error: "Forbidden",
-				message: "You cannot modify your own role. Contact support if you need role changes."
+				message: "You cannot modify your own admin role. Contact support if you need role changes."
 			});
 		}
 
@@ -616,36 +614,48 @@ export const deleteUserController = async (req: Request, res: Response) => {
 		}
 
 		const userId = getUserIdParamOrThrow(req);
-		if (requester.id === userId && (requester.userType === "admin" || requester.userType === "superadmin")) {
+
+		const prismaAny = db as any;
+		const [requesterAdmin, targetUser, targetAdmin] = await Promise.all([
+			prismaAny.admin.findUnique({
+				where: { userId: requester.id },
+				select: { role: true },
+			}),
+			db.user.findUnique({
+				where: { id: userId },
+				select: { id: true },
+			}),
+			prismaAny.admin.findUnique({
+				where: { userId: userId },
+				select: { role: true },
+			}),
+		]);
+
+		if (!targetUser) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		if (requesterAdmin && requester.id === userId) {
 			return res.status(403).json({
 				error: "Forbidden",
 				message: "Admins and superadmins cannot delete themselves."
 			});
 		}
 
-		// Fetch target user
-		const targetUser = await getUserById(userId);
-		if (!targetUser) {
-			return res.status(404).json({ message: "User not found" });
+		if (!requesterAdmin) {
+			return res.status(403).json({
+				message: "Only admin or superadmin can delete users.",
+			});
 		}
 
-		// Superadmin can delete admin or user
-		if (requester.userType === "superadmin") {
-			if (["admin", "user"].includes(targetUser.userType)) {
-				const result = await deleteUserById(userId);
-				return res.status(200).json(result);
-			} else {
-				return res.status(403).json({ message: "Superadmin can only delete admin or user." });
-			}
+		if (requesterAdmin.role === "admin" && targetAdmin?.role === "superadmin") {
+			return res.status(403).json({
+				message: "Admins cannot delete superadmin users.",
+			});
 		}
 
-		// Admin can delete other admin or user (but not themselves)
-		if (requester.userType === "admin" && requester.id !== userId && ["admin", "user"].includes(targetUser.userType)) {
-			const result = await deleteUserById(userId);
-			return res.status(200).json(result);
-		}
-
-		return res.status(403).json({ message: "You do not have permission to delete this user." });
+		const result = await deleteUserById(userId);
+		return res.status(200).json(result);
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);
 		return res.status(statusCode).json({ message });

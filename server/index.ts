@@ -39,12 +39,12 @@ const httpServer = createServer(app);
  * UNIFIED REGISTRATION FLOW:
  * 1. POST /api/users/register (ONE endpoint for complete sign-up)
  *    {
- *      email, password, name, phone, userType,
+ *      email, password, name, phone,
  *      profileType, firstName, lastName, ...
  *    }
  *    → Better Auth hashes password (Account.password stores encrypted hash)
  *    → User created with email (no password field)
- *    → Profile completed (phone, userType, custom fields)
+ *    → Profile completed (phone, profile fields, custom fields)
  *    → Returns full user profile
  * 
  * 2. POST /api/auth/sign-in (to get session/JWT)

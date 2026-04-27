@@ -287,11 +287,15 @@ const includePropertyRelations = {
 	location: true,
 	leaseholdDetails: true,
 	media: true,
+} as const;
+
+const includePropertyRelationsWithDocuments = {
+	...includePropertyRelations,
 	documents: {
 		include: {
-			media: true
-		}
-	}
+			media: true,
+		},
+	},
 } as const;
 
 const getShortlistedState = async (propertyId: string, userId?: string) => {
@@ -368,18 +372,18 @@ export const getUploadedMediaAndDocuments = async (
 
 	const uploadedDocuments = documentIds.length > 0
 		? await db.document.findMany({
-				where: { id: { in: documentIds } },
-				select: {
-					id: true,
-					verificationStatus: true,
-					media: {
-						select: {
-							fileUrl: true,
-						},
+			where: { id: { in: documentIds } },
+			select: {
+				id: true,
+				verificationStatus: true,
+				media: {
+					select: {
+						fileUrl: true,
 					},
-					createdAt: true,
 				},
-			})
+				createdAt: true,
+			},
+		})
 		: [];
 
 	// Generate signed URLs for all images
@@ -778,9 +782,17 @@ export const getListLandById = async (
 	propertyId: string,
 	userId?: string
 ) => {
+	const adminRecord = userId
+		? await db.admin.findUnique({
+			where: { userId },
+			select: { role: true },
+		})
+		: null;
+	const includeDocuments = !!adminRecord;
+
 	const property = await db.property.findUnique({
 		where: { id: propertyId },
-		include: includePropertyRelations,
+		include: includeDocuments ? includePropertyRelationsWithDocuments : includePropertyRelations,
 	});
 
 	if (!property) {
@@ -1068,7 +1080,7 @@ export const requestListLandChanges = async (
 				data: {
 					status: "draft",
 				},
-				include: includePropertyRelations,
+				include: includePropertyRelationsWithDocuments,
 			});
 
 			await (trx as any).adminAction.create({

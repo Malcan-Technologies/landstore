@@ -20,7 +20,7 @@ const getErrorPayload = (error: unknown) => {
 
 const getRequesterUserOrThrow = (req: Request) => {
 	const user = (req as any).user as
-		| { id?: string; userType?: string }
+		| { id?: string }
 		| undefined;
 
 	if (!user?.id) {
@@ -33,7 +33,6 @@ const getRequesterUserOrThrow = (req: Request) => {
 
 	return {
 		id: user.id,
-		userType: user.userType,
 	};
 };
 

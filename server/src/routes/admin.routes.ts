@@ -53,7 +53,7 @@ const adminRouter = Router();
  * Response:
  * {
  *   message: "Admin created successfully",
- *   admin: { id, email, phone, name, userType, status, createdAt, emailVerified }
+ *   admin: { id, email, phone, name, role, status, createdAt, emailVerified }
  * }
  */
 adminRouter.post(
@@ -93,7 +93,7 @@ adminRouter.get(
  * Response:
  * {
  *   message: "Admin retrieved successfully",
- *   admin: { id, email, phone, name, userType, status, createdAt, updatedAt, emailVerified, image }
+ *   admin: { id, email, phone, name, role, status, createdAt, updatedAt, emailVerified, image }
  * }
  */
 adminRouter.get(
@@ -119,7 +119,7 @@ adminRouter.get(
  * Response:
  * {
  *   message: "Admin updated successfully",
- *   admin: { id, email, phone, name, userType, status, createdAt, updatedAt, emailVerified }
+ *   admin: { id, email, phone, name, role, status, createdAt, updatedAt, emailVerified }
  * }
  */
 adminRouter.patch(
@@ -140,7 +140,7 @@ adminRouter.patch(
  * Response:
  * {
  *   message: "Admin account deleted successfully",
- *   deletedAdmin: { id, email, name, userType }
+ *   deletedAdmin: { id, email, name, role }
  * }
  */
 adminRouter.delete(
@@ -158,7 +158,7 @@ adminRouter.delete(
  * Response:
  * {
  *   message: "User promoted to admin successfully",
- *   user: { id, email, name, userType, status, createdAt, updatedAt }
+ *   user: { id, email, name, role, status, createdAt, updatedAt }
  * }
  */
 adminRouter.post(
@@ -179,7 +179,7 @@ adminRouter.post(
  * Response:
  * {
  *   message: "Admin demoted to user successfully",
- *   user: { id, email, name, userType, status, createdAt, updatedAt }
+ *   user: { id, email, name, role, status, createdAt, updatedAt }
  * }
  */
 adminRouter.post(

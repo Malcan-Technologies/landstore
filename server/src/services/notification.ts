@@ -61,7 +61,11 @@ const includeNotificationRelations = {
 		select: {
 			id: true,
 			email: true,
-			userType: true,
+			admin: {
+				select: {
+					role: true,
+				},
+			},
 		},
 	},
 } as const;
