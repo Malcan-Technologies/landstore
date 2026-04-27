@@ -11,6 +11,7 @@ import EyeOpen from "@/components/svg/EyeOpen";
 import Exclamation from "@/components/svg/Exclamation";
 import { authService } from "@/services/authService";
 import { loginSuccess } from "@/store/authSlice";
+import { getNormalizedAdminRole, hasAdminAccess } from "@/utils/auth";
 
 const ADMIN_AUTH_STORAGE_KEY = "landstore_admin_auth";
 const MAX_ADMIN_ATTEMPTS = 3;
@@ -51,7 +52,7 @@ const AdminRouteGate = ({ children }) => {
       return;
     }
 
-    if (user?.userType === "admin" || user?.userType === "superadmin") {
+    if (hasAdminAccess(user)) {
       setIsAllowed(true);
     } else {
       clearAdminAuth();
@@ -59,7 +60,7 @@ const AdminRouteGate = ({ children }) => {
     }
 
     setIsReady(true);
-  }, [hydrated, user?.userType]);
+  }, [hydrated, user]);
 
   const handleFailedAttempt = (message) => {
     const nextAttemptCount = attemptCount + 1;
@@ -106,10 +107,11 @@ const AdminRouteGate = ({ children }) => {
         password: trimmedPassword,
       });
       const loggedInUser = response?.user;
+      const adminRole = getNormalizedAdminRole(loggedInUser);
 
-      if (loggedInUser?.userType === "admin" || loggedInUser?.userType === "superadmin") {
+      if (hasAdminAccess(loggedInUser)) {
         dispatch(loginSuccess(loggedInUser));
-        persistAdminAuth({ email: loggedInUser.email || trimmedEmail, userType: loggedInUser?.userType || "admin" });
+        persistAdminAuth({ email: loggedInUser?.email || trimmedEmail, adminRole });
         setErrorMessage("");
         setIsRedirecting(false);
         setAttemptCount(0);

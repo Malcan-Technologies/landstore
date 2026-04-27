@@ -27,6 +27,19 @@ export const checkAuth = () => {
   return Boolean(getStoredUser());
 };
 
+export const getNormalizedAdminRole = (value) => {
+  const rawRole = typeof value === "string" ? value : value?.adminRole;
+  const normalizedRole = typeof rawRole === "string" ? rawRole.trim().toLowerCase() : "";
+
+  return normalizedRole || null;
+};
+
+export const hasAdminAccess = (user) => {
+  const adminRole = getNormalizedAdminRole(user);
+
+  return adminRole === "admin" || adminRole === "superadmin";
+};
+
 export const persistUser = (user) => {
   if (typeof window === "undefined") {
     return;
