@@ -25,6 +25,7 @@ const listingStatsConfig = [
 const listingTabConfig = [
   { id: "all", label: "All listings" },
   { id: "drafts", label: "Drafts" },
+  { id: "pending", label: "Pending" },
   { id: "review", label: "Under Review" },
   { id: "active", label: "Active" },
   { id: "inactive", label: "Inactive / History" },
@@ -147,6 +148,7 @@ const toStatusKey = (status) => {
   }
 
   if (normalizedStatus === "draft") return "draft";
+  if (normalizedStatus === "pending") return "pending";
   if (normalizedStatus === "review" || normalizedStatus === "under_review" || normalizedStatus === "under review") {
     return "review";
   }
@@ -159,6 +161,7 @@ const toStatusKey = (status) => {
 
 const toStatusLabel = (statusKey) => {
   if (statusKey === "draft") return "Draft";
+  if (statusKey === "pending") return "Pending";
   if (statusKey === "review") return "Under review";
   if (statusKey === "reserved") return "Reserved";
   return "Active";
@@ -174,6 +177,13 @@ const toListingActions = (statusKey) => {
 
   if (statusKey === "active") {
     return [{ type: "delete", label: "Delete" }];
+  }
+
+  if (statusKey === "pending") {
+    return [
+      { type: "default", label: "Edit" },
+      { type: "delete", label: "Delete" },
+    ];
   }
 
   return [
@@ -299,6 +309,8 @@ const ListingsPage = () => {
     switch (activeTab) {
       case "drafts":
         return listings.filter((listing) => listing.statusKey === "draft");
+      case "pending":
+        return listings.filter((listing) => listing.statusKey === "pending");
       case "review":
         return listings.filter((listing) => listing.statusKey === "review");
       case "active":
@@ -313,6 +325,7 @@ const ListingsPage = () => {
   const listingTabs = useMemo(() => {
     const counts = {
       drafts: 0,
+      pending: 0,
       review: 0,
       active: 0,
       inactive: 0,
@@ -320,6 +333,7 @@ const ListingsPage = () => {
 
     listings.forEach((listing) => {
       if (listing.statusKey === "draft") counts.drafts += 1;
+      if (listing.statusKey === "pending") counts.pending += 1;
       if (listing.statusKey === "review") counts.review += 1;
       if (listing.statusKey === "active") counts.active += 1;
       if (listing.statusKey === "reserved") counts.inactive += 1;

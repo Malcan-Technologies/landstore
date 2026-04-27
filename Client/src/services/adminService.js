@@ -276,5 +276,51 @@ export const adminService = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Admins
+  createAdmin: async (data) => {
+    try {
+      const response = await api.post('/admins/', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getAdmins: async (params = {}) => {
+    try {
+      const response = await api.get('/admins/', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getAdminById: async (id) => {
+    try {
+      const response = await api.get(`/admins/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateAdmin: async (id, data) => {
+    try {
+      const response = await api.patch(`/admins/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteAdmin: async (id) => {
+    try {
+      const response = await api.delete(`/admins/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };

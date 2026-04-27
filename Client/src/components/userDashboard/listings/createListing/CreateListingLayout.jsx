@@ -2,7 +2,7 @@ import Arrow from "@/components/svg/Arrow";
 import File from "@/components/svg/File";
 import CreateListingStepper from "@/components/userDashboard/listings/createListing/CreateListingStepper";
 
-const CreateListingLayout = ({ currentStep, children, onBack, onNext, isLastStep = false, nextLabel = "Next step" }) => {
+const CreateListingLayout = ({ currentStep, children, onBack, onNext, onSaveDraft, isLastStep = false, nextLabel = "Next step" }) => {
   return (
     <main className="min-h-screen mx-auto max-w-7xl bg-background-primary pt-10 sm:pt-8 md:pt-10">
       <div className="mx-auto w-full px-3 mb-16 sm:px-4 md:px-6 lg:px-10">
@@ -36,6 +36,7 @@ const CreateListingLayout = ({ currentStep, children, onBack, onNext, isLastStep
           <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3">
             <button
               type="button"
+              onClick={onSaveDraft}
               className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg border border-border-input bg-white px-3 text-[11px] font-medium text-gray5 transition hover:bg-background-primary sm:h-10 sm:flex-none sm:px-4 sm:text-[12px] md:text-[13px]"
             >
               <File size={14} color="currentColor" className="sm:h-4 sm:w-4" />

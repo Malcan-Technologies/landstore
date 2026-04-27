@@ -4,7 +4,7 @@ import Modal from "@/components/common/Modal";
 import Button from "@/components/common/Button";
 import RoundX from "@/components/svg/RoundX";
 import Delete from "@/components/svg/Delete";
-export default function DeleteAdminModal({ open, onClose, onConfirm, target, isLoading = false }) {
+export default function DeleteAdminModal({ open, onClose, onConfirm, target, isLoading = false, error = "" }) {
   return (
     <Modal
       open={open}
@@ -21,6 +21,7 @@ export default function DeleteAdminModal({ open, onClose, onConfirm, target, isL
         </div>
         <h2 className="mt-4 text-[18px] font-semibold text-[#111827]">Delete admin</h2>
         <p className="mt-2 text-[14px] text-[#6B7280]">Are you sure you want to delete {target?.name || "this admin"}?</p>
+        {error && <p className="mt-3 text-xs text-red-500">{error}</p>}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">

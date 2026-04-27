@@ -29,6 +29,7 @@ const SelectDropdown = ({
   error = "",
   errorClassName = "left-0",
   renderValue,
+  position = "down",
   ...props
 }) => {
   const hasError = Boolean(error);
@@ -80,7 +81,7 @@ const SelectDropdown = ({
         >
           <Listbox.Options
             modal={false}
-            className={`absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-lg border ${optionsBorderClassName} ${optionsBgClassName} py-1 shadow-xl focus:outline-none ${optionsClassName}`.trim()}
+            className={`absolute z-20 ${position === "up" ? "bottom-full mb-2" : "mt-2"} max-h-60 w-full overflow-auto rounded-lg border ${optionsBorderClassName} ${optionsBgClassName} py-1 shadow-xl focus:outline-none ${optionsClassName}`.trim()}
           >
             {options.map((option) => (
               <Listbox.Option

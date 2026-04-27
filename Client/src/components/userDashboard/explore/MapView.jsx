@@ -116,6 +116,7 @@ const MapView = ({
   hideMarkerPin = false,
   onMapClick,
   onViewportChange,
+  onMarkerClick,
 }) => {
   const [activeMarker, setActiveMarker] = useState(defaultActiveMarkerId);
   const mapRef = useRef(null);
@@ -155,7 +156,10 @@ const MapView = ({
 
   const handleMarkerClick = useCallback((markerId) => {
     setActiveMarker((prev) => (prev === markerId ? null : markerId));
-  }, []);
+    if (onMarkerClick) {
+      onMarkerClick(markerId);
+    }
+  }, [onMarkerClick]);
 
   const handleMapClick = useCallback(
     (event) => {

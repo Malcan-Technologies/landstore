@@ -51,7 +51,7 @@ const AdminRouteGate = ({ children }) => {
       return;
     }
 
-    if (user?.userType === "admin") {
+    if (user?.userType === "admin" || user?.userType === "superadmin") {
       setIsAllowed(true);
     } else {
       clearAdminAuth();
@@ -107,9 +107,9 @@ const AdminRouteGate = ({ children }) => {
       });
       const loggedInUser = response?.user;
 
-      if (loggedInUser?.userType === "admin") {
+      if (loggedInUser?.userType === "admin" || loggedInUser?.userType === "superadmin") {
         dispatch(loginSuccess(loggedInUser));
-        persistAdminAuth({ email: loggedInUser.email || trimmedEmail, userType: "admin" });
+        persistAdminAuth({ email: loggedInUser.email || trimmedEmail, userType: loggedInUser?.userType || "admin" });
         setErrorMessage("");
         setIsRedirecting(false);
         setAttemptCount(0);

@@ -9,6 +9,7 @@ import Building from "@/components/svg/Building";
 const statusStyles = {
   active: "bg-[#EAF8F1] text-green-secondary",
   draft: "bg-[#F3F4F6] text-gray5",
+  pending: "bg-[#FFF7E8] text-[#F59E0B]",
   review: "bg-[#FFF7E8] text-[#F59E0B]",
   reserved: "bg-[#EEF4FF] text-[#2563EB]",
 };

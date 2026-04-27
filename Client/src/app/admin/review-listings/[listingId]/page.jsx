@@ -404,7 +404,7 @@ export default function ReviewListingDetailPage({ params }) {
               onClick={() => setActiveModal("permanentDelete")}
               className="inline-flex items-center justify-center rounded-lg bg-[#30201D] px-4 py-3 text-[13px] font-medium text-[#F87171] transition hover:bg-[#382623] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Soft Delete
+              Delete/Policy breach 
             </button>
           </div>
           {actionError ? <p className="mt-3 text-[12px] text-[#FCA5A5]">{actionError}</p> : null}
