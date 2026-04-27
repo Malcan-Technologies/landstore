@@ -12,8 +12,9 @@ import Search from "@/components/svg/Search";
 import ThreeBars from "@/components/svg/ThreeBars";
 import Button from "@/components/common/Button";
 import LoginModal from "@/components/auth/LoginModal";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
-import { notificationService } from "@/services/notificationService";
+import { resetSocketConnection } from "@/services/socketService";
 import { logoutUser } from "@/store/authSlice";
 
 const ADMIN_AUTH_STORAGE_KEY = "landstore_admin_auth";
@@ -38,53 +39,20 @@ const AdminHeader = ({ onMenuClick }) => {
   const [authTab, setAuthTab] = useState("login");
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const notificationRef = useRef(null);
   const profileMenuRef = useRef(null);
-
-  useEffect(() => {
-    if (!isAuth || !user?.id) {
-      setNotifications([]);
-      return;
-    }
-
-    let mounted = true;
-
-    const mapNotification = (item) => {
-      const apiType = item?.type;
-      const type = apiType === "urgent" ? "warning" : "success";
-      const createdAt = item?.createdAt ? new Date(item.createdAt) : null;
-
-      return {
-        id: item?.id,
-        title: apiType === "urgent" ? "Action needed" : "Notification",
-        message: item?.content || "",
-        timeLabel: createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toLocaleString() : "",
-        type,
-        href: "/user-dashboard/notifications",
-        read: Boolean(item?.isRead),
-      };
-    };
-
-    (async () => {
-      try {
-        const response = await notificationService.getNotifications({ page: 1, limit: 5, userId: user.id });
-        const items = Array.isArray(response) ? response : response?.data;
-        const mapped = Array.isArray(items) ? items.map(mapNotification).filter((n) => n?.id) : [];
-        if (mounted) {
-          setNotifications(mapped);
-        }
-      } catch (_error) {
-        if (mounted) {
-          setNotifications([]);
-        }
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [isAuth, user?.id]);
+  const notificationUserId = isAuth && user?.id ? user.id : "";
+  const {
+    notifications,
+    unreadCount,
+    isMarkingAllRead,
+    markNotificationRead,
+    markAllNotificationsRead,
+  } = useRealtimeNotifications({
+    enabled: hydrated && isAuth && Boolean(notificationUserId),
+    userId: notificationUserId,
+    limit: 5,
+  });
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -109,11 +77,24 @@ const AdminHeader = ({ onMenuClick }) => {
       window.localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
     }
 
+    resetSocketConnection();
     setProfileMenuOpen(false);
     await dispatch(logoutUser());
     router.push("/");
     // setAuthTab("login");
     // setIsLoginOpen(true);
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification?.id || notification?.read) {
+      return;
+    }
+
+    await markNotificationRead(notification.id);
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    await markAllNotificationsRead();
   };
 
   const handleOpenProfile = () => {
@@ -172,11 +153,18 @@ const AdminHeader = ({ onMenuClick }) => {
                     aria-label="Open notifications"
                   >
                     <Bell width={16} height={16} fill="currentColor" />
-                    <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[#FDB022]" />
+                    {unreadCount > 0 ? <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[#FDB022]" /> : null}
                   </button>
 
                   {notificationOpen ? (
-                    <NotificationPopup notifications={notifications} onClose={() => setNotificationOpen(false)} />
+                    <NotificationPopup
+                      notifications={notifications}
+                      onClose={() => setNotificationOpen(false)}
+                      onNotificationClick={handleNotificationClick}
+                      onMarkAllRead={handleMarkAllNotificationsRead}
+                      isMarkingAllRead={isMarkingAllRead}
+                      hasUnread={unreadCount > 0}
+                    />
                   ) : null}
                 </div>
 

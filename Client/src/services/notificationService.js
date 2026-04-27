@@ -35,7 +35,8 @@ export const notificationService = {
   // Get notifications
   getNotifications: async (params = {}) => {
     try {
-      const response = await api.get('/notifications/', { params });
+      const { userId, ...queryParams } = params || {};
+      const response = await api.get('/notifications/', { params: queryParams });
       return response.data;
     } catch (error) {
       throw error;
@@ -46,6 +47,33 @@ export const notificationService = {
   getNotificationById: async (id) => {
     try {
       const response = await api.get(`/notifications/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  markAsRead: async (id) => {
+    try {
+      const response = await api.patch(`/notifications/${id}/mark-as-read`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  markAllAsRead: async (userId) => {
+    try {
+      const response = await api.patch(`/notifications/user/${userId}/mark-all-as-read`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getUnreadCount: async (userId) => {
+    try {
+      const response = await api.get(`/notifications/user/${userId}/unread-count`);
       return response.data;
     } catch (error) {
       throw error;

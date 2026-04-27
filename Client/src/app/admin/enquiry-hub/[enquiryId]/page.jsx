@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Loading from "@/components/common/Loading";
 import Sheild from "@/components/svg/Sheild";
@@ -22,8 +22,62 @@ import Profile from "@/components/svg/Profile";
 import Verify from "@/components/svg/Verify";
 import { enquiryService } from "@/services/enquiryService";
 import { messageService } from "@/services/messageService";
+import { SOCKET_EVENTS, acquireSocketConnection, joinChatEnquiryRoom, leaveChatEnquiryRoom, offSocketEvent, onSocketEvent, releaseSocketConnection } from "@/services/socketService";
 
 const fallbackEnquiryImage = "/Land.jpg";
+const ENQUIRY_DETAIL_CACHE_TTL_MS = 1500;
+const enquiryDetailRequestCache = new Map();
+
+const getEnquiryDetailCacheKey = (enquiryId) => String(enquiryId || "").trim();
+
+const getCachedEnquiryDetail = async (enquiryId) => {
+  const cacheKey = getEnquiryDetailCacheKey(enquiryId);
+
+  if (!cacheKey) {
+    return null;
+  }
+
+  const now = Date.now();
+  const cachedEntry = enquiryDetailRequestCache.get(cacheKey);
+
+  if (cachedEntry?.data && now - cachedEntry.timestamp < ENQUIRY_DETAIL_CACHE_TTL_MS) {
+    return cachedEntry.data;
+  }
+
+  if (cachedEntry?.promise) {
+    return cachedEntry.promise;
+  }
+
+  const requestPromise = enquiryService
+    .getEnquiryById(cacheKey)
+    .then((response) => {
+      enquiryDetailRequestCache.set(cacheKey, {
+        data: response,
+        timestamp: Date.now(),
+      });
+
+      return response;
+    })
+    .catch((error) => {
+      enquiryDetailRequestCache.delete(cacheKey);
+      throw error;
+    });
+
+  enquiryDetailRequestCache.set(cacheKey, {
+    promise: requestPromise,
+    timestamp: now,
+  });
+
+  return requestPromise;
+};
+
+const invalidateCachedEnquiryDetail = (enquiryId) => {
+  const cacheKey = getEnquiryDetailCacheKey(enquiryId);
+
+  if (cacheKey) {
+    enquiryDetailRequestCache.delete(cacheKey);
+  }
+};
 
 const normalizeEnquiryPayload = (payload) => {
   const resolved = payload?.data ?? payload?.result?.data ?? payload ?? null;
@@ -302,8 +356,25 @@ const sortChatMessages = (messages) => {
   });
 };
 
+const upsertChatMessage = (currentMessages, nextMessage) => {
+  if (!nextMessage?.id) {
+    return Array.isArray(currentMessages) ? currentMessages : [];
+  }
+
+  return sortChatMessages([...(Array.isArray(currentMessages) ? currentMessages : []).filter((item) => item.id !== nextMessage.id), nextMessage]);
+};
+
+const removeChatMessage = (currentMessages, messageId) => {
+  if (!Array.isArray(currentMessages) || !messageId) {
+    return Array.isArray(currentMessages) ? currentMessages : [];
+  }
+
+  return currentMessages.filter((item) => item.id !== messageId);
+};
+
 const mapMessageToChatMessage = (message, requesterId) => {
   const senderId = message?.senderId || message?.sender?.id || "";
+  const receiverId = message?.receiverId || message?.receiver?.id || "";
   const content = typeof message?.content === "string" ? message.content.trim() : "";
 
   if (!content) {
@@ -314,6 +385,8 @@ const mapMessageToChatMessage = (message, requesterId) => {
     id: message?.id || `${senderId}-${message?.createdAt || content}`,
     content,
     sender: String(senderId) === String(requesterId || "") ? "user" : "admin",
+    senderId,
+    receiverId,
     createdAt: message?.createdAt || new Date().toISOString(),
   };
 };
@@ -366,6 +439,7 @@ export default function EnquiryHubDetailPage({ params }) {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [statusError, setStatusError] = useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const enquirySnapshotRef = useRef(null);
 
   useEffect(() => {
     if (!normalizedRouteId) {
@@ -383,16 +457,8 @@ export default function EnquiryHubDetailPage({ params }) {
         setEnquiryLoadError("");
         setChatError("");
 
-        const [enquiryResult, messageResult] = await Promise.allSettled([
-          enquiryService.getEnquiryById(normalizedRouteId),
-          messageService.getMessagesByEnquiry(normalizedRouteId, { page: 1, limit: 100 }),
-        ]);
-
-        if (enquiryResult.status !== "fulfilled") {
-          throw enquiryResult.reason;
-        }
-
-        const normalizedEnquiry = normalizeEnquiryPayload(enquiryResult.value);
+        const enquiryResult = await getCachedEnquiryDetail(normalizedRouteId);
+        const normalizedEnquiry = normalizeEnquiryPayload(enquiryResult);
 
         if (!isMounted) {
           return;
@@ -405,16 +471,11 @@ export default function EnquiryHubDetailPage({ params }) {
         }
 
         const mappedEnquiry = buildEnquiryDetailModel(normalizedEnquiry);
+        enquirySnapshotRef.current = normalizedEnquiry;
         setEnquiryDetail(mappedEnquiry);
         setMediationStatus(mappedEnquiry.mediationStatus);
         setStatusError("");
-
-        if (messageResult.status === "fulfilled") {
-          setChatMessages(buildChatMessages(normalizedEnquiry, messageResult.value));
-        } else {
-          setChatMessages(buildChatMessages(normalizedEnquiry, { data: normalizedEnquiry?.messages || [] }));
-          setChatError(messageResult.reason?.message || "Failed to load chat history.");
-        }
+        setChatMessages(buildChatMessages(normalizedEnquiry, { data: normalizedEnquiry?.messages || [] }));
       } catch (error) {
         if (!isMounted) {
           return;
@@ -436,6 +497,106 @@ export default function EnquiryHubDetailPage({ params }) {
       isMounted = false;
     };
   }, [normalizedRouteId]);
+
+  useEffect(() => {
+    if (!normalizedRouteId || !enquiryDetail?.requesterId) {
+      return;
+    }
+
+    acquireSocketConnection();
+
+    const requesterId = enquiryDetail.requesterId;
+    const updateAdminSummary = (message) => {
+      if (!message || message.sender !== "admin") {
+        return;
+      }
+
+      setEnquiryDetail((currentValue) => {
+        if (!currentValue) {
+          return currentValue;
+        }
+
+        return {
+          ...currentValue,
+          adminMessage: message.content,
+          adminDate: formatDate(message.createdAt),
+        };
+      });
+    };
+
+    const handleChatHistory = (payload) => {
+      if (String(payload?.enquiryId || "") !== String(normalizedRouteId)) {
+        return;
+      }
+
+      const enquirySnapshot = enquirySnapshotRef.current;
+      if (!enquirySnapshot) {
+        return;
+      }
+
+      const nextMessages = buildChatMessages(enquirySnapshot, { data: payload?.messages || [] });
+      setChatMessages(nextMessages);
+
+      const latestAdminMessage = [...nextMessages].reverse().find((item) => item.sender === "admin");
+      if (latestAdminMessage) {
+        updateAdminSummary(latestAdminMessage);
+      }
+    };
+
+    const handleNewMessage = (payload) => {
+      if (String(payload?.enquiryId || "") !== String(normalizedRouteId)) {
+        return;
+      }
+
+      const mappedMessage = mapMessageToChatMessage(payload, requesterId);
+      if (!mappedMessage) {
+        return;
+      }
+
+      setChatMessages((currentMessages) => upsertChatMessage(currentMessages, mappedMessage));
+      updateAdminSummary(mappedMessage);
+    };
+
+    const handleUpdatedMessage = (payload) => {
+      if (String(payload?.enquiryId || "") !== String(normalizedRouteId)) {
+        return;
+      }
+
+      const mappedMessage = mapMessageToChatMessage(payload, requesterId);
+      if (!mappedMessage) {
+        return;
+      }
+
+      setChatMessages((currentMessages) => upsertChatMessage(currentMessages, mappedMessage));
+      updateAdminSummary(mappedMessage);
+    };
+
+    const handleDeletedMessage = (payload) => {
+      if (String(payload?.enquiryId || "") !== String(normalizedRouteId)) {
+        return;
+      }
+
+      setChatMessages((currentMessages) => removeChatMessage(currentMessages, payload?.id));
+    };
+
+    onSocketEvent(SOCKET_EVENTS.CHAT.HISTORY, handleChatHistory);
+    onSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+    onSocketEvent(SOCKET_EVENTS.CHAT.UPDATED_MESSAGE, handleUpdatedMessage);
+    onSocketEvent(SOCKET_EVENTS.CHAT.DELETED_MESSAGE, handleDeletedMessage);
+
+    void joinChatEnquiryRoom(normalizedRouteId).catch((socketError) => {
+      setChatError(socketError?.message || "Failed to connect to live chat.");
+    });
+
+    return () => {
+      offSocketEvent(SOCKET_EVENTS.CHAT.HISTORY, handleChatHistory);
+      offSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+      offSocketEvent(SOCKET_EVENTS.CHAT.UPDATED_MESSAGE, handleUpdatedMessage);
+      offSocketEvent(SOCKET_EVENTS.CHAT.DELETED_MESSAGE, handleDeletedMessage);
+      void leaveChatEnquiryRoom(normalizedRouteId);
+      releaseSocketConnection();
+    };
+  }, [enquiryDetail?.requesterId, normalizedRouteId]);
 
   const handleSendMessage = async (content) => {
     if (!normalizedRouteId || !enquiryDetail?.requesterId) {
@@ -459,6 +620,8 @@ export default function EnquiryHubDetailPage({ params }) {
       if (mappedMessage) {
         setChatMessages((prev) => sortChatMessages([...prev.filter((item) => item.id !== mappedMessage.id), mappedMessage]));
       }
+
+      invalidateCachedEnquiryDetail(normalizedRouteId);
 
       return true;
     } catch (apiError) {
@@ -489,6 +652,7 @@ export default function EnquiryHubDetailPage({ params }) {
       setIsUpdatingStatus(true);
       await enquiryService.updateEnquiryStatus(normalizedRouteId, { status: apiStatus });
       setEnquiryDetail((prev) => (prev ? { ...prev, mediationStatus: nextStatus } : prev));
+      invalidateCachedEnquiryDetail(normalizedRouteId);
     } catch (apiError) {
       setMediationStatus(previousStatus);
       setStatusError(apiError?.message || "Failed to update mediation status.");
@@ -600,7 +764,7 @@ export default function EnquiryHubDetailPage({ params }) {
         </div>
 
         <div className="space-y-4 lg:w-[35%]">
-          <div className="overflow-hidden rounded-[20px] border border-[#0E3C2D] bg-[#082B20] text-white shadow-[0_12px_30px_rgba(6,36,26,0.18)]">
+          <div className="overflow-visible rounded-[20px] border border-[#0E3C2D] bg-[#082B20] text-white shadow-[0_12px_30px_rgba(6,36,26,0.18)]">
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
               <div className="flex items-center gap-2.5">
                 <span className="inline-flex h-5 w-5 items-center justify-center text-greenbg">
@@ -678,9 +842,9 @@ export default function EnquiryHubDetailPage({ params }) {
                 </div>
               </div>
 
-              <div className="border-b border-white/10 py-5 px-4">
+              <div className="border-b border-white/10 py-5 px-4 overflow-visible">
                 <p className="text-[12px] sm:text-[14px] lg:text-[12px] xl:text-[14px] text-white/55">Mediation Status</p>
-                <div className="mt-3 relative">
+                <div className="relative z-30 mt-3">
                   <SelectDropdown
                     value={mediationStatus}
                     onChange={handleMediationStatusChange}
