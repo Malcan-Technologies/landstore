@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import db from "../../config/prisma.js";
 
+const prismaAny = db as any;
+
 const authorizeListLandVisibility = async (
 	req: Request,
 	res: Response,
@@ -30,7 +32,7 @@ const authorizeListLandVisibility = async (
 		}
 
 		const user = (req as any).user as
-			| { id: string; userType?: string }
+			| { id: string }
 			| undefined;
 
 		if (!user) {
@@ -49,7 +51,6 @@ const authorizeListLandVisibility = async (
 			where: { id: user.id },
 			select: {
 				id: true,
-				userType: true,
 			},
 		});
 
@@ -59,12 +60,17 @@ const authorizeListLandVisibility = async (
 			});
 		}
 
-		if (dbUser.userType === "admin" || dbUser.userType === "superadmin") {
+		const adminRecord = await prismaAny.admin.findUnique({
+			where: { userId: dbUser.id },
+			select: { role: true },
+		});
+
+		if (adminRecord) {
 			(req as any).viewerScope = "admin";
 			return next();
 		}
 
-		if (dbUser.userType === "user" && property.userId === dbUser.id) {
+		if (property.userId === dbUser.id) {
 			(req as any).viewerScope = "owner";
 			return next();
 		}

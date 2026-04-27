@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { randomBytes } from "crypto";
 import {
   createAdmin,
   getAllAdmins,
@@ -8,6 +9,8 @@ import {
   promoteToAdmin,
   demoteAdmin,
 } from "../services/admin.js";
+import { emailService } from "../services/email.js";
+import db from "../../config/prisma.js";
 
 /**
  * ADMIN CONTROLLER
@@ -40,6 +43,7 @@ const getErrorPayload = (error: unknown) => {
  * Request body:
  * {
  *   email: "admin@example.com",
+ *   password: "SecurePassword123!",
  *   phone?: "+1234567890",
  *   name?: "Admin Name",
  *   firstName?: "Admin",
@@ -48,7 +52,7 @@ const getErrorPayload = (error: unknown) => {
  */
 export const createAdminController = async (req: Request, res: Response) => {
   try {
-    const { email, phone, name, firstName, lastName } = req.body;
+    const { email, password, phone, name, firstName, lastName } = req.body;
     const requester = (req as any).user;
 
     // Validate input
@@ -58,19 +62,53 @@ export const createAdminController = async (req: Request, res: Response) => {
         message: "Email is required",
       });
     }
+    if (!password || typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({
+        error: "Bad Request",
+        message: "Password must be at least 8 characters",
+      });
+    }
 
-    // Create admin
+    // Create admin using user registration system
     const newAdmin = await createAdmin({
       email,
+      password,
       phone,
       name,
       firstName,
       lastName,
     });
 
+    // Generate email verification token (same as user registration)
+    const verificationToken = randomBytes(32).toString("hex");
+    const frontendURL = "https://landstore.my";
+    const verificationURL = `${frontendURL}/verify-email-callback?token=${verificationToken}`;
+
+    // Store verification token
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await db.verification.create({
+      data: {
+        identifier: `email_verification_${email.toLowerCase()}`,
+        value: verificationToken,
+        token: verificationToken,
+        expiresAt: expiresAt,
+      },
+    });
+
+    // Send verification email
+    await emailService.sendVerificationEmail(email.toLowerCase(), verificationToken, verificationURL);
+
     return res.status(201).json({
-      message: "Admin created successfully",
-      admin: newAdmin,
+      message: "Admin created successfully. Please check your email to verify your account.",
+      admin: {
+        id: newAdmin.userId,
+        email: email.toLowerCase(),
+        name: name || `${firstName || ""} ${lastName || ""}`.trim() || email,
+        phone: phone || null,
+        role: newAdmin.adminRole,
+        emailVerified: false,
+        createdAt: new Date()
+      },
     });
   } catch (error) {
     const payload = getErrorPayload(error);
@@ -253,7 +291,7 @@ export const promoteToAdminController = async (req: Request, res: Response) => {
       });
     }
 
-    const result = await promoteToAdmin(userId, requester.id, requester.userType);
+    const result = await promoteToAdmin(userId, requester.id);
 
     return res.status(200).json(result);
   } catch (error) {
@@ -285,7 +323,7 @@ export const demoteAdminController = async (req: Request, res: Response) => {
       });
     }
 
-    const result = await demoteAdmin(adminId, requester.id, requester.userType);
+    const result = await demoteAdmin(adminId, requester.id);
 
     return res.status(200).json(result);
   } catch (error) {

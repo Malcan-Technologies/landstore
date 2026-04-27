@@ -11,18 +11,17 @@ import type {
 
 type Requester = {
 	id: string;
-	userType?: string | null | undefined;
 };
 
 type CreateMessagePayload = {
 	enquiryId: string;
 	content: string;
-	receiverId?: string;
+	receiverId?: string | undefined;
 };
 
 type UpdateMessagePayload = {
-	content?: string;
-	receiverId?: string;
+	content?: string | undefined;
+	receiverId?: string | undefined;
 };
 
 type MessageListQuery = {
@@ -37,7 +36,6 @@ type EnquiryAccessContext = {
 	isAdmin: boolean;
 };
 
-const ADMIN_USER_TYPES = new Set(["admin", "superadmin"]);
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 30;
 const MAX_MESSAGE_LENGTH = 1000;
@@ -48,9 +46,12 @@ const createHttpError = (message: string, statusCode: number) => {
 	return error;
 };
 
-const isAdminUserType = (userType?: string | null): boolean => {
-	if (!userType) return false;
-	return ADMIN_USER_TYPES.has(userType.toLowerCase());
+const isAdminUserType = async (userId: string): Promise<boolean> => {
+	const adminRecord = await db.admin.findUnique({
+		where: { userId },
+		select: { role: true },
+	});
+	return !!adminRecord;
 };
 
 const normalizeText = (value: unknown): string | undefined => {
@@ -120,7 +121,7 @@ const getEnquiryAccessContext = async (
 		throw createHttpError("Enquiry not found", 404);
 	}
 
-	const isAdmin = isAdminUserType(requester.userType);
+const isAdmin = await isAdminUserType(requester.id);
 	const isParticipant =
 		requester.id === enquiry.userId || requester.id === enquiry.property.userId;
 
@@ -157,10 +158,10 @@ const resolveReceiverId = async (
 
 		const receiver = await db.user.findUnique({
 			where: { id: providedReceiverId },
-			select: { id: true, userType: true },
+			select: { id: true },
 		});
 
-		if (receiver && isAdminUserType(receiver.userType)) {
+		if (receiver && (await isAdminUserType(receiver.id))) {
 			return providedReceiverId;
 		}
 
@@ -187,14 +188,12 @@ const messageInclude = {
 		select: {
 			id: true,
 			email: true,
-			userType: true,
 		},
 	},
 	receiver: {
 		select: {
 			id: true,
 			email: true,
-			userType: true,
 		},
 	},
 } as const;

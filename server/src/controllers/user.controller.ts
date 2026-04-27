@@ -87,7 +87,6 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 		const {
 			email,
 			password,
-			userType,
 			phone,
 			profileType,
 			fullName,
@@ -107,9 +106,6 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 		}
 		if (!password || typeof password !== "string" || password.length < 8) {
 			return res.status(400).json({ message: "Password must be at least 8 characters" });
-		}
-		if (userType && !["admin", "user"].includes(userType)) {
-			return res.status(400).json({ message: "Invalid userType. Must be 'admin' or 'user'" });
 		}
 		if (profileType && !["individual", "company", "koperasi"].includes(profileType)) {
 			return res.status(400).json({
@@ -132,7 +128,6 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 		// Sign up with password AND complete profile in ONE transaction
 		// Better Auth automatically hashes password before database storage
 		const result = await signUpAndCompleteProfile(email, password, {
-			userType,
 			phone,
 			profileType,
 			fullName,
@@ -207,14 +202,10 @@ export const registerAndCompleteProfileController = async (req: Request, res: Re
 // Better Auth has already created the User record
 export const completeProfileController = async (req: Request, res: Response) => {
 	try {
-		const { email, userType, phone, profileType, fullName, identityNo, companyName, koperasiName, registrationNo, firstName, lastName, name } = req.body;
+		const { email, phone, profileType, fullName, identityNo, companyName, koperasiName, registrationNo, firstName, lastName, name } = req.body;
 
 		if (!email) {
 			return res.status(400).json({ message: "email is required" });
-		}
-
-		if (userType && !["admin", "user"].includes(userType)) {
-			return res.status(400).json({ message: "Invalid userType" });
 		}
 
 		if (profileType && !["individual", "company", "koperasi"].includes(profileType)) {
@@ -223,7 +214,6 @@ export const completeProfileController = async (req: Request, res: Response) => 
 
 		const user = await completeUserProfile({
 			email,
-			userType,
 			phone,
 			profileType,
 			fullName,
@@ -358,7 +348,15 @@ export const loginController = async (req: Request, res: Response) => {
 				// Continue with login response even if email fails
 			});
 
-			// Return enhanced response with userType
+			// Get admin role if user is admin
+			const prismaAny = db as any;
+			const adminRecord = await (prismaAny).admin.findUnique({
+				where: { userId: responseBody.user.id },
+				select: { role: true },
+			});
+			const adminRole = adminRecord?.role ?? null;
+
+			// Return enhanced response with adminRole
 			// Session cookie is managed by Better Auth with all session config applied
 			return res.status(200).json({
 				success: true,
@@ -370,7 +368,7 @@ export const loginController = async (req: Request, res: Response) => {
 					email: responseBody.user.email,
 					emailVerified: responseBody.user.emailVerified,
 					image: responseBody.user.image,
-					userType: user.userType, // Include userType from database
+					adminRole,
 					createdAt: responseBody.user.createdAt,
 					updatedAt: responseBody.user.updatedAt,
 				},

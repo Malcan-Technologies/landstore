@@ -23,7 +23,6 @@ export const registerChatHandler = (socket: AppSocket): void => {
 	if (!userId) return;
 	const requester = {
 		id: userId,
-		userType: socket.data.user?.userType,
 	};
 
 	socket.on(SOCKET_EVENTS.CHAT.JOIN_ENQUIRY, async (payload, ack) => {

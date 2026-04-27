@@ -9,7 +9,6 @@ export type AckResponse<T = unknown> = {
 export type SocketUser = {
 	id: string;
 	email?: string;
-	userType?: string;
 };
 
 export type NotificationRealtimePayload = {

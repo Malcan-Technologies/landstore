@@ -101,7 +101,6 @@ export const getEntityTypeById = async (entityTypeId: string) => {
 							select: {
 								id: true,
 								email: true,
-								userType: true,
 							},
 						},
 						createdAt: true,

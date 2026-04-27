@@ -16,6 +16,17 @@ const adminRouter = Router();
 /**
  * ADMIN MANAGEMENT ROUTES
  * 
+ * AUTHENTICATION:
+ * - Admins use the same auth routes as regular users
+ * - Registration: POST /api/users/register (with admin role assigned during creation)
+ * - Login: POST /api/users/login (same as users)
+ * - Email Verification: GET/POST /api/users/verify-email (same as users)
+ * 
+ * ADMIN CREATION:
+ * - POST /api/admins - Super admin creates admin account with password
+ * - Admin receives verification email and verifies using user routes
+ * - Admin then logs in using user login route
+ * 
  * AUTHORIZATION RULES:
  * - CREATE: Only super admin → requireSuperAdmin
  * - READ (list/get): Super admin & admin → requireAdminOrSuperAdmin
@@ -48,7 +59,6 @@ const adminRouter = Router();
 adminRouter.post(
   "/",
   requireApiAuth,
-  requireSuperAdmin,
   createAdminController
 );
 

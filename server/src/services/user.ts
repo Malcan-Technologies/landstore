@@ -1,18 +1,16 @@
 import db from "../../config/prisma.js";
 import { auth } from "../../config/auth.js";
 import { transformMediaWithSignedUrl } from "./signedUrlTransformer.js";
-import type { User, UserType } from "@prisma/client";
+import type { User } from "@prisma/client";
 
 type UpdateUserPayload = {
   email?: string;
   phone?: string | null;
-  userType?: UserType;
   profileMediaId?: string;
 };
 
 type CreateUserProfilePayload = {
   email: string;
-  userType?: UserType | undefined;
   phone?: string | undefined;
   profileType?: "individual" | "company" | "koperasi" | undefined;
   fullName?: string | undefined;
@@ -33,7 +31,7 @@ const normalizePhone = (phone?: string | null) => {
   return value ? value : null;
 };
 
-const isValidUserType = (value?: string): value is UserType => {
+const isValidUserType = (value?: string): boolean => {
   return value === "admin" || value === "user";
 };
 
@@ -45,6 +43,19 @@ const buildDisplayName = (
   if (name?.trim()) return name.trim();
   const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim();
   return fullName || null;
+};
+
+/**
+ * Helper: Get admin role for a user
+ * Returns "admin", "superadmin", or null if not an admin
+ */
+const getUserAdminRole = async (userId: string): Promise<"admin" | "superadmin" | null> => {
+  const prismaAny = db as any;
+  const adminRecord = await prismaAny.admin.findUnique({
+    where: { userId },
+    select: { role: true },
+  });
+  return adminRecord?.role ?? null;
 };
 
 const transformUserMediaWithSignedUrls = async (user: any) => {
@@ -139,7 +150,6 @@ export const registerAndCompleteProfile = async (
 				where: { id: userId },
 				data: {
 					phone: normalizePhone(profileData.phone),
-					userType: profileData.userType ?? "user",
 				},
 			});
 
@@ -255,11 +265,10 @@ export const completeUserProfile = async (
 		where: { id: user.id },
 		data: {
 			phone: normalizePhone(payload.phone),
-			userType: payload.userType ?? "user",
 		},
 	});
 
-	// Create user profile details
+	// Upsert user profile detail
 	await upsertUserProfileDetail(user.id, payload);
 
 	// Associate entity types if provided
@@ -422,7 +431,6 @@ export const signUpAndCompleteProfile = async (
         where: { id: userId },
         data: {
           phone: normalizePhone(profileData.phone),
-          userType: profileData.userType ?? "user",
         },
       });
 
@@ -595,7 +603,7 @@ export const getAllUsers = async (page: number = 1, limit: number = 10) => {
 };
 
 export const updateUserById = async (id: string, payload: UpdateUserPayload) => {
-  const updateData: { email?: string; phone?: string | null; userType?: UserType; profileMediaId?: string } = {};
+  const updateData: { email?: string; phone?: string | null; profileMediaId?: string } = {};
 
   if (payload.email !== undefined) {
     updateData.email = normalizeEmail(payload.email);
@@ -603,15 +611,6 @@ export const updateUserById = async (id: string, payload: UpdateUserPayload) => 
 
   if (payload.phone !== undefined) {
     updateData.phone = normalizePhone(payload.phone);
-  }
-
-  if (payload.userType !== undefined) {
-    if (!isValidUserType(payload.userType)) {
-      const badRequestError = new Error("Invalid userType");
-      (badRequestError as Error & { statusCode?: number }).statusCode = 400;
-      throw badRequestError;
-    }
-    updateData.userType = payload.userType;
   }
 
   if (payload.profileMediaId !== undefined) {
@@ -705,6 +704,9 @@ export const getUserCompleteProfile = async (userId: string) => {
     (notFoundError as Error & { statusCode?: number }).statusCode = 404;
     throw notFoundError;
   }
+
+  // Get admin role if user is an admin
+  const adminRole = await getUserAdminRole(userId);
 
   // Determine profile type
   let profileType: "individual" | "company" | "koperasi" | null = null;
@@ -804,11 +806,14 @@ export const getUserCompleteProfile = async (userId: string) => {
     email: user.email,
     emailVerified: user.emailVerified,
     image: user.image,
-    userType: user.userType,
     phone: user.phone,
     profileMediaId: user.profileMediaId,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
+
+    // Admin role (replaces old userType field)
+    // "admin", "superadmin", or null (means regular user)
+    adminRole,
 
     // Profile type and specific details
     profileType,

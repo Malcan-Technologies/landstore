@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import type { UserType } from "@prisma/client";
 import db from "../../config/prisma.js";
+
+const prismaAny = db as any;
 
 /**
  * Middleware to check user role
@@ -22,7 +23,7 @@ export const requireRole = (role: "superadmin" | "admin" | "user") =>
       // Fetch user from database to check role
       const dbUser = await db.user.findUnique({
         where: { id: user.id },
-        select: { id: true, userType: true, email: true },
+        select: { id: true, email: true },
       });
       // Check if user exists in database
       if (!dbUser) {
@@ -33,18 +34,22 @@ export const requireRole = (role: "superadmin" | "admin" | "user") =>
         });
       }
 
-      const userRole = dbUser.userType.toLowerCase();
-      const requiredRole = role.toLowerCase();
+      const adminRecord = await prismaAny.admin.findUnique({
+        where: { userId: dbUser.id },
+        select: { role: true },
+      });
+      const userRole = adminRecord?.role ?? "user";
+      const requiredRole = role;
 
       // Superadmin is a universal override for all role-gated routes.
       if (userRole !== requiredRole && userRole !== "superadmin") {
         console.warn(
-          `Access denied: User ${dbUser.email} (${dbUser.id}) has role '${dbUser.userType}', required '${role}'`
+          `Access denied: User ${dbUser.email} (${dbUser.id}) has role '${userRole}', required '${role}'`
         );
         return res.status(403).json({ 
           error: "Forbidden",
-          message: `Access denied. This resource requires '${role}' permissions, but your account is configured as '${dbUser.userType}'. Contact an administrator if you need access level changes.`,
-          userRole: dbUser.userType,
+          message: `Access denied. This resource requires '${role}' permissions, but your account is configured as '${userRole}'. Contact an administrator if you need access level changes.`,
+          userRole,
           requiredRole: role
         });
       }
@@ -88,7 +93,7 @@ export const requireAdminOrSuperAdmin = async (
 
     const dbUser = await db.user.findUnique({
       where: { id: user.id },
-      select: { id: true, userType: true, email: true },
+      select: { id: true, email: true },
     });
 
     if (!dbUser) {
@@ -99,15 +104,21 @@ export const requireAdminOrSuperAdmin = async (
       });
     }
 
+    const adminRecord = await prismaAny.admin.findUnique({
+      where: { userId: dbUser.id },
+      select: { role: true },
+    });
+    const userRole = adminRecord?.role ?? "user";
+
     // Check if user is admin or superadmin
-    if (dbUser.userType !== "admin" && dbUser.userType !== "superadmin") {
+    if (userRole !== "admin" && userRole !== "superadmin") {
       console.warn(
-        `Access denied: User ${dbUser.email} (${dbUser.id}) must be admin or superadmin, but is '${dbUser.userType}'`
+        `Access denied: User ${dbUser.email} (${dbUser.id}) must be admin or superadmin, but is '${userRole}'`
       );
       return res.status(403).json({
         error: "Forbidden",
         message: "Access denied. This resource requires 'admin' or 'superadmin' permissions.",
-        userRole: dbUser.userType,
+        userRole,
       });
     }
 
@@ -142,7 +153,7 @@ export const requireUser = async (
 
     const dbUser = await db.user.findUnique({
       where: { id: user.id },
-      select: { id: true, userType: true, email: true },
+      select: { id: true, email: true },
     });
 
     if (!dbUser) {
@@ -150,16 +161,6 @@ export const requireUser = async (
       return res.status(401).json({ 
         error: "Unauthorized",
         message: "User account not found. Your account may have been deleted or suspended."
-      });
-    }
-
-    // Verify user is either admin or user (validation check)
-    if (!["superadmin","admin", "user"].includes(dbUser.userType)) {
-      console.error(`Invalid user type '${dbUser.userType}' for user ${dbUser.email}`);
-      return res.status(403).json({ 
-        error: "Forbidden",
-        message: `Invalid account configuration detected. Please contact support for assistance.`,
-        userRole: dbUser.userType
       });
     }
 

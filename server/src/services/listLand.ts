@@ -262,7 +262,6 @@ const includePropertyRelations = {
 			name: true,
 			phone: true,
 			image: true,
-			userType: true,
 			status: true,
 			individuals: {
 				select: {
@@ -653,7 +652,6 @@ export const createListLand = async (
  */
 export const getListLands = async (
 	userId: string,
-	userType: string,
 	query: GetLandsQuery
 ) => {
 	const page =
@@ -668,7 +666,14 @@ export const getListLands = async (
 
 	const where: Prisma.PropertyWhereInput = {};
 
-	if (userType !== "admin") {
+	// Check if user is an admin by querying Admin table
+	const adminRecord = await db.admin.findUnique({
+		where: { userId },
+		select: { role: true },
+	});
+
+	// If not an admin, filter to only their own properties
+	if (!adminRecord) {
 		where.userId = userId;
 	}
 
@@ -1062,9 +1067,17 @@ export const requestListLandChanges = async (
 				where: { id: propertyId },
 				data: {
 					status: "draft",
-					adminAction: trimmedReason,
 				},
 				include: includePropertyRelations,
+			});
+
+			await (trx as any).adminAction.create({
+				data: {
+					userId: adminId,
+					listingId: propertyId,
+					status: "draft",
+					reason: trimmedReason,
+				},
 			});
 
 			const notificationContent = [
@@ -1108,8 +1121,7 @@ export const requestListLandChanges = async (
  */
 export const deleteListLandById = async (
 	propertyId: string,
-	userId: string,
-	userType: string
+	userId: string
 ) => {
 	const existingProperty = await db.property.findUnique({
 		where: { id: propertyId },
@@ -1119,8 +1131,14 @@ export const deleteListLandById = async (
 		throw createHttpError("Property not found", 404);
 	}
 
+	// Check if user is admin by querying Admin table
+	const adminRecord = await db.admin.findUnique({
+		where: { userId },
+		select: { role: true },
+	});
+
 	// Check authorization: only admin or property owner can delete
-	if (userType !== "admin" && existingProperty.userId !== userId) {
+	if (!adminRecord && existingProperty.userId !== userId) {
 		throw createHttpError(
 			"You do not have permission to delete this property",
 			403
@@ -2115,11 +2133,19 @@ export const softDeleteListLand = async (
 				where: { id: propertyId },
 				data: {
 					status: "deleted",
-					isLocked: true,
-					adminAction: trimmedReason,
 				},
 				include: includePropertyRelations,
 			});
+
+			await (trx as any).adminAction.create({
+				data: {
+					userId: adminId,
+					listingId: propertyId,
+					status: "deleted",
+					reason: trimmedReason,
+				},
+			});
+
 			const notificationContent = [
 				`Your listing \"${property.title}\" (Listing Code: ${property.listingCode}) has been permanently deleted for extreme policy violations.`,
 				`Administrative reason: ${trimmedReason}`,
@@ -2190,11 +2216,19 @@ export const rejectListLand = async (
 				where: { id: propertyId },
 				data: {
 					status: "rejected",
-					isLocked: true,
-					adminAction: trimmedReason,
 				},
 				include: includePropertyRelations,
 			});
+
+			await (trx as any).adminAction.create({
+				data: {
+					userId: adminId,
+					listingId: propertyId,
+					status: "rejected",
+					reason: trimmedReason,
+				},
+			});
+
 			const notificationContent = [
 				`Your listing "${property.title}" (Listing Code: ${property.listingCode}) has been rejected and locked.`,
 				`Administrative reason: ${trimmedReason}`,

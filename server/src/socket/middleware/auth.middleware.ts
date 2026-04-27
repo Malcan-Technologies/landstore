@@ -27,10 +27,6 @@ export const socketAuthMiddleware = async (
 		socket.data.user = {
 			id: session.user.id,
 			email: session.user.email,
-			userType:
-				typeof (session.user as { userType?: unknown }).userType === "string"
-					? ((session.user as { userType?: string }).userType ?? "user")
-					: "user",
 		};
 
 		return next();

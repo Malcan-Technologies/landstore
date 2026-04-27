@@ -231,7 +231,7 @@ export const getListLandsController = async (req: Request, res: Response) => {
 			status: req.query.status as string
 		}
 
-		const result = await getListLands(requester.id, requester.userType, query);
+		const result = await getListLands(requester.id, query);
 
 		return res.status(200).json(result);
 	} catch (error: unknown) {
@@ -395,8 +395,7 @@ export const deleteListLandController = async (req: Request, res: Response) => {
 
 		const result = await deleteListLandById(
 			propertyId,
-			requester.id,
-			requester.userType
+			requester.id
 		);
 
 		return res.status(200).json(result);

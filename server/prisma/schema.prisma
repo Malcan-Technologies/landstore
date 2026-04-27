@@ -11,7 +11,6 @@ model User {
   id                String                  @id @default(uuid())
   email             String                  @unique
   phone             String?
-  userType          UserType                @default(user)
   profileMediaId    String?
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
@@ -34,6 +33,17 @@ model User {
   shortlistFolders  ShortlistFolder[]
   profileMedia      Media?                  @relation("UserProfileMedia", fields: [profileMediaId], references: [id])
   entityTypes       UserEntityType[]
+  admin             Admin?
+  adminActions      AdminAction[]
+}
+
+model Admin {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  role      AdminRole @default(admin)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {
@@ -194,7 +204,6 @@ model Property {
   titleTypeId         String
   landMediaId         String?
   tanahRizabMelayu    Boolean?
-  adminAction         String?
   dealTypes           DealType[]
   terrainChips        TerrainType[]
   featureTags         FeatureTag[]
@@ -223,8 +232,24 @@ model Property {
   utilization         Utilization           @relation(fields: [utilizationId], references: [id])
   enquiries           PropertyEnquiry[]
   shortlistedBy       ShortlistProperty[]
+  adminActions        AdminAction[]
 
   @@index([userId])
+}
+
+model AdminAction {
+  id        String   @id @default(uuid())
+  userId    String
+  listingId String
+  status    String
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Property @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([listingId])
 }
 
 model LeaseholdDetail {
@@ -376,9 +401,8 @@ model ShortlistProperty {
   @@unique([folderId, propertyId])
 }
 
-enum UserType {
+enum AdminRole {
   admin
-  user
   superadmin
 }
 

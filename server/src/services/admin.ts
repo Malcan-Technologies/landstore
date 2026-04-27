@@ -1,5 +1,8 @@
 import db from "../../config/prisma.js";
-import type { User, UserType } from "@prisma/client";
+import { signUpAndCompleteProfile } from "./user.js";
+
+type AdminRole = "admin" | "superadmin";
+const prismaAny = db as any;
 
 /**
  * ADMIN SERVICE
@@ -12,60 +15,42 @@ import type { User, UserType } from "@prisma/client";
  */
 
 /**
- * Create a new admin
+ * Create a new admin using the same registration system as users
  * Only super admin can create admins
  * 
- * @param adminData - Admin profile data
+ * @param adminData - Admin registration data with password
  * @throws Error if user already exists or invalid data
  */
 export const createAdmin = async (adminData: {
   email: string;
+  password: string;
   phone?: string;
   name?: string;
   firstName?: string;
   lastName?: string;
 }) => {
-  const normalizedEmail = adminData.email.trim().toLowerCase();
+  const { email, password, phone, name, firstName, lastName } = adminData;
 
-  // Check if admin with this email already exists
-  const existingAdmin = await db.user.findUnique({
-    where: { email: normalizedEmail },
+  // Use the existing user registration system
+  const registrationResult = await signUpAndCompleteProfile(email, password, {
+    phone,
+    name,
+    firstName,
+    lastName,
   });
 
-  if (existingAdmin) {
-    const error = new Error("Admin with this email already exists");
-    (error as any).statusCode = 409;
-    throw error;
-  }
-
-  // Create admin user
-  const displayName =
-    adminData.name ||
-    `${adminData.firstName || ""} ${adminData.lastName || ""}`.trim() ||
-    normalizedEmail;
-
-  const admin = await db.user.create({
+  // Create admin record for the new user
+  const adminRecord = await prismaAny.admin.create({
     data: {
-      email: normalizedEmail,
-      phone: adminData.phone?.trim() || null,
-      name: displayName,
-      userType: "admin",
-      status: "active",
-      emailVerified: false,
-    },
-    select: {
-      id: true,
-      email: true,
-      phone: true,
-      name: true,
-      userType: true,
-      status: true,
-      createdAt: true,
-      emailVerified: true,
+      userId: registrationResult.userId,
+      role: "admin",
     },
   });
 
-  return admin;
+  return {
+    ...registrationResult,
+    adminRole: adminRecord.role,
+  };
 };
 
 /**
@@ -76,59 +61,72 @@ export const getAllAdmins = async (filters?: {
   status?: "active" | "inactive" | "suspended" | undefined;
   search?: string | undefined;
 }) => {
-  const where: any = {
-    userType: "admin",
-  };
+  const where: any = {};
 
   if (filters?.status) {
-    where.status = filters.status;
+    where.user = { ...(where.user ?? {}), status: filters.status };
   }
 
   if (filters?.search) {
-    where.OR = [
-      { email: { contains: filters.search, mode: "insensitive" } },
-      { name: { contains: filters.search, mode: "insensitive" } },
-    ];
+    where.user = {
+      ...(where.user ?? {}),
+      OR: [
+        { email: { contains: filters.search, mode: "insensitive" } },
+        { name: { contains: filters.search, mode: "insensitive" } },
+      ],
+    };
   }
 
-  const admins = await db.user.findMany({
+  const admins = await prismaAny.admin.findMany({
     where,
     select: {
-      id: true,
-      email: true,
-      phone: true,
-      name: true,
-      userType: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-      emailVerified: true,
+      role: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          name: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          emailVerified: true,
+        },
+      },
     },
     orderBy: {
-      createdAt: "desc",
+      user: {
+        createdAt: "desc",
+      },
     },
   });
 
-  return admins;
+  return admins.map((admin: any) => ({
+    ...admin.user,
+  }));
 };
 
 /**
  * Get admin by ID
  */
 export const getAdminById = async (adminId: string) => {
-  const admin = await db.user.findUnique({
-    where: { id: adminId },
+  const admin = await prismaAny.admin.findUnique({
+    where: { userId: adminId },
     select: {
-      id: true,
-      email: true,
-      phone: true,
-      name: true,
-      userType: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-      emailVerified: true,
-      image: true,
+      role: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          name: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          emailVerified: true,
+          image: true,
+        },
+      },
     },
   });
 
@@ -138,19 +136,23 @@ export const getAdminById = async (adminId: string) => {
     throw error;
   }
 
-  if (admin.userType !== "admin") {
-    const error = new Error("User is not an admin");
-    (error as any).statusCode = 400;
-    throw error;
-  }
+  return {
+    ...admin.user,
+  };
+};
 
-  return admin;
+const getRequesterAdminRole = async (requesterId: string): Promise<AdminRole | null> => {
+  const requesterAdmin = await prismaAny.admin.findUnique({
+    where: { userId: requesterId },
+    select: { role: true },
+  });
+
+  return requesterAdmin?.role ?? null;
 };
 
 /**
  * Update admin details
  * Both super admin and admin can update other admins
- * Cannot update their own userType
  */
 export const updateAdmin = async (
   adminId: string,
@@ -162,15 +164,12 @@ export const updateAdmin = async (
   },
   requesterId: string,
 ) => {
-  // Get super admin
-  const superAdmin = await db.user.findUnique({
-    where: { id: requesterId },
-    select: { id: true, userType: true, email: true },
-  })
+  const requesterRole = await getRequesterAdminRole(requesterId);
+
   // Get target admin
-  const targetAdmin = await db.user.findUnique({
-    where: { id: adminId },
-    select: { id: true, userType: true, email: true },
+  const targetAdmin = await prismaAny.admin.findUnique({
+    where: { userId: adminId },
+    select: { role: true, userId: true },
   });
 
   if (!targetAdmin) {
@@ -179,14 +178,8 @@ export const updateAdmin = async (
     throw error;
   }
 
-  if (targetAdmin.userType !== "admin") {
-    const error = new Error("Target user is not an admin");
-    (error as any).statusCode = 400;
-    throw error;
-  }
-
   // Check authorization: only super admin can update
-  if (superAdmin?.userType !== "superadmin") {
+  if (requesterRole !== "superadmin") {
     const error = new Error("Only super admin can update admin details");
     (error as any).statusCode = 403;
     throw error;
@@ -215,7 +208,6 @@ export const updateAdmin = async (
       email: true,
       phone: true,
       name: true,
-      userType: true,
       status: true,
       createdAt: true,
       updatedAt: true,
@@ -223,7 +215,9 @@ export const updateAdmin = async (
     },
   });
 
-  return updatedAdmin;
+  return {
+    ...updatedAdmin,
+  };
 };
 
 /**
@@ -237,11 +231,7 @@ export const deleteAdmin = async (
   adminId: string,
   requesterId: string
 ) => {
-  // Get super admin
-  const superAdmin = await db.user.findUnique({
-    where: { id: requesterId },
-    select: { id: true, userType: true, email: true },
-  })
+  const requesterRole = await getRequesterAdminRole(requesterId);
   // Prevent self-deletion
   if (adminId === requesterId) {
     const error = new Error("You cannot delete your own admin account");
@@ -250,9 +240,9 @@ export const deleteAdmin = async (
   }
 
   // Get target admin
-  const targetAdmin = await db.user.findUnique({
-    where: { id: adminId },
-    select: { id: true, userType: true, email: true },
+  const targetAdmin = await prismaAny.admin.findUnique({
+    where: { userId: adminId },
+    select: { role: true, user: { select: { id: true, email: true, name: true } } },
   });
 
   if (!targetAdmin) {
@@ -261,16 +251,16 @@ export const deleteAdmin = async (
     throw error;
   }
 
-  if (targetAdmin.userType !== "admin") {
-    const error = new Error("Target user is not an admin");
-    (error as any).statusCode = 400;
+  // Check authorization
+  // Only super admin and admin can delete admins
+  if (requesterRole !== "superadmin" && requesterRole !== "admin") {
+    const error = new Error("Only super admin or admin can delete admin accounts");
+    (error as any).statusCode = 403;
     throw error;
   }
 
-  // Check authorization
-  // Only super admin and admin can delete admins
-  if (superAdmin?.userType !== "superadmin" ) {
-    const error = new Error("Only super admin or admin can delete admin accounts");
+  if (requesterRole === "admin" && targetAdmin.role === "superadmin") {
+    const error = new Error("Admins cannot delete super admin accounts");
     (error as any).statusCode = 403;
     throw error;
   }
@@ -282,13 +272,14 @@ export const deleteAdmin = async (
       id: true,
       email: true,
       name: true,
-      userType: true,
     },
   });
 
   return {
     message: "Admin account deleted successfully",
-    deletedAdmin,
+    deletedAdmin: {
+      ...deletedAdmin,
+    },
   };
 };
 
@@ -298,9 +289,10 @@ export const deleteAdmin = async (
  */
 export const promoteToAdmin = async (
   userId: string,
-  requesterId: string,
-  requesterRole: UserType
+  requesterId: string
 ) => {
+  const requesterRole = await getRequesterAdminRole(requesterId);
+
   // Check authorization
   if (requesterRole !== "superadmin") {
     const error = new Error("Only super admin can promote users to admin");
@@ -311,7 +303,7 @@ export const promoteToAdmin = async (
   // Get user
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, userType: true, email: true },
+    select: { id: true, email: true },
   });
 
   if (!user) {
@@ -320,30 +312,45 @@ export const promoteToAdmin = async (
     throw error;
   }
 
-  if (user.userType === "admin") {
+  const existingAdmin = await prismaAny.admin.findUnique({
+    where: { userId: user.id },
+    select: { role: true },
+  });
+
+  if (existingAdmin) {
     const error = new Error("User is already an admin");
     (error as any).statusCode = 400;
     throw error;
   }
 
   // Promote to admin
-  const promotedUser = await db.user.update({
-    where: { id: userId },
-    data: { userType: "admin" },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      userType: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+  const promotedUser = await db.$transaction(async (trx) => {
+    await (trx as any).admin.create({
+      data: {
+        userId,
+        role: "admin",
+      },
+    });
+
+    return trx.user.update({
+      where: { id: userId },
+      data: {},
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   });
 
   return {
     message: "User promoted to admin successfully",
-    user: promotedUser,
+    user: {
+      ...promotedUser,
+    },
   };
 };
 
@@ -354,9 +361,10 @@ export const promoteToAdmin = async (
  */
 export const demoteAdmin = async (
   adminId: string,
-  requesterId: string,
-  requesterRole: UserType
+  requesterId: string
 ) => {
+  const requesterRole = await getRequesterAdminRole(requesterId);
+
   // Prevent self-demotion
   if (adminId === requesterId) {
     const error = new Error("You cannot demote yourself");
@@ -372,9 +380,9 @@ export const demoteAdmin = async (
   }
 
   // Get admin
-  const admin = await db.user.findUnique({
-    where: { id: adminId },
-    select: { id: true, userType: true, email: true },
+  const admin = await prismaAny.admin.findUnique({
+    where: { userId: adminId },
+    select: { role: true, userId: true },
   });
 
   if (!admin) {
@@ -383,29 +391,36 @@ export const demoteAdmin = async (
     throw error;
   }
 
-  if (admin.userType !== "admin") {
-    const error = new Error("User is not an admin");
+  if (admin.role === "superadmin") {
+    const error = new Error("Super admin cannot be demoted through this endpoint");
     (error as any).statusCode = 400;
     throw error;
   }
 
   // Demote to regular user
-  const demotedUser = await db.user.update({
-    where: { id: adminId },
-    data: { userType: "user" },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      userType: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+  const demotedUser = await db.$transaction(async (trx) => {
+    await (trx as any).admin.delete({
+      where: { userId: adminId },
+    });
+
+    return trx.user.update({
+      where: { id: adminId },
+      data: {},
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   });
 
   return {
     message: "Admin demoted to user successfully",
-    user: demotedUser,
+    user: {
+      ...demotedUser,
+    },
   };
 };
