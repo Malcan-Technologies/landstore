@@ -217,7 +217,7 @@ const LoginModal = ({ open, onClose, initialTab = "login" }) => {
 
       // Better Auth returns { user, session }
       if (response.user) {
-        dispatch(loginSuccess(response.user));
+        dispatch(loginSuccess({ ...response.user, token: response?.token || response?.user?.token || "" }));
         resetLoginState();
         onClose();
       } else {

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Loading from "@/components/common/Loading";
@@ -13,6 +13,7 @@ import StepperTick from "@/components/svg/StepperTick";
 import UpRight from "@/components/svg/UpRight";
 import { enquiryService } from "@/services/enquiryService";
 import { messageService } from "@/services/messageService";
+import { SOCKET_EVENTS, acquireSocketConnection, joinChatEnquiryRoom, leaveChatEnquiryRoom, offSocketEvent, onSocketEvent, releaseSocketConnection } from "@/services/socketService";
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80";
 const progressSteps = ["Submitted", "Verification", "Under negotiation", "Matched", "Completed"];
@@ -224,6 +225,22 @@ const sortChatMessages = (messages) => {
   });
 };
 
+const upsertChatMessage = (currentMessages, nextMessage) => {
+  if (!nextMessage?.id) {
+    return Array.isArray(currentMessages) ? currentMessages : [];
+  }
+
+  return sortChatMessages([...(Array.isArray(currentMessages) ? currentMessages : []).filter((item) => item.id !== nextMessage.id), nextMessage]);
+};
+
+const removeChatMessage = (currentMessages, messageId) => {
+  if (!Array.isArray(currentMessages) || !messageId) {
+    return Array.isArray(currentMessages) ? currentMessages : [];
+  }
+
+  return currentMessages.filter((item) => item.id !== messageId);
+};
+
 const mapMessageToChatMessage = (message, requesterId) => {
   const senderId = message?.senderId || message?.sender?.id || "";
   const receiverId = message?.receiverId || message?.receiver?.id || "";
@@ -279,6 +296,7 @@ const EnquiryDetailPage = ({ params }) => {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatError, setChatError] = useState("");
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const enquirySnapshotRef = useRef(null);
 
   const currentStep = useMemo(() => {
     if (!enquiryData) return 1;
@@ -336,16 +354,8 @@ const EnquiryDetailPage = ({ params }) => {
       setChatError("");
 
       try {
-        const [enquiryResult, messageResult] = await Promise.allSettled([
-          enquiryService.getEnquiryById(enquiryid),
-          messageService.getMessagesByEnquiry(enquiryid, { page: 1, limit: 100 }),
-        ]);
-
-        if (enquiryResult.status !== "fulfilled") {
-          throw enquiryResult.reason;
-        }
-
-        const normalized = normalizeEnquiryPayload(enquiryResult.value);
+        const enquiryResult = await enquiryService.getEnquiryById(enquiryid);
+        const normalized = normalizeEnquiryPayload(enquiryResult);
 
         if (mounted) {
           if (!normalized) {
@@ -354,14 +364,9 @@ const EnquiryDetailPage = ({ params }) => {
             return;
           }
 
+          enquirySnapshotRef.current = normalized;
           setEnquiryData(buildEnquiryViewModel(normalized));
-
-          if (messageResult.status === "fulfilled") {
-            setChatMessages(buildChatMessages(normalized, messageResult.value));
-          } else {
-            setChatMessages(buildChatMessages(normalized, { data: normalized?.messages || [] }));
-            setChatError(messageResult.reason?.message || "Failed to load chat history.");
-          }
+          setChatMessages(buildChatMessages(normalized, { data: normalized?.messages || [] }));
         }
       } catch (apiError) {
         if (mounted) {
@@ -380,6 +385,106 @@ const EnquiryDetailPage = ({ params }) => {
       mounted = false;
     };
   }, [enquiryid]);
+
+  useEffect(() => {
+    if (!enquiryid || !enquiryData?.requesterId) {
+      return;
+    }
+
+    acquireSocketConnection();
+
+    const requesterId = enquiryData.requesterId;
+    const updateAdminPreview = (message) => {
+      if (!message || message.sender !== "admin") {
+        return;
+      }
+
+      setEnquiryData((currentValue) => {
+        if (!currentValue) {
+          return currentValue;
+        }
+
+        return {
+          ...currentValue,
+          adminMessage: message.content,
+          adminDate: formatDate(message.createdAt),
+        };
+      });
+    };
+
+    const handleChatHistory = (payload) => {
+      if (String(payload?.enquiryId || "") !== String(enquiryid)) {
+        return;
+      }
+
+      const enquirySnapshot = enquirySnapshotRef.current;
+      if (!enquirySnapshot) {
+        return;
+      }
+
+      const nextMessages = buildChatMessages(enquirySnapshot, { data: payload?.messages || [] });
+      setChatMessages(nextMessages);
+
+      const latestAdminMessage = [...nextMessages].reverse().find((item) => item.sender === "admin");
+      if (latestAdminMessage) {
+        updateAdminPreview(latestAdminMessage);
+      }
+    };
+
+    const handleNewMessage = (payload) => {
+      if (String(payload?.enquiryId || "") !== String(enquiryid)) {
+        return;
+      }
+
+      const mappedMessage = mapMessageToChatMessage(payload, requesterId);
+      if (!mappedMessage) {
+        return;
+      }
+
+      setChatMessages((currentMessages) => upsertChatMessage(currentMessages, mappedMessage));
+      updateAdminPreview(mappedMessage);
+    };
+
+    const handleUpdatedMessage = (payload) => {
+      if (String(payload?.enquiryId || "") !== String(enquiryid)) {
+        return;
+      }
+
+      const mappedMessage = mapMessageToChatMessage(payload, requesterId);
+      if (!mappedMessage) {
+        return;
+      }
+
+      setChatMessages((currentMessages) => upsertChatMessage(currentMessages, mappedMessage));
+      updateAdminPreview(mappedMessage);
+    };
+
+    const handleDeletedMessage = (payload) => {
+      if (String(payload?.enquiryId || "") !== String(enquiryid)) {
+        return;
+      }
+
+      setChatMessages((currentMessages) => removeChatMessage(currentMessages, payload?.id));
+    };
+
+    onSocketEvent(SOCKET_EVENTS.CHAT.HISTORY, handleChatHistory);
+    onSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+    onSocketEvent(SOCKET_EVENTS.CHAT.UPDATED_MESSAGE, handleUpdatedMessage);
+    onSocketEvent(SOCKET_EVENTS.CHAT.DELETED_MESSAGE, handleDeletedMessage);
+
+    void joinChatEnquiryRoom(enquiryid).catch((socketError) => {
+      setChatError(socketError?.message || "Failed to connect to live chat.");
+    });
+
+    return () => {
+      offSocketEvent(SOCKET_EVENTS.CHAT.HISTORY, handleChatHistory);
+      offSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+      offSocketEvent(SOCKET_EVENTS.CHAT.UPDATED_MESSAGE, handleUpdatedMessage);
+      offSocketEvent(SOCKET_EVENTS.CHAT.DELETED_MESSAGE, handleDeletedMessage);
+      void leaveChatEnquiryRoom(enquiryid);
+      releaseSocketConnection();
+    };
+  }, [enquiryData?.requesterId, enquiryid]);
 
   const enquiry = enquiryData;
 

@@ -30,8 +30,13 @@ const notificationTypeStyles = {
   },
 };
 
-const NotificationList = ({ notifications = [] }) => {
+const NotificationList = ({ notifications = [], onNotificationClick }) => {
   const router = useRouter();
+
+  const handleNavigate = async (notification) => {
+    await onNotificationClick?.(notification);
+    router.push(notification?.href || "/user-dashboard/notifications");
+  };
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -61,7 +66,7 @@ const NotificationList = ({ notifications = [] }) => {
 
                 <button
                   type="button"
-                  onClick={() => router.push(notification.href)}
+                  onClick={() => handleNavigate(notification)}
                   className={`mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium transition sm:mt-4 sm:gap-2 sm:text-[14px] md:text-[15px] ${style.linkClassName}`}
                 >
                   <span>View details</span>

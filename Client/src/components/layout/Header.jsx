@@ -12,8 +12,9 @@ import ArrowDown from "@/components/svg/ArrowDown";
 import Button from "@/components/common/Button";
 import LoginModal from "@/components/auth/LoginModal";
 import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
-import { notificationService } from "@/services/notificationService";
+import { resetSocketConnection } from "@/services/socketService";
 import { logoutUser } from "@/store/authSlice";
 import { hasAdminAccess } from "@/utils/auth";
 
@@ -43,53 +44,20 @@ const Header = () => {
   const [authTab, setAuthTab] = useState("login");
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const notificationRef = useRef(null);
   const profileMenuRef = useRef(null);
   const notificationUserId = isAuth && user?.id ? user.id : "";
-
-  useEffect(() => {
-    if (!notificationUserId) {
-      return;
-    }
-
-    let mounted = true;
-
-    const mapNotification = (item) => {
-      const apiType = item?.type;
-      const type = apiType === "urgent" ? "warning" : "success";
-      const createdAt = item?.createdAt ? new Date(item.createdAt) : null;
-
-      return {
-        id: item?.id,
-        title: apiType === "urgent" ? "Action needed" : "Notification",
-        message: item?.content || "",
-        timeLabel: createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toLocaleString() : "",
-        type,
-        href: "/user-dashboard/notifications",
-        read: Boolean(item?.isRead),
-      };
-    };
-
-    (async () => {
-      try {
-        const response = await notificationService.getNotifications({ page: 1, limit: 5, userId: notificationUserId });
-        const items = Array.isArray(response) ? response : response?.data;
-        const mapped = Array.isArray(items) ? items.map(mapNotification).filter((n) => n?.id) : [];
-        if (mounted) {
-          setNotifications(mapped);
-        }
-      } catch (_error) {
-        if (mounted) {
-          setNotifications([]);
-        }
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [notificationUserId]);
+  const {
+    notifications,
+    unreadCount,
+    isMarkingAllRead,
+    markNotificationRead,
+    markAllNotificationsRead,
+  } = useRealtimeNotifications({
+    enabled: hydrated && isAuth && Boolean(notificationUserId),
+    userId: notificationUserId,
+    limit: 5,
+  });
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -110,11 +78,24 @@ const Header = () => {
   }, []);
 
   const handleLogout = async () => {
+    resetSocketConnection();
     setProfileMenuOpen(false);
     await dispatch(logoutUser());
     router.push("/");
     // setAuthTab("login");
     // setIsLoginOpen(true);
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification?.id || notification?.read) {
+      return;
+    }
+
+    await markNotificationRead(notification.id);
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    await markAllNotificationsRead();
   };
 
   const handleOpenProfile = () => {
@@ -213,11 +194,18 @@ const Header = () => {
                     aria-label="Open notifications"
                   >
                     <Bell width={18} height={18} fill="currentColor" />
-                    <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-green-secondary" />
+                    {unreadCount > 0 ? <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-green-secondary" /> : null}
                   </button>
 
                   {notificationOpen ? (
-                    <NotificationPopup notifications={notifications} onClose={() => setNotificationOpen(false)} />
+                    <NotificationPopup
+                      notifications={notifications}
+                      onClose={() => setNotificationOpen(false)}
+                      onNotificationClick={handleNotificationClick}
+                      onMarkAllRead={handleMarkAllNotificationsRead}
+                      isMarkingAllRead={isMarkingAllRead}
+                      hasUnread={unreadCount > 0}
+                    />
                   ) : null}
                 </div>
                 <span className="h-6 w-[1.5px] bg-border-card" aria-hidden />

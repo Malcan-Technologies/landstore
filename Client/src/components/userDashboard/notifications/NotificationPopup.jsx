@@ -30,19 +30,24 @@ const notificationTypeStyles = {
   },
 };
 
-const NotificationPopup = ({ notifications = [], onClose }) => {
+const NotificationPopup = ({ notifications = [], onClose, onNotificationClick, onMarkAllRead, isMarkingAllRead = false, hasUnread = false }) => {
   const router = useRouter();
 
-  const handleNavigate = (href) => {
+  const handleNavigate = async (notification) => {
+    await onNotificationClick?.(notification);
     onClose?.();
-    router.push(href);
+    router.push(notification?.href || "/user-dashboard/notifications");
+  };
+
+  const handleMarkAllRead = async () => {
+    await onMarkAllRead?.();
   };
 
   return (
     <div className="absolute left-1/2 top-[calc(100%+10px)] z-40 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-[18px] border border-border-card bg-white shadow-[0px_24px_60px_rgba(15,61,46,0.12)] sm:top-[calc(100%+12px)] sm:w-[22rem] md:left-auto md:right-0 md:w-96 md:translate-x-0">
       <div className="flex items-center justify-between border-b border-border-card px-3 py-2.5 sm:px-4 sm:py-3">
         <h3 className="text-[13px] font-semibold text-gray2 sm:text-[14px] md:text-[15px]">Notification</h3>
-        <button type="button" onClick={() => handleNavigate("/user-dashboard/notifications")} className="text-[12px] font-medium text-green-primary transition hover:text-green-secondary sm:text-[13px] md:text-[14px]">
+        <button type="button" onClick={() => { onClose?.(); router.push("/user-dashboard/notifications"); }} className="text-[12px] font-medium text-green-primary transition hover:text-green-secondary sm:text-[13px] md:text-[14px]">
           View all
         </button>
       </div>
@@ -55,7 +60,7 @@ const NotificationPopup = ({ notifications = [], onClose }) => {
             <button
               type="button"
               key={notification.id}
-              onClick={() => handleNavigate(notification.href)}
+              onClick={() => handleNavigate(notification)}
               className={`w-full block px-3 py-2.5 transition hover:brightness-[0.99] sm:px-4 sm:py-3 ${style.itemClassName} ${index !== notifications.length - 1 ? "border-b border-border-card" : ""}`}
             >
               <div className="flex items-start gap-2.5 sm:gap-3">
@@ -77,10 +82,11 @@ const NotificationPopup = ({ notifications = [], onClose }) => {
 
       <button
         type="button"
-        onClick={onClose}
-        className="flex h-10 w-full items-center justify-center border-t border-border-card text-[13px] font-medium text-gray5 transition hover:bg-background-primary hover:text-gray2 sm:h-11 sm:text-[14px] md:h-12 md:text-[15px]"
+        onClick={handleMarkAllRead}
+        disabled={!hasUnread || isMarkingAllRead}
+        className="flex h-10 w-full items-center justify-center border-t border-border-card text-[13px] font-medium text-gray5 transition hover:bg-background-primary hover:text-gray2 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:text-[14px] md:h-12 md:text-[15px]"
       >
-        Mark all as read
+        {isMarkingAllRead ? "Marking..." : "Mark all as read"}
       </button>
     </div>
   );

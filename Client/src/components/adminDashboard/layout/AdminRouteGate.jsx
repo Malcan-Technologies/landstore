@@ -110,7 +110,7 @@ const AdminRouteGate = ({ children }) => {
       const adminRole = getNormalizedAdminRole(loggedInUser);
 
       if (hasAdminAccess(loggedInUser)) {
-        dispatch(loginSuccess(loggedInUser));
+        dispatch(loginSuccess({ ...loggedInUser, token: response?.token || loggedInUser?.token || "" }));
         persistAdminAuth({ email: loggedInUser?.email || trimmedEmail, adminRole });
         setErrorMessage("");
         setIsRedirecting(false);
