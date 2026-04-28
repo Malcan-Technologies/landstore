@@ -1,6 +1,6 @@
+import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../../../config/auth.js";
 import type { AppSocket } from "../types/socket.types.js";
-import { getSessionTokenFromSocket } from "../utils/socket.utils.js";
 
 const SOCKET_UNAUTHORIZED_MESSAGE = "Unauthorized socket connection";
 
@@ -9,17 +9,10 @@ export const socketAuthMiddleware = async (
 	next: (err?: Error) => void
 ) => {
 	try {
-		const token = getSessionTokenFromSocket(socket);
-		if (!token) {
-			return next(new Error(SOCKET_UNAUTHORIZED_MESSAGE));
-		}
-
 		const session = await auth.api.getSession({
-			headers: {
-				cookie: `__session=${token}`,
-			},
+			headers: fromNodeHeaders(socket.handshake.headers),
 		});
-
+		console.log(session);
 		if (!session?.user?.id) {
 			return next(new Error(SOCKET_UNAUTHORIZED_MESSAGE));
 		}
