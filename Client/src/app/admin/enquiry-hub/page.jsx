@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/common/Loading";
 import Table from "@/components/common/Table";
@@ -113,12 +113,19 @@ export default function EnquiryHubPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadEnquiries = async () => {
       setIsLoading(true);
       setError("");
 
       try {
-        const response = await enquiryService.getAllEnquiries({ page: 1, limit: 100 });
+        const query = searchTerm.trim();
+        const response = await enquiryService.getAllEnquiries({
+          page: 1,
+          limit: 100,
+          ...(query ? { search: query } : {}),
+        });
         const items = normalizeEnquiries(response);
 
         const mappedItems = items.map((item, index) => {
@@ -137,30 +144,29 @@ export default function EnquiryHubPage() {
           };
         });
 
-        setEnquiries(mappedItems);
+        if (isMounted) {
+          setEnquiries(mappedItems);
+        }
       } catch (apiError) {
-        setError(apiError?.message || "Failed to load enquiries.");
+        if (isMounted) {
+          setError(apiError?.message || "Failed to load enquiries.");
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    loadEnquiries();
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      loadEnquiries();
+    }, searchTerm.trim() ? 300 : 0);
 
-  const filteredEnquiries = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-
-    if (!query) {
-      return enquiries;
-    }
-
-    return enquiries.filter((item) => {
-      return [item.enquiryId, item.listingId, item.requester, item.requesterType, item.status, item.interestType]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query));
-    });
-  }, [enquiries, searchTerm]);
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchTerm]);
 
   if (isLoading) {
     return <Loading />;
@@ -180,7 +186,7 @@ export default function EnquiryHubPage() {
     { label: "Actions", className: "text-right", contentClassName: "text-right" },
   ];
 
-  const rows = filteredEnquiries.map((enquiry) => ({
+  const rows = enquiries.map((enquiry) => ({
     key: enquiry.id,
     cells: [
       {

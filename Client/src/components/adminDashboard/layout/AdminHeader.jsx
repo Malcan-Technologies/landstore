@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import Bell from "@/components/svg/Bell";
@@ -19,6 +19,26 @@ import { logoutUser } from "@/store/authSlice";
 
 const ADMIN_AUTH_STORAGE_KEY = "landstore_admin_auth";
 
+const adminPageTitles = [
+  { href: "/admin/homepage-content", label: "Homepage Content" },
+  { href: "/admin/admin-management", label: "Admin Management" },
+  { href: "/admin/review-listings", label: "Review Listings" },
+  { href: "/admin/review-lisitings", label: "Review Listings" },
+  { href: "/admin/enquiry-hub", label: "Enquiry Hub" },
+  { href: "/admin/users", label: "Users" },
+  { href: "/admin/map", label: "Map" },
+  { href: "/admin", label: "Dashboard" },
+];
+
+const getAdminPageTitle = (pathname) => {
+  if (!pathname) {
+    return "Dashboard";
+  }
+
+  const matchedItem = adminPageTitles.find(({ href }) => pathname === href || pathname.startsWith(`${href}/`));
+  return matchedItem?.label || "Dashboard";
+};
+
 const AdminSearchParamsHandler = ({ onToken }) => {
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -32,6 +52,7 @@ const AdminSearchParamsHandler = ({ onToken }) => {
 
 const AdminHeader = ({ onMenuClick }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useDispatch();
   const { isAuth, user, hydrated } = useSelector((state) => state.auth);
 
@@ -112,6 +133,7 @@ const AdminHeader = ({ onMenuClick }) => {
     "/user.png";
   const resolvedProfileImageSrc =
     typeof profileImageSrc === "string" && profileImageSrc.trim() ? profileImageSrc : "/user.png";
+  const pageTitle = getAdminPageTitle(pathname);
 
   return (
     <>
@@ -126,8 +148,8 @@ const AdminHeader = ({ onMenuClick }) => {
             >
               <ThreeBars size={18} color="#374151" />
             </button>
-            <h1 className="text-[16px] font-semibold leading-none text-gray2 sm:text-[17px]">Dashboard</h1>
-            <DoubleArrows size={14} color="#6B7280" />
+            <h1 className="text-[16px] font-semibold leading-none text-gray2 sm:text-[17px]">{pageTitle}</h1>
+            {/* <DoubleArrows size={14} color="#6B7280" /> */}
           </div>
 
           <div className="flex items-center py-3 text-sm font-medium">
@@ -141,7 +163,7 @@ const AdminHeader = ({ onMenuClick }) => {
                     className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-gray2 transition hover:bg-background-primary"
                     aria-label="Search"
                   >
-                    <Search size={16} color="#374151" />
+                    <Search size={16} color="currentColor" />
                   </button>
                 </div>
 
@@ -168,19 +190,19 @@ const AdminHeader = ({ onMenuClick }) => {
                   ) : null}
                 </div>
 
-                <div ref={profileMenuRef} className="relative">
+                <div ref={profileMenuRef} className="relative h-10">
                   <button
                     type="button"
                     onClick={() => setProfileMenuOpen((prev) => !prev)}
-                    className="inline-flex items-center gap-3 rounded-full bg-white pl-1 pr-1 text-[#0F172A] transition hover:bg-background-primary sm:gap-4 sm:pl-1.5 sm:pr-2"
+                    className="inline-flex h-full w-10 items-center justify-center gap-0 rounded-full bg-white px-1 text-[#0F172A] transition hover:bg-background-primary sm:w-auto sm:justify-start sm:gap-4 sm:pl-1.5 sm:pr-2"
                     aria-label="Open profile menu"
                   >
-                    <span className="relative flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-gray1 sm:h-8 sm:w-8">
+                    <span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-gray1">
                       <Image
                         src={resolvedProfileImageSrc}
                         alt="Admin profile"
                         fill
-                        sizes="(min-width: 640px) 32px, 16px"
+                        sizes="32px"
                         className="object-cover"
                         unoptimized
                       />

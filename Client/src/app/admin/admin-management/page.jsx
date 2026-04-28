@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Loading from "@/components/common/Loading";
 import Table from "@/components/common/Table";
 import UserViewModal from "@/components/adminDashboard/modals/UserViewModal";
@@ -42,6 +42,16 @@ const statusStyles = {
   Suspended: "bg-[#FFF1F2] text-[#EF4444]",
 };
 
+const normalizeAdminStatusSearch = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (["active", "inactive", "suspended"].includes(normalized)) {
+    return normalized;
+  }
+
+  return undefined;
+};
+
 const actionButtonBase = "inline-flex h-8 w-8 items-center justify-center rounded-[6px] transition border-0";
 
 export default function AdminManagementPage() {
@@ -69,11 +79,16 @@ export default function AdminManagementPage() {
   const openEditModal = (user) => setEditTarget(user);
   const closeEditModal = () => setEditTarget(null);
 
-  const loadAdmins = async () => {
+  const loadAdmins = useCallback(async (rawSearch = "") => {
     try {
       setIsLoading(true);
       setError("");
-      const response = await adminService.getAdmins();
+      const query = rawSearch.trim();
+      const matchedStatus = normalizeAdminStatusSearch(query);
+      const response = await adminService.getAdmins({
+        ...(matchedStatus ? { status: matchedStatus } : {}),
+        ...(!matchedStatus && query ? { search: query } : {}),
+      });
       const items = Array.isArray(response?.admins) ? response.admins : Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
       setAdmins(items.map(mapApiAdminToTableUser));
     } catch (err) {
@@ -82,11 +97,17 @@ export default function AdminManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadAdmins();
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      loadAdmins(searchValue);
+    }, searchValue.trim() ? 300 : 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [loadAdmins, searchValue]);
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
@@ -95,7 +116,7 @@ export default function AdminManagementPage() {
 
     try {
       await adminService.deleteAdmin(deleteTarget.id);
-      setAdmins((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+      await loadAdmins(searchValue);
       if (selectedUserId === deleteTarget.id) {
         setSelectedUserId(null);
       }
@@ -111,7 +132,7 @@ export default function AdminManagementPage() {
   const handleCreateAdmin = async (payload) => {
     try {
       await adminService.createAdmin(payload);
-      await loadAdmins();
+      await loadAdmins(searchValue);
       setIsCreateOpen(false);
     } catch (err) {
       throw err;
@@ -122,7 +143,7 @@ export default function AdminManagementPage() {
     if (!editTarget) return;
     try {
       await adminService.updateAdmin(editTarget.id, payload);
-      await loadAdmins();
+      await loadAdmins(searchValue);
       closeEditModal();
     } catch (err) {
       throw err;
@@ -131,16 +152,6 @@ export default function AdminManagementPage() {
 
   const selectedUser = useMemo(() => admins.find((u) => u.id === selectedUserId) ?? null, [selectedUserId, admins]);
 
-  const filteredAdmins = useMemo(() => {
-    const query = searchValue.trim().toLowerCase();
-    if (!query) return admins;
-
-    return admins.filter((user) => {
-      const haystack = [user.name, user.email, user.status].join(" ").toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [searchValue, admins]);
-
   const headers = [
     { label: "Name" },
     { label: "Email" },
@@ -148,7 +159,7 @@ export default function AdminManagementPage() {
     { label: "Actions", className: "text-right", contentClassName: "text-right" },
   ];
 
-  const rows = filteredAdmins.map((user) => ({
+  const rows = admins.map((user) => ({
     key: user.id,
     cells: [
       {
@@ -170,7 +181,13 @@ export default function AdminManagementPage() {
         content: (
           <div className="flex items-center gap-1.5 text-[#111827]">
             <Envelop size={12} color="#298064" />
-            <span className="truncate">{user.email}</span>
+            {user.email !== "-" ? (
+              <a href={`mailto:${user.email}`} className="truncate hover:underline">
+                {user.email}
+              </a>
+            ) : (
+              <span className="truncate">{user.email}</span>
+            )}
           </div>
         ),
       },
@@ -229,21 +246,21 @@ export default function AdminManagementPage() {
     ],
   }));
 
-  if (isLoading) return <Loading />;
+  if (isLoading && admins.length === 0) return <Loading />;
 
   return (
     <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background-primary px-4 py-5 sm:px-5">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#E9EDF5] bg-white p-4 sm:p-5">
         <div className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-[18px] font-semibold text-[#111827] sm:text-[22px]">Admin Management</h1>
-            <span className="inline-flex h-5 min-w-7 items-center justify-center rounded-full bg-[#EEF2FF] px-2 text-[12px] font-medium leading-none text-[#4338CA]">
+            <h1 className="whitespace-nowrap text-[18px] font-semibold text-[#111827] sm:text-[22px]">Admin Management</h1>
+            <span className="inline-flex whitespace-nowrap h-5 min-w-7 items-center justify-center rounded-full bg-[#EEF2FF] px-2 text-[12px] font-medium leading-none text-[#4338CA]">
               {admins.length} members
             </span>
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="flex h-8 w-full max-w-45 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[#9CA3AF] sm:max-w-45">
+            <label className="flex h-8 sm:h-10 w-full max-w-45 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3 text-[#9CA3AF] sm:max-w-45">
               <Search size={16} color="#111827" />
               <input
                 type="text"
@@ -256,12 +273,12 @@ export default function AdminManagementPage() {
 
             <Button
               onClick={() => setIsCreateOpen(true)}
-              className="group sm:h-10 h-8 justify-center gap-0 rounded-md px-2! sm:gap-2 sm:px-4!"
+              className="group sm:h-10 h-8 justify-center gap-0 rounded-md px-4! sm:gap-2 lg:px-4!"
             >
-              <span className="flex h-6 w-6 items-center justify-center bg-green-primary group-hover:bg-green-secondary transition-colors rounded text-white">
+              <span className="flex  items-center justify-center bg-green-primary group-hover:bg-green-secondary transition-colors rounded text-white">
                 <Plus size={14} color="white" aria-hidden />
               </span>
-              <span className="hidden sm:inline">Add admin</span>
+              <span className="hidden md:inline whitespace-nowrap">Add admin</span>
             </Button>
           </div>
         </div>

@@ -5,7 +5,18 @@ export const landService = {
   // Create listing (multipart/form-data supported)
   createListing: async (listingData, config = {}) => {
     try {
-      const response = await api.post('/list-lands/', listingData, config);
+      const response = await api.post('/list-lands/', listingData, {
+        ...config,
+        toastMessages: {
+          pendingTitle: 'Listing land',
+          pendingMessage: '',
+          successTitle: 'Land listed',
+          successMessage: '',
+          errorTitle: 'Land not listed',
+          errorMessage: '',
+          ...(config?.toastMessages || {}),
+        },
+      });
       return response.data;
     } catch (error) {
       throw error;
