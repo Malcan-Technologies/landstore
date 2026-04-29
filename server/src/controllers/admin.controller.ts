@@ -126,30 +126,64 @@ export const createAdminController = async (req: Request, res: Response) => {
  * 
  * Query params:
  * - status?: "active" | "inactive" | "suspended"
- * - search?: string (searches email and name)
+ * - search?: string (regex search across email, name, phone, status)
+ * - page?: number (default: 1)
+ * - limit?: number (default: 20, max: 100)
  */
 export const getAllAdminsController = async (req: Request, res: Response) => {
   try {
-    const { status, search } = req.query;
+    const { status, search, page, limit } = req.query;
     const requester = (req as any).user;
 
-    // Fetch all admins
-    let searchValue: string | undefined = undefined;
+    // Build filters object - only include properties that have actual values
+    const filters: {
+      status?: "active" | "inactive" | "suspended";
+      search?: string;
+    } = {};
+
+    // Extract status
+    let statusValue: string | undefined;
+    if (typeof status === "string") {
+      statusValue = status;
+    } else if (Array.isArray(status) && status.length > 0 && typeof status[0] === "string") {
+      statusValue = status[0];
+    }
+    if (statusValue && ["active", "inactive", "suspended"].includes(statusValue)) {
+      filters.status = statusValue as "active" | "inactive" | "suspended";
+    }
+
+    // Extract search
+    let searchValue: string | undefined;
     if (typeof search === "string") {
       searchValue = search;
     } else if (Array.isArray(search) && search.length > 0 && typeof search[0] === "string") {
       searchValue = search[0];
     }
-    
-    const admins = await getAllAdmins({
-      status: (Array.isArray(status) ? status[0] : status) as "active" | "inactive" | "suspended" | undefined,
-      search: searchValue,
-    });
+    if (searchValue) {
+      filters.search = searchValue;
+    }
+
+    // Extract pagination
+    const pagination: { page?: number; limit?: number } = {};
+    if (typeof page === "string") {
+      const pageNum = parseInt(page, 10);
+      if (!isNaN(pageNum) && pageNum > 0) pagination.page = pageNum;
+    }
+    if (typeof limit === "string") {
+      const limitNum = parseInt(limit, 10);
+      if (!isNaN(limitNum) && limitNum > 0) pagination.limit = limitNum;
+    }
+
+    // Fetch all admins
+    const result = await getAllAdmins(
+      Object.keys(filters).length > 0 ? filters : undefined,
+      Object.keys(pagination).length > 0 ? pagination : undefined,
+    );
 
     return res.status(200).json({
       message: "Admins retrieved successfully",
-      count: admins.length,
-      admins,
+      data: result.data,
+      meta: result.meta,
     });
   } catch (error) {
     const payload = getErrorPayload(error);

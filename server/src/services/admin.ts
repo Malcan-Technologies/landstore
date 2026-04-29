@@ -57,26 +57,51 @@ export const createAdmin = async (adminData: {
  * Get all admins
  * Super admin and admin can view all admins
  */
-export const getAllAdmins = async (filters?: {
-  status?: "active" | "inactive" | "suspended" | undefined;
-  search?: string | undefined;
-}) => {
+export const getAllAdmins = async (
+  filters?: {
+    status?: string;
+    search?: string;
+  },
+  pagination?: { page?: number; limit?: number },
+) => {
   const where: any = {};
+  const userConditions: any[] = [];
 
+  // ✅ Status filter (exact match — enum safe)
   if (filters?.status) {
-    where.user = { ...(where.user ?? {}), status: filters.status };
+    userConditions.push({ status: filters.status });
   }
 
+  // ✅ Search filter (ONLY valid Prisma string filters)
   if (filters?.search) {
-    where.user = {
-      ...(where.user ?? {}),
+    const search = filters.search;
+
+    userConditions.push({
       OR: [
-        { email: { contains: filters.search, mode: "insensitive" } },
-        { name: { contains: filters.search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
       ],
-    };
+    });
   }
 
+  // ✅ Combine conditions properly
+  if (userConditions.length > 0) {
+    where.user =
+      userConditions.length === 1
+        ? userConditions[0]
+        : { AND: userConditions };
+  }
+
+  // ✅ Pagination (safe bounds)
+  const page = Math.max(1, pagination?.page ?? 1);
+  const limit = Math.min(Math.max(1, pagination?.limit ?? 20), 100);
+  const skip = (page - 1) * limit;
+
+  // ✅ Count query (same logic, no duplication issues)
+  const total = await prismaAny.admin.count({ where });
+
+  // ✅ Main query
   const admins = await prismaAny.admin.findMany({
     where,
     select: {
@@ -99,11 +124,24 @@ export const getAllAdmins = async (filters?: {
         createdAt: "desc",
       },
     },
+    take: limit,
+    skip,
   });
 
-  return admins.map((admin: any) => ({
+  // ✅ Flatten response
+  const data = admins.map((admin: any) => ({
     ...admin.user,
   }));
+
+  return {
+    data,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    },
+  };
 };
 
 /**

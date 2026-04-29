@@ -107,8 +107,10 @@ export const getEnquiriesController = async (
 			typeof req.query.status === "string" ? req.query.status : undefined;
 		const page = req.query.page ? Number(req.query.page) : undefined;
 		const limit = req.query.limit ? Number(req.query.limit) : undefined;
+		const search = req.query.search as string;
 
 		const result = await getEnquiries({
+			search,
 			status,
 			page,
 			limit,
