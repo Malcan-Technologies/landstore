@@ -9,6 +9,7 @@ const baseContainerClassName =
 
 const mapOptions = {
   disableDefaultUI: true,
+  fullscreenControl: true,
   clickableIcons: false,
   styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
 };

@@ -94,8 +94,13 @@ export default function UsersPage() {
   const sentinelRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
-  const fetchUsersPage = useCallback(async (page) => {
-    const response = await userService.getAllUsers({ page, limit: PAGE_LIMIT });
+  const fetchUsersPage = useCallback(async (page, rawSearch = "") => {
+    const query = rawSearch.trim();
+    const response = await userService.getAllUsers({
+      page,
+      limit: PAGE_LIMIT,
+      ...(query ? { search: query } : {}),
+    });
     const items = extractUsers(response).map(mapApiUserToTableUser);
     const pagination = extractPagination(response);
     return { items, pagination };
@@ -109,8 +114,9 @@ export default function UsersPage() {
         setIsLoading(true);
         setLoadError("");
         setCurrentPage(1);
+        setHasMore(true);
 
-        const { items, pagination } = await fetchUsersPage(1);
+        const { items, pagination } = await fetchUsersPage(1, searchValue);
         if (!isMounted) {
           return;
         }
@@ -137,12 +143,15 @@ export default function UsersPage() {
       }
     };
 
-    loadInitialPage();
+    const timeoutId = window.setTimeout(() => {
+      loadInitialPage();
+    }, searchValue.trim() ? 300 : 0);
 
     return () => {
       isMounted = false;
+      window.clearTimeout(timeoutId);
     };
-  }, [fetchUsersPage]);
+  }, [fetchUsersPage, searchValue]);
 
   useEffect(() => {
     if (isLoading || isFetchingMore || !hasMore) {
@@ -164,7 +173,7 @@ export default function UsersPage() {
         setIsFetchingMore(true);
 
         try {
-          const { items, pagination } = await fetchUsersPage(nextPage);
+          const { items, pagination } = await fetchUsersPage(nextPage, searchValue);
           setUsers((previous) => mergeUniqueUsers(previous, items));
           setCurrentPage(nextPage);
 
@@ -192,36 +201,12 @@ export default function UsersPage() {
     return () => {
       observer.disconnect();
     };
-  }, [currentPage, fetchUsersPage, hasMore, isFetchingMore, isLoading]);
+  }, [currentPage, fetchUsersPage, hasMore, isFetchingMore, isLoading, searchValue]);
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
     [selectedUserId, users]
   );
-
-  const filteredUsers = useMemo(() => {
-    const query = searchValue.trim().toLowerCase();
-    if (!query) {
-      return users;
-    }
-
-    return users.filter((user) => {
-      const haystack = [
-        user.userId,
-        user.entityType,
-        user.name,
-        user.company,
-        user.email,
-        user.phone,
-        user.identityNo,
-        user.status,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(query);
-    });
-  }, [searchValue, users]);
 
   const headers = [
     { label: "User ID" },
@@ -233,7 +218,7 @@ export default function UsersPage() {
     { label: "Actions", className: "text-right", contentClassName: "text-right" },
   ];
 
-  const rows = filteredUsers.map((user) => ({
+  const rows = users.map((user) => ({
     key: user.id,
     cells: [
       {
@@ -264,11 +249,23 @@ export default function UsersPage() {
           <div className="space-y-1 leading-4">
             <div className="flex items-center gap-1.5 text-[#111827]">
               <Envelop size={12} color="#298064" />
-              <span className="truncate">{user.email}</span>
+              {user.email !== "-" ? (
+                <a href={`mailto:${user.email}`} className="truncate hover:underline">
+                  {user.email}
+                </a>
+              ) : (
+                <span className="truncate">{user.email}</span>
+              )}
             </div>
             <div className="flex items-center gap-1.5 text-[#111827]">
               <Telephone size={12} color="#8B5CF6" />
-              <span className="truncate">{user.phone}</span>
+              {user.phone !== "-" ? (
+                <a href={`tel:${user.phone}`} className="truncate hover:underline">
+                  {user.phone}
+                </a>
+              ) : (
+                <span className="truncate">{user.phone}</span>
+              )}
             </div>
           </div>
         ),

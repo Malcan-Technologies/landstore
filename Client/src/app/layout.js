@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import AppLayoutShell from "@/components/layout/AppLayoutShell";
 import ReduxProvider from "@/components/providers/ReduxProvider";
+import ToastProvider from "@/components/providers/ToastProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,7 +22,9 @@ export default function RootLayout({ children }) {
         className={`${inter.className} antialiased min-h-screen w-full overflow-x-hidden bg-background-primary`}
       >
         <ReduxProvider>
-          <AppLayoutShell>{children}</AppLayoutShell>
+          <ToastProvider>
+            <AppLayoutShell>{children}</AppLayoutShell>
+          </ToastProvider>
         </ReduxProvider>
       </body>
     </html>

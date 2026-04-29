@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/common/Loading";
 import Table from "@/components/common/Table";
@@ -36,11 +36,14 @@ const formatRelativeTime = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
 
-  const diffMs = Date.now() - date.getTime();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const submittedDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffMs = today.getTime() - submittedDay.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays <= 0) return "Today";
-  if (diffDays === 1) return "1 day ago";
+  if (diffDays === 1) return "Yesterday";
   return `${diffDays} days ago`;
 };
 
@@ -112,11 +115,13 @@ export default function ReviewListingsPage() {
     router.push(`/admin/review-listings/${listing.listingSlug}`);
   };
 
-  const fetchPage = useCallback(async (pageNum, signal) => {
+  const fetchPage = useCallback(async (pageNum, signal, rawSearch = "") => {
+    const query = rawSearch.trim();
     const response = await landService.getAdminListings({
       page: pageNum,
       limit: PAGE_LIMIT,
       recentlyApproved: false,
+      ...(query ? { search: query } : {}),
     });
     if (signal?.aborted) return null;
     return response;
@@ -133,7 +138,7 @@ export default function ReviewListingsPage() {
         setPage(1);
         setHasMore(true);
 
-        const response = await fetchPage(1, controller.signal);
+        const response = await fetchPage(1, controller.signal, searchValue);
         if (!isMounted || !response) return;
 
         const items = extractListingItems(response);
@@ -149,13 +154,16 @@ export default function ReviewListingsPage() {
       }
     };
 
-    loadInitial();
+    const timeoutId = window.setTimeout(() => {
+      loadInitial();
+    }, searchValue.trim() ? 300 : 0);
 
     return () => {
       isMounted = false;
       controller.abort();
+      window.clearTimeout(timeoutId);
     };
-  }, [fetchPage]);
+  }, [fetchPage, searchValue]);
 
   useEffect(() => {
     if (!hasMore || isFetchingMore || isLoading) return;
@@ -169,7 +177,7 @@ export default function ReviewListingsPage() {
         const nextPage = page + 1;
         setIsFetchingMore(true);
         try {
-          const response = await fetchPage(nextPage);
+          const response = await fetchPage(nextPage, undefined, searchValue);
           if (!response) return;
           const items = extractListingItems(response);
           const pagination = response?.pagination ?? response?.data?.pagination ?? {};
@@ -190,7 +198,7 @@ export default function ReviewListingsPage() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, isFetchingMore, isLoading, page, fetchPage]);
+  }, [hasMore, isFetchingMore, isLoading, page, fetchPage, searchValue]);
 
   const updateListingStatus = useCallback(async (listing, newStatus) => {
     const id = listing.id;
@@ -215,28 +223,7 @@ export default function ReviewListingsPage() {
     }
   }, []);
 
-  const filteredReviewListings = useMemo(() => {
-    const query = searchValue.trim().toLowerCase();
-
-    if (!query) return reviewListings;
-
-    return reviewListings.filter((listing) => {
-      const text = [
-        listing.listingId,
-        listing.ownerName,
-        listing.ownerType,
-        listing.region,
-        listing.area,
-        listing.dealTypes.join(" "),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return text.includes(query);
-    });
-  }, [reviewListings, searchValue]);
-
-  const rows = filteredReviewListings.map((listing) => ({
+  const rows = reviewListings.map((listing) => ({
     key: listing.id,
     data: listing,
     cells: [
@@ -324,7 +311,7 @@ export default function ReviewListingsPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-[18px] font-semibold text-[#111827] sm:text-[22px]">Listing Review Queue</h1>
             <span className="inline-flex h-4 min-w-7 items-center justify-center rounded-full bg-[#EEF2FF] px-2 text-[12px] font-medium leading-none text-[#4338CA]">
-              {filteredReviewListings.length}
+              {reviewListings.length}
             </span>
           </div>
 

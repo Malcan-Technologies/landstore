@@ -147,7 +147,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
           })}
         </nav>
       </div>
-
+{/* 
       <div className="px-4 py-4">
         <button type="button" className="flex w-full items-center gap-3 rounded-2xl bg-white text-left transition hover:bg-[#F9FAFB]" aria-label="Open user menu">
           <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray1">
@@ -168,7 +168,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
             <ArrowDown size={16} color="#3F3F46" className="-rotate-90" />
           </span>
         </button>
-      </div>
+      </div> */}
     </div>
   );
 
@@ -183,9 +183,10 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
             key={item.href}
             type="button"
             onClick={() => handleNavigate(item.href)}
-            className={`flex w-full items-center rounded-xl text-left text-[15px] transition md:justify-center md:px-0 lg:justify-start lg:px-3 ${
+            className={`group relative flex w-full items-center rounded-xl text-left text-[15px] transition md:justify-center md:px-0 lg:justify-start lg:px-3 ${
               isActive ? "bg-[#F3F4F6] font-medium text-[#111827]" : "text-[#3F3F46] hover:bg-[#F9FAFB]"
             } px-3 py-2.5 gap-3`}
+            aria-label={item.label}
           >
             <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
               <Icon
@@ -195,6 +196,9 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
               />
             </span>
             <span className="hidden lg:inline">{item.label}</span>
+            <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-[#111827] px-2.5 py-1.5 text-[12px] font-medium text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100 md:inline-flex lg:hidden">
+              {item.label}
+            </span>
           </button>
         );
       })}
@@ -220,7 +224,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
           {renderNavItems()}
         </div>
 
-        <div className="px-2 py-3 lg:hidden">
+        {/* <div className="px-2 py-3 lg:hidden">
           <button type="button" className="flex w-full items-center justify-center rounded-2xl bg-white text-left transition hover:bg-[#F9FAFB]" aria-label="Open user menu">
             <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray1">
               <Image
@@ -233,9 +237,9 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
               />
             </span>
           </button>
-        </div>
+        </div> */}
 
-        <div className="hidden px-4 py-4 lg:block">
+        {/* <div className="hidden px-4 py-4 lg:block">
           <button type="button" className="flex w-full items-center gap-3 rounded-2xl bg-white text-left transition hover:bg-[#F9FAFB]" aria-label="Open user menu">
             <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray1">
               <Image
@@ -255,7 +259,7 @@ const SideBar = ({ mobileOpen = false, onClose = () => {} }) => {
               <DoubleArrows size={16} color="#3F3F46" className="" />
             </span>
           </button>
-        </div>
+        </div> */}
       </aside>
 
       <Drawer
