@@ -104,29 +104,29 @@ api.request = function requestWithDedup(config) {
 };
 
 // Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const requestMethod = String(config?.method || '').toLowerCase();
+// api.interceptors.request.use(
+//   (config) => {
+//     const requestMethod = String(config?.method || '').toLowerCase();
 
-    if (MUTATION_METHODS.has(requestMethod)) {
-      config.timeout = 0;
-    }
+//     if (MUTATION_METHODS.has(requestMethod)) {
+//       config.timeout = 0;
+//     }
 
-    if (typeof window !== 'undefined') {
-      const user = localStorage.getItem('user');
-      if (user) {
-        const parsedUser = JSON.parse(user);
-        if (parsedUser.token) {
-          config.headers.Authorization = `Bearer ${parsedUser.token}`;
-        }
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+//     if (typeof window !== 'undefined') {
+//       const user = localStorage.getItem('user');
+//       if (user) {
+//         const parsedUser = JSON.parse(user);
+//         if (parsedUser.token) {
+//           config.headers.Authorization = `Bearer ${parsedUser.token}`;
+//         }
+//       }
+//     }
+//     return config;
+//   },
+//   (error) => {
+//     return Promise.reject(error);
+//   }
+// );
 
 // Response interceptor for error handling
 api.interceptors.response.use(

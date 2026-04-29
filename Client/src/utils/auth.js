@@ -19,6 +19,11 @@ export const getStoredUser = () => {
   }
 };
 
+
+/**
+ * Check if user is authenticated
+ * @returns {boolean} True if user is authenticated, false otherwise
+ */
 export const checkAuth = () => {
   if (typeof window === "undefined") {
     return false;

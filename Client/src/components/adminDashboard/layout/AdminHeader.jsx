@@ -191,7 +191,7 @@ const AdminHeader = ({ onMenuClick }) => {
 
   return (
     <>
-      <div className="sticky top-0 z-20 bg-white shadow-xs">
+      <div className="sticky top-0 z-50 bg-white shadow-xs">
         <div className="flex h-17 w-full items-stretch justify-between gap-4 px-4 md:px-6">
           <div className="flex min-w-0 items-center gap-2 py-3">
             <button

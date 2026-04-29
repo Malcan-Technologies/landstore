@@ -165,7 +165,7 @@ const PropertyGallery = ({ images = [], moreImagesLabel }) => {
             </button>
           </div>
 
-          <div className="relative z-10 overflow-hidden rounded-[22px] bg-black/50">
+          <div className="relative z-10 overflow-hidden bg-black/50">
             <div className="relative h-[44vh] min-h-55 sm:w-full sm:h-[58vh] sm:min-h-105">
               <Image
                 src={resolveImageSrc(images[activeImageIndex])}

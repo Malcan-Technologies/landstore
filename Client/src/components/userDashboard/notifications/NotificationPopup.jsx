@@ -44,7 +44,7 @@ const NotificationPopup = ({ notifications = [], onClose, onNotificationClick, o
   };
 
   return (
-    <div className="absolute left-1/2 top-[calc(100%+10px)] z-40 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-[18px] border border-border-card bg-white shadow-[0px_24px_60px_rgba(15,61,46,0.12)] sm:top-[calc(100%+12px)] sm:w-[22rem] md:left-auto md:right-0 md:w-96 md:translate-x-0">
+    <div className="absolute left-1/2 top-[calc(100%+10px)] z-70 w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-[18px] border border-border-card bg-white shadow-[0px_24px_60px_rgba(15,61,46,0.12)] sm:top-[calc(100%+12px)] sm:w-88 md:left-auto md:right-0 md:w-96 md:translate-x-0">
       <div className="flex items-center justify-between border-b border-border-card px-3 py-2.5 sm:px-4 sm:py-3">
         <h3 className="text-[13px] font-semibold text-gray2 sm:text-[14px] md:text-[15px]">Notification</h3>
         <button type="button" onClick={() => { onClose?.(); router.push("/user-dashboard/notifications"); }} className="text-[12px] font-medium text-green-primary transition hover:text-green-secondary sm:text-[13px] md:text-[14px]">
@@ -52,7 +52,7 @@ const NotificationPopup = ({ notifications = [], onClose, onNotificationClick, o
         </button>
       </div>
 
-      <div className="max-h-[360px] overflow-y-auto">
+      <div className="max-h-90 overflow-y-auto">
         {notifications.map((notification, index) => {
           const style = notificationTypeStyles[notification.type] ?? notificationTypeStyles.info;
 

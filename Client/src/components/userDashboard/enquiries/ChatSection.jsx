@@ -26,6 +26,8 @@ const formatDate = (value) => {
   });
 };
 
+const MAX_CHAT_MESSAGE_LENGTH = 1000;
+
 const ChatSection = ({
   enquiryId,
   existingMessages = [],
@@ -35,6 +37,7 @@ const ChatSection = ({
   sendError = "",
 }) => {
   const [inputText, setInputText] = useState("");
+  const [validationError, setValidationError] = useState("");
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
@@ -54,6 +57,13 @@ const ChatSection = ({
   const handleSendMessage = async () => {
     const nextMessage = inputText.trim();
     if (!nextMessage || isSending) return;
+
+    if (nextMessage.length > MAX_CHAT_MESSAGE_LENGTH) {
+      setValidationError(`Message cannot exceed ${MAX_CHAT_MESSAGE_LENGTH} characters`);
+      return;
+    }
+
+    setValidationError("");
 
     try {
       const result = await onSendMessage?.(nextMessage, enquiryId);
@@ -155,7 +165,13 @@ const ChatSection = ({
           <div className={`rounded-2xl ${isAdmin ? "border border-border-card bg-background-primary p-4" : "border border-[#D9DDE3] bg-white px-4 py-3 shadow-[0px_4px_12px_rgba(15,61,46,0.03)]"}`}>
             <textarea
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              maxLength={MAX_CHAT_MESSAGE_LENGTH}
+              onChange={(e) => {
+                setInputText(e.target.value);
+                if (validationError) {
+                  setValidationError("");
+                }
+              }}
               disabled={isSending}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -171,6 +187,11 @@ const ChatSection = ({
               placeholder={isAdmin ? "Type a mediation update..." : "Type a follow-up note to LandStore admin..."}
               className={`${isAdmin ? "h-24 w-full" : "min-h-27.5 w-full"} resize-none border-0 bg-transparent ${isAdmin ? "text-[11px] sm:text-[15px] lg:text-[13px] xl:text-[15px] text-[#111827] outline-none placeholder:text-[#A1A1AA]" : "text-[14px] text-gray2 outline-none placeholder:text-[#AEAEAE]"} ${isSending ? "cursor-not-allowed opacity-70" : ""}`}
             />
+
+            <div className="mt-2 flex items-center justify-between gap-3 text-[11px] leading-5 text-[#71717A]">
+              <span>{inputText.length}/{MAX_CHAT_MESSAGE_LENGTH}</span>
+              {validationError ? <span className="text-red-500">{validationError}</span> : null}
+            </div>
 
             <div className={`mt-${isAdmin ? "4" : "3"} flex items-center justify-end gap-2 ${isAdmin ? "" : "border-t border-border-card pt-3"}`}>
               <button type="button" className={`inline-flex h-8 w-8 items-center justify-center rounded-[10px] ${isAdmin ? "border border-[#E5E7EB] bg-[#FAFAFA] text-[#71717A] transition hover:bg-[#F4F4F5]" : "border border-border-card bg-[#FCFCFC] text-gray5 transition hover:bg-background-primary"}`}>

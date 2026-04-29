@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Loading from "@/components/common/Loading";
@@ -16,6 +16,7 @@ import RequestChangesModal from "@/components/adminDashboard/modals/RequestChang
 import RejectListingModal from "@/components/adminDashboard/modals/RejectListingModal";
 import PermanentDeleteModal from "@/components/adminDashboard/modals/PermanentDeleteModal";
 import Telephone from "@/components/svg/Telephone";
+import PropertyGallery from "@/components/landingPage/property/PropertyGallery";
 import { landService } from "@/services/landService";
 
 const infoLabelClass = "mb-2 text-[12px] font-medium text-white/50";
@@ -84,7 +85,26 @@ const mapApiToDetail = (data) => {
       : p?.media?.fileUrl
         ? [p.media.fileUrl]
         : [],
+    geranDocumentUrl: Array.isArray(p?.documents) && p.documents.length > 0
+      ? p.documents[0]?.media?.fileUrl || null
+      : null,
   };
+};
+
+const descriptionPreviewSteps = [1000, 2000];
+
+const handleDownloadGeran = (url, filename = "geran-document") => {
+  if (!url) {
+    alert("No geran document available for download");
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.target = "_blank";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 const verificationChecklist = [
@@ -92,6 +112,28 @@ const verificationChecklist = [
   { label: "Map pin acceptable", tone: "neutral" },
   { label: "Description does not contain bypass info", tone: "neutral" },
 ];
+
+const PropertyGalleryWrapper = ({ images, onClose }) => {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    // Programmatically click the first image button to open the gallery modal
+    const timer = setTimeout(() => {
+      const firstButton = containerRef.current?.querySelector('button');
+      if (firstButton) {
+        firstButton.click();
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="absolute opacity-0 pointer-events-none">
+      <PropertyGallery images={images} />
+    </div>
+  );
+};
 
 export default function ReviewListingDetailPage({ params }) {
   const router = useRouter();
@@ -104,6 +146,8 @@ export default function ReviewListingDetailPage({ params }) {
   const [activeModal, setActiveModal] = useState(null);
   const [isActionSubmitting, setIsActionSubmitting] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [descriptionExpandLevel, setDescriptionExpandLevel] = useState(0);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   useEffect(() => {
     if (!listingId) return;
@@ -175,24 +219,51 @@ export default function ReviewListingDetailPage({ params }) {
 
           {detail.images.length > 0 ? (
             <div className="mt-4 grid grid-cols-2 gap-3">
-              {detail.images.slice(0, 4).map((image, index) => (
-                <div key={`${image}-${index}`} className="relative h-39 overflow-hidden rounded-sm sm:h-44">
-                  <Image
-                    src={image}
-                    alt={`Listing preview ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="(min-width: 1280px) 25vw, 50vw"
-                    loading={index === 0 ? "eager" : "lazy"}
-                    unoptimized
-                  />
-                </div>
-              ))}
+              {detail.images.slice(0, 2).map((image, index) => {
+                const remainingCount = detail.images.length - 2;
+                const isLastImage = index === 1 && remainingCount > 0;
+
+                return (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    onClick={() => {
+                      setIsGalleryOpen(false);
+                      // Small delay to ensure unmount before remount
+                      setTimeout(() => setIsGalleryOpen(true), 10);
+                    }}
+                    className="relative h-39 overflow-hidden rounded-sm sm:h-44 text-left"
+                  >
+                    <Image
+                      src={image}
+                      alt={`Listing preview ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 1280px) 25vw, 50vw"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      unoptimized
+                    />
+                    {isLastImage ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-lg font-semibold">
+                        +{remainingCount}
+                      </div>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="mt-4 flex h-39 items-center justify-center rounded-sm bg-[#F5F5F5] text-[12px] text-gray5">
               No images uploaded
             </div>
+          )}
+
+          {isGalleryOpen && detail.images.length > 0 && (
+            <PropertyGalleryWrapper
+              key={`gallery-${Date.now()}`}
+              images={detail.images}
+              onClose={() => setIsGalleryOpen(false)}
+            />
           )}
 
           <div className="mt-4 flex items-start justify-between gap-4">
@@ -228,7 +299,51 @@ export default function ReviewListingDetailPage({ params }) {
           {detail.description ? (
             <div className="mt-6">
               <h2 className="text-[16px] font-semibold text-gray2">Public Description</h2>
-              <p className="mt-2 text-[12px] leading-5 text-gray5 sm:text-[13px]">{detail.description}</p>
+              {(() => {
+                const descriptionText = detail.description || "";
+                const firstDescriptionStep = descriptionPreviewSteps[0];
+                const shouldUseDescriptionSteps = descriptionText.length > firstDescriptionStep;
+                const currentDescriptionLimit =
+                  descriptionExpandLevel >= descriptionPreviewSteps.length
+                    ? descriptionText.length
+                    : descriptionPreviewSteps[descriptionExpandLevel];
+                const isShowingFullDescription =
+                  !shouldUseDescriptionSteps || descriptionText.length <= currentDescriptionLimit;
+                const displayedDescription = isShowingFullDescription
+                  ? descriptionText
+                  : `${descriptionText.slice(0, currentDescriptionLimit).trimEnd()}...`;
+                const canShowMoreDescription = shouldUseDescriptionSteps && !isShowingFullDescription;
+                const canShowLessDescription =
+                  shouldUseDescriptionSteps && isShowingFullDescription && descriptionExpandLevel > 0;
+
+                return (
+                  <>
+                    <p className="mt-2 text-[12px] leading-5 text-gray5 sm:text-[13px]">{displayedDescription}</p>
+                    {canShowMoreDescription ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDescriptionExpandLevel((previousLevel) =>
+                            Math.min(previousLevel + 1, descriptionPreviewSteps.length)
+                          )
+                        }
+                        className="mt-2 text-green-secondary text-[12px] font-medium hover:opacity-80 transition"
+                      >
+                        show more
+                      </button>
+                    ) : null}
+                    {canShowLessDescription ? (
+                      <button
+                        type="button"
+                        onClick={() => setDescriptionExpandLevel(0)}
+                        className="mt-2 text-green-secondary text-[12px] font-medium hover:opacity-80 transition"
+                      >
+                        show less
+                      </button>
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
           ) : null}
 
@@ -336,7 +451,11 @@ export default function ReviewListingDetailPage({ params }) {
                   <span className="text-[12px] text-white/60">/ per sqf</span>
                 </div>
               </div>
-              <button type="button" className="inline-flex items-center gap-2 text-[12px] font-medium text-greenbg transition hover:opacity-85">
+              <button
+                type="button"
+                onClick={() => handleDownloadGeran(detail?.geranDocumentUrl, `geran-${detail?.code || "document"}`)}
+                className="inline-flex items-center gap-2 text-[12px] font-medium text-greenbg transition hover:opacity-85"
+              >
                 <DownloadIcon />
                 Download Geran
               </button>

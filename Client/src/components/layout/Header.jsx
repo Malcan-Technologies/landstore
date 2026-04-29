@@ -208,7 +208,7 @@ const Header = () => {
 
   return (
     <>
-      <div className="shadow-sm bg-white fixed w-full z-10">
+      <div className="shadow-sm bg-white fixed w-full z-50">
         <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3 md:px-6 lg:gap-6">
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Hamburger Menu - Show below lg */}

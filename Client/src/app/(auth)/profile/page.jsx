@@ -318,11 +318,11 @@ const ProfilePage = () => {
                   </label>
                 </>
               )}
-              {isEmailVerified && (
+              {/* {isEmailVerified && (
                 <span className="absolute bottom-2 md:bottom-2 right-1 md:right-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full z-10">
                   <Verify width={28} height={28} />
                 </span>
-              )}
+              )} */}
             </div>
 
             <div className="max-w-155 items-center sm:items-start flex flex-col">
@@ -330,7 +330,7 @@ const ProfilePage = () => {
                 {isLoading ? "Loading..." : displayName}
               </h2>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span
+                {/* <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${
                     isEmailVerified
                       ? "bg-[#ECFDF3] text-active"
@@ -342,7 +342,7 @@ const ProfilePage = () => {
                     color={isEmailVerified ? "var(--color-active)" : "#B42318"}
                   />
                   {isEmailVerified ? "Identity Verified" : "Identity Not Verified"}
-                </span>
+                </span> */}
                 <span className="inline-flex items-center rounded-full bg-[#1F1F1F] px-2.5 py-1 text-[12px] font-medium text-white">
                   Member ID: {memberId}
                 </span>

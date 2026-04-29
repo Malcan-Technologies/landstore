@@ -49,7 +49,7 @@ const ListingCard = ({ listing, showFooter = true, onAction, onCardClick }) => {
       aria-label={onCardClick ? `Open ${listing.title} details` : undefined}
     >
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="relative h-auto sm:w-54  lg:w-60 xl:w-60 w-auto overflow-hidden rounded-lg">
+        <div className="relative h-auto max-h-50 sm:w-54  lg:w-60 xl:w-60 w-auto overflow-hidden rounded-lg">
           <img
             src={listing.image || fallbackImage}
             alt={listing.title}
