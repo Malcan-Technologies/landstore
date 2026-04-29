@@ -17,10 +17,13 @@ const Modal = ({
   closeButtonClassName = "absolute right-4 top-4 text-[30px] leading-none text-gray5 transition hover:text-gray7",
   closeLabel = "Close modal",
   as = Fragment,
+  disableBackdropClose = false,
 }) => {
+  const handleDialogClose = disableBackdropClose ? () => {} : onClose;
+
   return (
     <Transition show={open} as={as} appear>
-      <Dialog as="div" className="relative z-50" onClose={onClose} initialFocus={initialFocus}>
+      <Dialog as="div" className="relative z-50" onClose={handleDialogClose} initialFocus={initialFocus}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"

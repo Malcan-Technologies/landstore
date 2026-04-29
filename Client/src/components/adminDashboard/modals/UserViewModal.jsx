@@ -89,22 +89,22 @@ export default function UserViewModal({ open, onClose, user }) {
                 <Person size={34} color="#9CA3AF" />
               )}
             </div>
-            {user.userId ? (
+            {/* {user.userId ? (
               <span className="absolute bottom-0 right-0 inline-flex items-center justify-center">
                 <UserVerified size={29} />
               </span>
-            ) : null}
+            ) : null} */}
           </div>
 
           <div className="flex-1">
             <h2 className="text-[24px] font-semibold text-[#111827]">{user.name}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              {user.identityVerified || user.identityNo ? (
+              {/* {user.identityVerified || user.identityNo ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF3] px-2.5 py-1 text-[11px] font-medium text-[#1E9E57]">
                   <IdentityVerified size={15} />
                   <span className="font-medium">Identity Verified</span>
                 </span>
-              ) : null}
+              ) : null} */}
               {user.userId ? (
                 <span className="inline-flex rounded-full bg-[#111827] px-2.5 py-1 text-[11px] font-medium text-white">
                   Member ID: {user.userId.replace("#", "")}

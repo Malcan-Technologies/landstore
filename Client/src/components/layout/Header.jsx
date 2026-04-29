@@ -68,24 +68,20 @@ const Header = () => {
   useEffect(() => {
     if (!isAuth || !user?.id) return;
 
-    console.log("[Header] Setting up chat message listener");
 
     const handleNewMessage = (payload) => {
       const msgId = payload?.id;
 
       // Deduplication: skip if we already toasted this message
       if (isRecentlyToasted(msgId)) {
-        console.log("[Header] Skipping duplicate message:", msgId);
         return;
       }
 
-      console.log("[Header] 📨 Chat message received:", payload);
 
       const currentUser = getStoredUser();
       const isOwnMessage = String(payload?.senderId) === String(currentUser?.id);
 
       if (isOwnMessage) {
-        console.log("[Header] Skipping own message");
         return;
       }
 
@@ -104,7 +100,6 @@ const Header = () => {
           ? "/admin"
           : "/user-dashboard";
 
-      console.log("[Header] Showing toast for enquiry:", enquiryId, "href:", href);
 
       const title = enquiryId ? `Enquiry ${enquiryId.slice(0, 8)}...` : "New message";
       const description = messageContent.length > 50
@@ -123,7 +118,6 @@ const Header = () => {
     onSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
 
     return () => {
-      console.log("[Header] Removing chat message listener");
       offSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
     };
   }, [isAuth, user?.id]);

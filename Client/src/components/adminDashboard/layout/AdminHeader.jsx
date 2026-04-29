@@ -82,24 +82,20 @@ const AdminHeader = ({ onMenuClick }) => {
   useEffect(() => {
     if (!isAuth || !user?.id) return;
 
-    console.log("[AdminHeader] Setting up chat message listener");
 
     const handleNewMessage = (payload) => {
       const msgId = payload?.id;
 
       // Deduplication: skip if we already toasted this message
       if (isRecentlyToasted(msgId)) {
-        console.log("[AdminHeader] Skipping duplicate message:", msgId);
         return;
       }
 
-      console.log("[AdminHeader] 📨 Chat message received:", payload);
 
       const currentUser = getStoredUser();
       const isOwnMessage = String(payload?.senderId) === String(currentUser?.id);
 
       if (isOwnMessage) {
-        console.log("[AdminHeader] Skipping own message");
         return;
       }
 
@@ -111,7 +107,6 @@ const AdminHeader = ({ onMenuClick }) => {
 
       const href = enquiryId ? `/admin/enquiry-hub/${enquiryId}` : "/admin";
 
-      console.log("[AdminHeader] Showing toast for enquiry:", enquiryId, "href:", href);
 
       const title = enquiryId ? `Enquiry ${enquiryId.slice(0, 8)}...` : "New message";
       const description = messageContent.length > 50
@@ -130,7 +125,6 @@ const AdminHeader = ({ onMenuClick }) => {
     onSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
 
     return () => {
-      console.log("[AdminHeader] Removing chat message listener");
       offSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
     };
   }, [isAuth, user?.id]);

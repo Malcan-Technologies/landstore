@@ -7,7 +7,16 @@ import EyeOpen from "@/components/svg/EyeOpen";
 import Lock from "@/components/svg/Lock";
 import RoundCheck from "@/components/svg/RoundCheck";
 
-const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoading = false, apiError = "", token = "" }) => {
+const SetNewPasswordModal = ({
+  open,
+  onClose,
+  onBackToLogin,
+  onSuccess,
+  isLoading = false,
+  apiError = "",
+  token = "",
+  disableBackdropClose = false,
+}) => {
   const passwordRef = useRef(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,12 +39,7 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoadin
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log("Step 1: Form submitted");
-    console.log("Step 2: Password =", password);
-    console.log("Step 3: Token =", token);
-    console.log("Step 4: Calling onSuccess callback with:", { password, confirmPassword, token });
     onSuccess?.({ password, confirmPassword, token });
-    console.log("Step 5: onSuccess callback completed");
   };
 
   return (
@@ -49,6 +53,7 @@ const SetNewPasswordModal = ({ open, onClose, onBackToLogin, onSuccess, isLoadin
       closeButtonClassName="absolute right-6 top-5 text-[28px] font-light leading-none text-gray5 transition hover:text-gray7"
       closeLabel="Close set new password modal"
       showCloseButton
+      disableBackdropClose={disableBackdropClose}
     >
       <div className="flex flex-col items-center text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border-input bg-white">
