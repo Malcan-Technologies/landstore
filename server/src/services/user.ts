@@ -530,14 +530,34 @@ export const getUserByEmail = async (email: string) => {
   return user;
 };
 
-export const getAllUsers = async (page: number = 1, limit: number = 10) => {
+export const getAllUsers = async (page: number = 1, limit: number = 10, search: string) => {
   const validPage = Number.isFinite(page) && page > 0 ? page : 1;
   const validLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
   const skip = (validPage - 1) * validLimit;
+  let where: any = {};
+  const userConditions: any[] = [];
+  if (search) {
+    userConditions.push({
+      OR: [
+        { email: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  // ✅ Combine conditions properly
+  if (userConditions.length > 0) {
+    where =
+      userConditions.length === 1
+        ? userConditions[0]
+        : { AND: userConditions };
+  }
 
   try {
     const [users, total] = await Promise.all([
       db.user.findMany({
+        where,
         orderBy: { createdAt: "desc" },
         skip,
         take: validLimit,
@@ -554,11 +574,11 @@ export const getAllUsers = async (page: number = 1, limit: number = 10) => {
               entityType: true,
             },
           },
-          properties: true,
-          enquiries: true,
-          sentMessages: true,
-          receivedMessages: true,
-          shortlistFolders: true,
+          // properties: true,
+          // enquiries: true,
+          // sentMessages: true,
+          // receivedMessages: true,
+          // shortlistFolders: true,
         },
       }),
       db.user.count(),

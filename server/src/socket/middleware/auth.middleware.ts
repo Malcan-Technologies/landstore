@@ -9,6 +9,7 @@ export const socketAuthMiddleware = async (
 	next: (err?: Error) => void
 ) => {
 	try {
+		console.log("HEADERS:", socket.handshake.headers);
 		const session = await auth.api.getSession({
 			headers: fromNodeHeaders(socket.handshake.headers),
 		});

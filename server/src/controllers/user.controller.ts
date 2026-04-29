@@ -516,10 +516,14 @@ export const getAllUsersController = async (req: Request, res: Response) => {
 			});
 		}
 
+		const search = req.query.search as string;
 		const page = parseInt(req.query.page as string) || 1;
 		const limit = parseInt(req.query.limit as string) || 10;
 
-		const result = await getAllUsers(page, limit);
+
+
+
+		const result = await getAllUsers(page, limit, search);
 		return res.status(200).json({ data: result.items, pagination: result.pagination });
 	} catch (error: unknown) {
 		const { statusCode, message } = getErrorPayload(error);

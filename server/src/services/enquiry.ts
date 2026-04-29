@@ -51,6 +51,7 @@ export type UpdateEnquiryPayload = {
 };
 
 type GetEnquiriesQuery = {
+	search?: string | undefined;
 	status?: string | undefined;
 	page?: number | undefined;
 	limit?: number | undefined;
@@ -205,33 +206,175 @@ export const getEnquiries = async (query: GetEnquiriesQuery, userId?: string) =>
 		const pageNumber = query.page ?? 1;
 		const skip = (pageNumber - 1) * pageSize;
 
-		const where: Prisma.PropertyEnquiryWhereInput = {};
-
-		if (query.status) {
-			const normalizedStatus = normalizeEnquiryStatus(query.status);
-			if (!isValidEnquiryStatus(normalizedStatus)) {
-				throw createHttpError("Invalid enquiry status", 400);
-			}
-
-			where.status = normalizedStatus;
+		const normalizedStatus = query.status ? normalizeEnquiryStatus(query.status) : undefined;
+		if (normalizedStatus && !isValidEnquiryStatus(normalizedStatus)) {
+			throw createHttpError("Invalid enquiry status", 400);
 		}
 
-		const [enquiries, total] = await Promise.all([
-			db.propertyEnquiry.findMany({
-				where,
-				include: includeEnquiryRelations,
-				skip,
-				take: pageSize,
-				orderBy: {
-					createdAt: "desc",
-				},
-			}),
-			db.propertyEnquiry.count({ where }),
+		const searchPattern = query.search?.trim() || undefined;
+		if (searchPattern) {
+			try {
+				new RegExp(searchPattern, "i");
+			} catch {
+				throw createHttpError("Invalid enquiry search pattern", 400);
+			}
+		}
+
+		const searchConditions: Prisma.Sql[] = [];
+		if (searchPattern) {
+			searchConditions.push(Prisma.sql`pe."id" ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`pe."propertyId" ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`pe."userId" ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`pe."interestTypeId" ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`COALESCE(pe."message", '') ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`COALESCE(pe."timeline", '') ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`COALESCE(pe."status"::text, '') ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`COALESCE(pe."budget"::text, '') ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`COALESCE(pe."createdAt"::text, '') ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`COALESCE(pe."updatedAt"::text, '') ~* ${searchPattern}`);
+			searchConditions.push(Prisma.sql`EXISTS (
+				SELECT 1
+				FROM "Property" p
+				LEFT JOIN "Location" l ON l."propertyId" = p."id"
+				LEFT JOIN "PropertyCategory" pc ON pc."id" = p."categoryId"
+				LEFT JOIN "PropertyOwnershipType" pot ON pot."id" = p."ownershipTypeId"
+				LEFT JOIN "Utilization" u ON u."id" = p."utilizationId"
+				LEFT JOIN "LandTitleType" ltt ON ltt."id" = p."titleTypeId"
+				WHERE p."id" = pe."propertyId"
+				AND (
+					COALESCE(p."title", '') ~* ${searchPattern}
+					OR COALESCE(p."listingCode", '') ~* ${searchPattern}
+					OR COALESCE(p."description", '') ~* ${searchPattern}
+					OR COALESCE(p."landArea"::text, '') ~* ${searchPattern}
+					OR COALESCE(p."landAreaUnit", '') ~* ${searchPattern}
+					OR COALESCE(p."estimatedValuation"::text, '') ~* ${searchPattern}
+					OR COALESCE(p."price"::text, '') ~* ${searchPattern}
+					OR COALESCE(p."pricePerSqrft"::text, '') ~* ${searchPattern}
+					OR COALESCE(p."status"::text, '') ~* ${searchPattern}
+					OR COALESCE(p."createdAt"::text, '') ~* ${searchPattern}
+					OR COALESCE(p."updatedAt"::text, '') ~* ${searchPattern}
+					OR COALESCE(l."state", '') ~* ${searchPattern}
+					OR COALESCE(l."district", '') ~* ${searchPattern}
+					OR COALESCE(l."mukim", '') ~* ${searchPattern}
+					OR COALESCE(l."section", '') ~* ${searchPattern}
+					OR COALESCE(l."latitude"::text, '') ~* ${searchPattern}
+					OR COALESCE(l."longitude"::text, '') ~* ${searchPattern}
+					OR COALESCE(l."isApproximate"::text, '') ~* ${searchPattern}
+					OR COALESCE(pc."name", '') ~* ${searchPattern}
+					OR COALESCE(pot."name", '') ~* ${searchPattern}
+					OR COALESCE(u."name", '') ~* ${searchPattern}
+					OR COALESCE(ltt."name", '') ~* ${searchPattern}
+				)
+			)`);
+			searchConditions.push(Prisma.sql`EXISTS (
+				SELECT 1
+				FROM "User" usr
+				LEFT JOIN "Individual" i ON i."userId" = usr."id"
+				LEFT JOIN "Company" c ON c."userId" = usr."id"
+				LEFT JOIN "Koperasi" k ON k."userId" = usr."id"
+				WHERE usr."id" = pe."userId"
+				AND (
+					COALESCE(usr."email", '') ~* ${searchPattern}
+					OR COALESCE(usr."phone", '') ~* ${searchPattern}
+					OR COALESCE(usr."name", '') ~* ${searchPattern}
+					OR COALESCE(usr."image", '') ~* ${searchPattern}
+					OR COALESCE(usr."status"::text, '') ~* ${searchPattern}
+					OR COALESCE(i."fullName", '') ~* ${searchPattern}
+					OR COALESCE(i."identityNo", '') ~* ${searchPattern}
+					OR COALESCE(c."companyName", '') ~* ${searchPattern}
+					OR COALESCE(c."registrationNo", '') ~* ${searchPattern}
+					OR COALESCE(k."koperasiName", '') ~* ${searchPattern}
+					OR COALESCE(k."registrationNo", '') ~* ${searchPattern}
+				)
+			)`);
+			searchConditions.push(Prisma.sql`EXISTS (
+				SELECT 1
+				FROM "InterestType" it
+				WHERE it."id" = pe."interestTypeId"
+				AND (
+					COALESCE(it."name", '') ~* ${searchPattern}
+					OR COALESCE(it."id", '') ~* ${searchPattern}
+				)
+			)`);
+			searchConditions.push(Prisma.sql`EXISTS (
+				SELECT 1
+				FROM "EnquiryRole" er
+				LEFT JOIN "Role" r ON r."id" = er."roleId"
+				WHERE er."enquiryId" = pe."id"
+				AND (
+					COALESCE(er."id", '') ~* ${searchPattern}
+					OR COALESCE(er."roleId", '') ~* ${searchPattern}
+					OR COALESCE(r."name", '') ~* ${searchPattern}
+				)
+			)`);
+			searchConditions.push(Prisma.sql`EXISTS (
+				SELECT 1
+				FROM "Message" m
+				WHERE m."enquiryId" = pe."id"
+				AND (
+					COALESCE(m."content", '') ~* ${searchPattern}
+					OR COALESCE(m."createdAt"::text, '') ~* ${searchPattern}
+				)
+			)`);
+		}
+
+		const whereClauses: Prisma.Sql[] = [];
+		if (normalizedStatus) {
+			whereClauses.push(Prisma.sql`pe."status" = ${normalizedStatus}`);
+		}
+		if (searchConditions.length > 0) {
+			const searchSql = searchConditions.slice(1).reduce(
+				(combined, condition) => Prisma.sql`${combined} OR ${condition}`,
+				searchConditions[0],
+			);
+			whereClauses.push(Prisma.sql`(${searchSql})`);
+		}
+
+		const whereSql = whereClauses.length > 0
+			? Prisma.sql`WHERE ${whereClauses.slice(1).reduce(
+				(combined, condition) => Prisma.sql`${combined} AND ${condition}`,
+				whereClauses[0],
+			)}`
+			: Prisma.empty;
+
+		const [countResult, enquiryIds] = await Promise.all([
+			db.$queryRaw<Array<{ total: bigint }>>(Prisma.sql`
+				SELECT COUNT(*)::bigint AS total
+				FROM "PropertyEnquiry" pe
+				${whereSql}
+			`),
+			db.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+				SELECT pe."id"
+				FROM "PropertyEnquiry" pe
+				${whereSql}
+				ORDER BY pe."createdAt" DESC, pe."id" DESC
+				LIMIT ${pageSize}
+				OFFSET ${skip}
+			`),
 		]);
+
+		const total = Number(countResult[0]?.total ?? 0n);
+		const ids = enquiryIds.map((entry) => entry.id);
+
+		const enquiries = ids.length > 0
+			? await db.propertyEnquiry.findMany({
+				where: {
+					id: {
+						in: ids,
+					},
+				},
+				include: includeEnquiryRelations,
+			})
+			: [];
+
+		const enquiryById = new Map(enquiries.map((enquiry) => [enquiry.id, enquiry]));
+		const orderedEnquiries = ids
+			.map((id) => enquiryById.get(id))
+			.filter((enquiry): enquiry is (typeof enquiries)[number] => Boolean(enquiry));
 
 		// Enrich properties with signed URLs
 		const enrichedEnquiries = await Promise.all(
-			enquiries.map(async (enquiry) => ({
+			orderedEnquiries.map(async (enquiry) => ({
 				...enquiry,
 				property: await enrichListingResult(enquiry.property, userId),
 				budget: enquiry.budget?.toString(),
