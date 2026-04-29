@@ -606,6 +606,56 @@ export const updateUserController = async (req: Request, res: Response) => {
 	}
 };
 
+export const updateUserStatusController = async (req: Request, res: Response) => {
+	try {
+		const requester = (req as any).user;
+		if (!requester) {
+			return res.status(401).json({
+				error: "Unauthorized",
+				message: "Authentication required. Please log in to access this resource."
+			});
+		}
+
+		const userId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+		if (!userId) {
+			return res.status(400).json({
+				error: "Bad Request",
+				message: "User ID is required",
+			});
+		}
+
+		const prismaAny = db as any;
+		const requesterAdmin = await prismaAny.admin.findUnique({
+			where: { userId: requester.id },
+			select: { role: true },
+		});
+
+		if (!requesterAdmin) {
+			return res.status(403).json({
+				error: "Forbidden",
+				message: "Only admin or superadmin can update user status.",
+			});
+		}
+
+		const status = String(req.body?.status || "").trim().toLowerCase();
+		if (!status || !["active", "suspended"].includes(status)) {
+			return res.status(400).json({
+				error: "Bad Request",
+				message: "Status must be either active or suspended.",
+			});
+		}
+
+		const user = await updateUserById(userId, {
+			status: status as "active" | "suspended",
+		});
+
+		return res.status(200).json({ message: "User updated successfully", user });
+	} catch (error: unknown) {
+		const { statusCode, message } = getErrorPayload(error);
+		return res.status(statusCode).json({ message });
+	}
+};
+
 export const deleteUserController = async (req: Request, res: Response) => {
 	try {
 		const requester = (req as any).user;

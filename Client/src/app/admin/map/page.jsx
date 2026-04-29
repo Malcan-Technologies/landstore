@@ -187,68 +187,43 @@ export default function AdminMapPage() {
   useEffect(() => {
     let isMounted = true;
 
-    const loadListings = async () => {
+    const loadMapData = async () => {
       try {
         setIsLoadingListings(true);
+        setIsLoadingStats(true);
         setListingsError("");
 
-        const response = await landService.getAdminListings({ page: 1, limit: 500, recentlyApproved: false });
+        const [listingsResult, statisticsResult] = await Promise.allSettled([
+          landService.getAdminListings({ page: 1, limit: 500, recentlyApproved: false }),
+          landService.getListingStatistics(),
+        ]);
 
         if (!isMounted) {
           return;
         }
 
-        setListings(extractListingItems(response));
+        if (listingsResult.status === "fulfilled") {
+          setListings(extractListingItems(listingsResult.value));
+        } else {
+          const errorMessage = listingsResult.reason?.response?.data?.message || listingsResult.reason?.message || "Unable to load map listings.";
+          setListingsError(errorMessage);
+          setListings([]);
+        }
+
+        if (statisticsResult.status === "fulfilled" && statisticsResult.value?.success && statisticsResult.value?.data) {
+          setListingStats(statisticsResult.value.data);
+        }
       } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        const errorMessage = error?.response?.data?.message || error?.message || "Unable to load map listings.";
-        setListingsError(errorMessage);
-        setListings([]);
+        console.error("Failed to fetch map data:", error);
       } finally {
         if (isMounted) {
           setIsLoadingListings(false);
-        }
-      }
-    };
-
-    loadListings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadStatistics = async () => {
-      try {
-        setIsLoadingStats(true);
-        const response = await landService.getListingStatistics();
-
-        if (!isMounted) {
-          return;
-        }
-
-        if (response?.success && response?.data) {
-          setListingStats(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch listing statistics:", error);
-        if (isMounted) {
-          setIsLoadingStats(false);
-        }
-      } finally {
-        if (isMounted) {
           setIsLoadingStats(false);
         }
       }
     };
 
-    loadStatistics();
+    loadMapData();
 
     return () => {
       isMounted = false;

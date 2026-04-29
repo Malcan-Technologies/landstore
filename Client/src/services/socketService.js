@@ -147,22 +147,33 @@ const ensureSocketInstance = () => {
     });
 
     socketInstance.on(SOCKET_EVENTS.NOTIFICATION.UNREAD_COUNT, (payload) => {
+      console.log("[SocketService] UNREAD_COUNT event:", payload);
       if (typeof payload?.unreadCount === "number") {
         latestUnreadCount = payload.unreadCount;
       }
     });
 
     socketInstance.on("disconnect", (reason) => {
+      console.log("[SocketService] ❌ Disconnected:", reason);
       shouldRestoreStateOnReconnect = reason !== "io client disconnect";
     });
 
     socketInstance.on("connect", () => {
+      console.log("[SocketService] ✅ Connected, socket id:", socketInstance.id);
       if (!shouldRestoreStateOnReconnect) {
         return;
       }
 
       shouldRestoreStateOnReconnect = false;
       void resubscribeSocketState(socketInstance);
+    });
+
+    socketInstance.on("connect_error", (err) => {
+      console.log("[SocketService] ⚠️ Connection error:", err.message);
+    });
+
+    socketInstance.on(SOCKET_EVENTS.CHAT.NEW_MESSAGE, (payload) => {
+      console.log("[SocketService] 📨 NEW_MESSAGE event received:", payload);
     });
   }
 
@@ -171,16 +182,20 @@ const ensureSocketInstance = () => {
 };
 
 export const acquireSocketConnection = () => {
+  console.log("[SocketService] acquireSocketConnection called");
   const socket = ensureSocketInstance();
 
   if (!socket) {
+    console.log("[SocketService] No socket instance available");
     return null;
   }
 
   clearPendingDisconnect();
   activeSocketConsumers += 1;
+  console.log("[SocketService] Active consumers:", activeSocketConsumers, "Connected:", socket.connected);
 
   if (!socket.connected) {
+    console.log("[SocketService] Connecting socket...");
     socket.connect();
   }
 
@@ -193,6 +208,7 @@ export const releaseSocketConnection = () => {
   }
 
   activeSocketConsumers = Math.max(0, activeSocketConsumers - 1);
+  console.log("[SocketService] Released connection, active consumers:", activeSocketConsumers);
 
   if (activeSocketConsumers > 0) {
     return;
@@ -223,16 +239,20 @@ export const resetSocketConnection = () => {
 };
 
 export const onSocketEvent = (eventName, handler) => {
+  console.log("[SocketService] onSocketEvent registering:", eventName);
   const socket = ensureSocketInstance();
 
   if (!socket || typeof handler !== "function") {
+    console.log("[SocketService] Cannot register - no socket or invalid handler");
     return;
   }
 
   socket.on(eventName, handler);
+  console.log("[SocketService] ✅ Registered handler for:", eventName);
 };
 
 export const offSocketEvent = (eventName, handler) => {
+  console.log("[SocketService] offSocketEvent removing:", eventName);
   if (!socketInstance || typeof handler !== "function") {
     return;
   }

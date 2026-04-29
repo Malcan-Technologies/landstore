@@ -6,6 +6,7 @@ import {
   getCurrentUserController,
   getUserByIdController,
   updateUserController,
+  updateUserStatusController,
   getUserCompleteProfileController,
   registerAndCompleteProfileController,
   requestPasswordResetController,
@@ -60,6 +61,8 @@ userRouter.get("/my-profile", requireApiAuth, getMyProfileController);
 // Get complete user profile with all registration data (requires auth)
 userRouter.get("/profile", requireApiAuth, getUserCompleteProfileController);
 
+userRouter.patch("/me", requireApiAuth, upload.single("profileImage"), updateUserController);
+
 // User management (admin only)
 userRouter.get("/", requireApiAuth, requireAdmin,getAllUsersController);
 
@@ -72,9 +75,11 @@ userRouter.get("/analytics/growth", requireApiAuth, requireAdmin, getUserGrowthC
 // Analytics - User breakdown by entity type (admin only)
 userRouter.get("/analytics/breakdown", requireApiAuth, requireAdmin, getUserBreakdownController);
 
+// Update user status (admin only)
+userRouter.patch("/:id", requireApiAuth, requireAdmin, updateUserStatusController);
+
 // User by ID (must come after specific routes)
 userRouter.get("/:id", requireApiAuth, getUserByIdController);
-userRouter.patch("/me", requireApiAuth, upload.single("profileImage"), updateUserController);
 userRouter.delete("/:id", requireApiAuth, deleteUserController);
 
 export default userRouter;

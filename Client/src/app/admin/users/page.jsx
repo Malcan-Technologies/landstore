@@ -12,6 +12,7 @@ import Telephone from "@/components/svg/Telephone";
 import RoundX from "@/components/svg/RoundX";
 import RoundArrow from "@/components/svg/RoundArrow";
 import { userService } from "@/services/userService";
+import { showToast } from "@/utils/toastStore";
 
 const PAGE_LIMIT = 5;
 
@@ -40,7 +41,8 @@ const toTitleCase = (value) =>
 
 const mapApiUserToTableUser = (user) => {
   const rawId = String(user?.id || user?.email || "");
-  const status = user?.emailVerified ? "Active" : "Suspended";
+  const statusValue = String(user?.status || "active").toLowerCase();
+  const status = statusValue === "suspended" ? "Suspended" : "Active";
 
   return {
     id: rawId,
@@ -91,6 +93,7 @@ export default function UsersPage() {
   const [totalUsers, setTotalUsers] = useState(0);
   const [loadError, setLoadError] = useState("");
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [updatingUserId, setUpdatingUserId] = useState(null);
   const sentinelRef = useRef(null);
   const scrollContainerRef = useRef(null);
 
@@ -132,10 +135,13 @@ export default function UsersPage() {
         if (!isMounted) {
           return;
         }
-        setUsers([]);
-        setTotalUsers(0);
+        showToast({
+          type: "error",
+          title: "Failed to load users",
+          message: error?.message || "Please try again.",
+          duration: 4500,
+        });
         setHasMore(false);
-        setLoadError(error?.message || "Failed to load users.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -184,7 +190,13 @@ export default function UsersPage() {
 
           const totalPages = Number(pagination?.totalPages);
           setHasMore(Number.isFinite(totalPages) ? nextPage < totalPages : items.length >= PAGE_LIMIT);
-        } catch {
+        } catch (error) {
+          showToast({
+            type: "error",
+            title: "Failed to load more users",
+            message: error?.message || "Please try again.",
+            duration: 4500,
+          });
           setHasMore(false);
         } finally {
           setIsFetchingMore(false);
@@ -207,6 +219,44 @@ export default function UsersPage() {
     () => users.find((user) => user.id === selectedUserId) ?? null,
     [selectedUserId, users]
   );
+
+  const handleToggleUserStatus = useCallback(async (user) => {
+    if (!user?.id || updatingUserId === user.id) {
+      return;
+    }
+
+    const nextStatus = user.status === "Suspended" ? "active" : "suspended";
+
+    try {
+      setUpdatingUserId(user.id);
+      await userService.updateUserProfile(user.id, { status: nextStatus });
+
+      setUsers((previousUsers) =>
+        previousUsers.map((item) => {
+          if (item.id !== user.id) {
+            return item;
+          }
+
+          const mappedStatus = nextStatus === "suspended" ? "Suspended" : "Active";
+
+          return {
+            ...item,
+            status: mappedStatus,
+            actionVariant: mappedStatus === "Active" ? "deactivate" : "reactivate",
+          };
+        })
+      );
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Failed to update user status",
+        message: error?.message || "Please try again.",
+        duration: 4500,
+      });
+    } finally {
+      setUpdatingUserId(null);
+    }
+  }, [updatingUserId]);
 
   const headers = [
     { label: "User ID" },
@@ -297,7 +347,9 @@ export default function UsersPage() {
             {user.actionVariant === "deactivate" ? (
               <button
                 type="button"
-                className={`${actionButtonBase} bg-[#FFF1F2] text-[#EF4444]`}
+                onClick={() => handleToggleUserStatus(user)}
+                disabled={updatingUserId === user.id}
+                className={`${actionButtonBase} bg-[#FFF1F2] text-[#EF4444] disabled:cursor-not-allowed disabled:opacity-60`}
                 aria-label="Deactivate user"
               >
                 <RoundX size={14} color="#EF4444" />
@@ -305,7 +357,9 @@ export default function UsersPage() {
             ) : (
               <button
                 type="button"
-                className={`${actionButtonBase} bg-[#ECFDF3] text-[#1E9E57]`}
+                onClick={() => handleToggleUserStatus(user)}
+                disabled={updatingUserId === user.id}
+                className={`${actionButtonBase} bg-[#ECFDF3] text-[#1E9E57] disabled:cursor-not-allowed disabled:opacity-60`}
                 aria-label="Reactivate user"
               >
                 <RoundArrow size={14} color="#1E9E57" />
@@ -346,29 +400,19 @@ export default function UsersPage() {
         </div>
 
         <div ref={scrollContainerRef} className="mt-4 min-h-0 flex-1 overflow-hidden sm:max-h-[calc(100vh-210px)] sm:overflow-y-auto no-scrollbar">
-          {loadError ? (
-            <div className="rounded-xl border border-[#FFE0E0] bg-[#FFF1F2] px-4 py-3 text-[14px] text-[#B42318]">
-              {loadError}
+          <Table
+            headers={headers}
+            rows={rows}
+            className="border-none shadow-none"
+            tableClassName="min-w-[1120px]"
+            headClassName="bg-white"
+            rowClassName="hover:bg-[#FAFBFD]"
+          />
+          <div ref={sentinelRef} className="h-px" />
+          {isFetchingMore ? (
+            <div className="flex items-center justify-center py-4">
+              <span className="h-6 w-6 animate-spin rounded-full border-4 border-border-card border-t-green-secondary" />
             </div>
-          ) : null}
-
-          {!loadError ? (
-            <>
-              <Table
-                headers={headers}
-                rows={rows}
-                className="border-none shadow-none"
-                tableClassName="min-w-[1120px]"
-                headClassName="bg-white"
-                rowClassName="hover:bg-[#FAFBFD]"
-              />
-              <div ref={sentinelRef} className="h-px" />
-              {isFetchingMore ? (
-                <div className="flex py-4 items-center justify-center">
-                  <span className="h-6 w-6 animate-spin rounded-full border-4 border-border-card border-t-green-secondary" />
-                </div>
-              ) : null}
-            </>
           ) : null}
         </div>
 

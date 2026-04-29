@@ -7,6 +7,7 @@ type UpdateUserPayload = {
   email?: string;
   phone?: string | null;
   profileMediaId?: string;
+  status?: "active" | "suspended";
 };
 
 type CreateUserProfilePayload = {
@@ -599,7 +600,12 @@ export const getAllUsers = async (page: number = 1, limit: number = 10) => {
 };
 
 export const updateUserById = async (id: string, payload: UpdateUserPayload) => {
-  const updateData: { email?: string; phone?: string | null; profileMediaId?: string } = {};
+  const updateData: {
+    email?: string;
+    phone?: string | null;
+    profileMediaId?: string;
+    status?: "active" | "suspended";
+  } = {};
 
   if (payload.email !== undefined) {
     updateData.email = normalizeEmail(payload.email);
@@ -611,6 +617,10 @@ export const updateUserById = async (id: string, payload: UpdateUserPayload) => 
 
   if (payload.profileMediaId !== undefined) {
     updateData.profileMediaId = payload.profileMediaId;
+  }
+
+  if (payload.status !== undefined) {
+    updateData.status = payload.status;
   }
 
   if (Object.keys(updateData).length === 0) {

@@ -3,6 +3,7 @@ import "./globals.css";
 import AppLayoutShell from "@/components/layout/AppLayoutShell";
 import ReduxProvider from "@/components/providers/ReduxProvider";
 import ToastProvider from "@/components/providers/ToastProvider";
+import GlobalSocketProvider from "@/components/providers/GlobalSocketProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,7 +24,9 @@ export default function RootLayout({ children }) {
       >
         <ReduxProvider>
           <ToastProvider>
-            <AppLayoutShell>{children}</AppLayoutShell>
+            <GlobalSocketProvider>
+              <AppLayoutShell>{children}</AppLayoutShell>
+            </GlobalSocketProvider>
           </ToastProvider>
         </ReduxProvider>
       </body>

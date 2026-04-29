@@ -5,18 +5,22 @@ import Link from "next/link";
 import { useEffect, useRef, useState, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
+
+import { isRecentlyToasted, markAsToasted } from "@/utils/toastDedup";
 import Plus from "@/components/svg/Plus";
 import Bell from "@/components/svg/Bell";
 import Person from "@/components/svg/Person";
 import ArrowDown from "@/components/svg/ArrowDown";
+import ThreeBars from "@/components/svg/ThreeBars";
 import Button from "@/components/common/Button";
 import LoginModal from "@/components/auth/LoginModal";
 import LoginRequiredModal from "@/components/auth/modals/LoginRequiredModal";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
-import { resetSocketConnection } from "@/services/socketService";
+import { resetSocketConnection, SOCKET_EVENTS, onSocketEvent, offSocketEvent } from "@/services/socketService";
 import { logoutUser } from "@/store/authSlice";
-import { hasAdminAccess } from "@/utils/auth";
+import { hasAdminAccess, getStoredUser } from "@/utils/auth";
+import { showToast } from "@/utils/toastStore";
 
 const HeaderSearchParamsHandler = ({ onToken, pathname }) => {
   const searchParams = useSearchParams();
@@ -44,8 +48,10 @@ const Header = () => {
   const [authTab, setAuthTab] = useState("login");
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const notificationRef = useRef(null);
   const profileMenuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   const notificationUserId = isAuth && user?.id ? user.id : "";
   const {
     notifications,
@@ -60,6 +66,69 @@ const Header = () => {
   });
 
   useEffect(() => {
+    if (!isAuth || !user?.id) return;
+
+    console.log("[Header] Setting up chat message listener");
+
+    const handleNewMessage = (payload) => {
+      const msgId = payload?.id;
+
+      // Deduplication: skip if we already toasted this message
+      if (isRecentlyToasted(msgId)) {
+        console.log("[Header] Skipping duplicate message:", msgId);
+        return;
+      }
+
+      console.log("[Header] 📨 Chat message received:", payload);
+
+      const currentUser = getStoredUser();
+      const isOwnMessage = String(payload?.senderId) === String(currentUser?.id);
+
+      if (isOwnMessage) {
+        console.log("[Header] Skipping own message");
+        return;
+      }
+
+      // Track this message ID
+      markAsToasted(msgId);
+
+      const enquiryId = payload?.enquiryId || payload?.data?.enquiryId;
+      const messageContent = payload?.content || "";
+
+      const isAdmin = hasAdminAccess(currentUser);
+      const href = enquiryId
+        ? isAdmin
+          ? `/admin/enquiry-hub/${enquiryId}`
+          : `/user-dashboard/enquiries/${enquiryId}`
+        : isAdmin
+          ? "/admin"
+          : "/user-dashboard";
+
+      console.log("[Header] Showing toast for enquiry:", enquiryId, "href:", href);
+
+      const title = enquiryId ? `Enquiry ${enquiryId.slice(0, 8)}...` : "New message";
+      const description = messageContent.length > 50
+        ? messageContent.slice(0, 50) + "..."
+        : messageContent || "New message received";
+
+      showToast({
+        type: "socket",
+        title,
+        message: description,
+        duration: 6000,
+        data: { href, enquiryId, type: "chat" },
+      });
+    };
+
+    onSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+
+    return () => {
+      console.log("[Header] Removing chat message listener");
+      offSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+    };
+  }, [isAuth, user?.id]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setNotificationOpen(false);
@@ -67,6 +136,10 @@ const Header = () => {
 
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setProfileMenuOpen(false);
+      }
+
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setMobileMenuOpen(false);
       }
     };
 
@@ -130,6 +203,8 @@ const Header = () => {
     typeof profileImageSrc === "string" && profileImageSrc.trim() ? profileImageSrc : "/user.png";
   const isAdminUser = hasAdminAccess(user);
   const isExploreActive = pathname === "/explore" || pathname.startsWith("/explore/");
+  const isListingsActive =
+    pathname === "/user-dashboard/listings" || pathname.startsWith("/user-dashboard/listings/");
   const isShortlistsActive =
     pathname === "/user-dashboard/shortlists" || pathname.startsWith("/user-dashboard/shortlists/");
   const isEnquiriesActive =
@@ -140,23 +215,41 @@ const Header = () => {
   return (
     <>
       <div className="shadow-sm bg-white fixed w-full z-10">
-        <div className="mx-auto flex w-full items-center justify-between gap-6 px-4 py-3 md:px-6">
-          <button type="button" onClick={() => router.push("/")} className="flex items-center gap-3">
-            <div className="relative h-10 w-10 md:h-12 md:w-12">
-              <Image
-                src="/logo.png"
-                alt="LandStore"
-                fill
-                sizes="48px"
-                className="object-contain"
-                priority
-              />
-            </div>
-            <span className="text-lg font-bold text-green-logo hidden sm:block">
-              LandStore<span className="text-green-secondary font-normal">.my</span>
-            </span>
-          </button>
+        <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3 md:px-6 lg:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Hamburger Menu - Show below lg */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="flex items-center justify-center lg:hidden"
+              aria-label="Open menu"
+            >
+              <ThreeBars size={24} color="#22863a" />
+            </button>
 
+            {/* Logo - Hide below sm, show in sidebar */}
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="hidden items-center gap-3 sm:flex"
+            >
+              <div className="relative h-10 w-10 md:h-12 md:w-12">
+                <Image
+                  src="/logo.png"
+                  alt="LandStore"
+                  fill
+                  sizes="48px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <span className="text-lg font-bold text-green-logo">
+                LandStore<span className="text-green-secondary font-normal">.my</span>
+              </span>
+            </button>
+          </div>
+
+          {/* Desktop Navigation - Show on lg+ */}
           <nav className="hidden flex-1 items-center justify-center gap-6 text-sm font-medium text-gray2 lg:flex">
             <button
               type="button"
@@ -164,6 +257,13 @@ const Header = () => {
               className={getNavLinkClass(isExploreActive)}
             >
               Explore Map
+            </button>
+            <button
+              type="button"
+              onClick={() => handleProtectedNavigation("/user-dashboard/listings")}
+              className={getNavLinkClass(isListingsActive)}
+            >
+              Listings
             </button>
             <button
               type="button"
@@ -298,6 +398,108 @@ const Header = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Mobile Sidebar - Show below lg */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/35 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden
+        />
+      )}
+      <div
+        ref={mobileMenuRef}
+        className={`fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-30 lg:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Sidebar Header with Logo */}
+        <div className="flex h-16 items-center justify-between border-b border-border-card px-4">
+          <button type="button" onClick={() => { router.push("/"); setMobileMenuOpen(false); }} className="flex items-center gap-2">
+            <div className="relative h-8 w-8">
+              <Image
+                src="/logo.png"
+                alt="LandStore"
+                fill
+                sizes="32px"
+                className="object-contain"
+                priority
+              />
+            </div>
+            <span className="text-sm font-bold text-green-logo">
+              LandStore<span className="text-green-secondary font-normal">.my</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-2xl leading-none text-gray5 transition hover:bg-background-primary hover:text-gray2"
+            aria-label="Close sidebar"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Sidebar Navigation */}
+        <nav className="flex-1 px-4 py-4 space-y-1">
+          <button
+            type="button"
+            onClick={() => {
+              router.push("/explore");
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition ${
+              isExploreActive
+                ? "bg-background-primary text-green-primary"
+                : "text-gray2 hover:bg-background-primary"
+            }`}
+          >
+            Explore Map
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              handleProtectedNavigation("/user-dashboard/listings");
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition ${
+              isListingsActive
+                ? "bg-background-primary text-green-primary"
+                : "text-gray2 hover:bg-background-primary"
+            }`}
+          >
+            Listings
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              handleProtectedNavigation("/user-dashboard/shortlists");
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition ${
+              isShortlistsActive
+                ? "bg-background-primary text-green-primary"
+                : "text-gray2 hover:bg-background-primary"
+            }`}
+          >
+            Shortlists
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              handleProtectedNavigation("/user-dashboard/enquiries");
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition ${
+              isEnquiriesActive
+                ? "bg-background-primary text-green-primary"
+                : "text-gray2 hover:bg-background-primary"
+            }`}
+          >
+            My Enquiries
+          </button>
+        </nav>
       </div>
 
       <Suspense fallback={null}>

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Loading from "@/components/common/Loading";
 import StatCard from "@/components/adminDashboard/home/StatCard";
@@ -205,45 +205,106 @@ export default function AdminPage() {
   const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
   const [breakdownEntityCards, setBreakdownEntityCards] = useState([]);
   const [hasCompletedInitialLoad, setHasCompletedInitialLoad] = useState(false);
+  const hasBootstrappedRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadOverviewStats = async () => {
+    const loadDashboardBootstrap = async () => {
       try {
         setIsLoadingOverviewStats(true);
+        setIsLoadingGrowth(true);
+        setIsLoadingActiveListings(true);
+        setIsLoadingBreakdown(true);
+        setIsLoadingApprovedListings(true);
+        setApprovedListingsError("");
 
-        const response = await landService.getListingStatistics();
+        const [overviewResult, growthResult, activeListingsResult, breakdownResult, approvedListingsResult] = await Promise.allSettled([
+          landService.getListingStatistics(),
+          analyticsService.getUserGrowth({ timeRange: growthTimeRange }),
+          analyticsService.getActiveListings({ timeRange: activeListingsTimeRange }),
+          analyticsService.getUserBreakdown({ timeRange: breakdownTimeRange }),
+          landService.getAdminListings({
+            page: 1,
+            limit: 5,
+            recentlyApproved: true,
+          }),
+        ]);
 
         if (!isMounted) {
           return;
         }
 
-        if (response?.success && response?.data) {
+        if (overviewResult.status === "fulfilled" && overviewResult.value?.success && overviewResult.value?.data) {
           setOverviewStats({
-            listingsUnderReview: response.data.listings.underReview,
-            enquiriesPending: response.data.enquiries.pending,
-            enquiriesNeedInfo: response.data.enquiries.needMoreInfo,
+            listingsUnderReview: overviewResult.value.data.listings.underReview,
+            enquiriesPending: overviewResult.value.data.enquiries.pending,
+            enquiriesNeedInfo: overviewResult.value.data.enquiries.needMoreInfo,
+          });
+        } else {
+          setOverviewStats({
+            listingsUnderReview: 0,
+            enquiriesPending: 0,
+            enquiriesNeedInfo: 0,
           });
         }
-      } catch {
-        if (!isMounted) {
-          return;
+
+        if (growthResult.status === "fulfilled") {
+          setGrowthData(extractGrowthPoints(growthResult.value));
+        } else {
+          setGrowthData({ series: [], categories: [], trendPercent: null });
         }
 
-        setOverviewStats({
-          listingsUnderReview: 0,
-          enquiriesPending: 0,
-          enquiriesNeedInfo: 0,
-        });
+        if (activeListingsResult.status === "fulfilled") {
+          setActiveListingsData(extractGrowthPoints(activeListingsResult.value));
+        } else {
+          setActiveListingsData({ series: [], categories: [], trendPercent: null });
+        }
+
+        if (breakdownResult.status === "fulfilled") {
+          const parsed = extractBreakdown(breakdownResult.value);
+          setBreakdownData(parsed);
+          const labelMap = { individual: "Individual", company: "Company", koperasi: "Koperasi" };
+          const breakdownObj = breakdownResult.value?.data?.breakdown ?? breakdownResult.value?.breakdown ?? {};
+          if (breakdownObj && typeof breakdownObj === "object" && !Array.isArray(breakdownObj)) {
+            const cards = Object.keys(breakdownObj)
+              .filter((k) => labelMap[k.toLowerCase()])
+              .map((k) => ({
+                key: k,
+                label: labelMap[k.toLowerCase()],
+                count: Number(breakdownObj[k]?.count ?? breakdownObj[k]?.total ?? 0),
+                trend: breakdownObj[k]?.percentageChange ?? breakdownObj[k]?.trendPercent ?? null,
+              }));
+            setBreakdownEntityCards(cards);
+          } else {
+            setBreakdownEntityCards([]);
+          }
+        } else {
+          setBreakdownEntityCards([]);
+        }
+
+        if (approvedListingsResult.status === "fulfilled") {
+          const items = extractListingItems(approvedListingsResult.value);
+          setApprovedListings(items.map(mapListingToCard));
+        } else {
+          setApprovedListings([]);
+          setApprovedListingsError(approvedListingsResult.reason?.message || "Failed to load recently approved listings.");
+        }
+
+        hasBootstrappedRef.current = true;
       } finally {
         if (isMounted) {
           setIsLoadingOverviewStats(false);
+          setIsLoadingGrowth(false);
+          setIsLoadingActiveListings(false);
+          setIsLoadingBreakdown(false);
+          setIsLoadingApprovedListings(false);
+          setHasCompletedInitialLoad(true);
         }
       }
     };
 
-    loadOverviewStats();
+    loadDashboardBootstrap();
 
     return () => {
       isMounted = false;
@@ -251,6 +312,10 @@ export default function AdminPage() {
   }, []);
 
   const loadUserGrowth = useCallback(async (timeRange) => {
+    if (!hasBootstrappedRef.current) {
+      return;
+    }
+
     setIsLoadingGrowth(true);
     try {
       const response = await analyticsService.getUserGrowth({ timeRange });
@@ -263,6 +328,10 @@ export default function AdminPage() {
   }, []);
 
   const loadActiveListings = useCallback(async (timeRange) => {
+    if (!hasBootstrappedRef.current) {
+      return;
+    }
+
     setIsLoadingActiveListings(true);
     try {
       const response = await analyticsService.getActiveListings({ timeRange });
@@ -275,6 +344,10 @@ export default function AdminPage() {
   }, []);
 
   const loadUserBreakdown = useCallback(async (timeRange) => {
+    if (!hasBootstrappedRef.current) {
+      return;
+    }
+
     setIsLoadingBreakdown(true);
     try {
       const response = await analyticsService.getUserBreakdown({ timeRange });
@@ -305,42 +378,6 @@ export default function AdminPage() {
   useEffect(() => { loadUserGrowth(growthTimeRange); }, [growthTimeRange, loadUserGrowth]);
   useEffect(() => { loadActiveListings(activeListingsTimeRange); }, [activeListingsTimeRange, loadActiveListings]);
   useEffect(() => { loadUserBreakdown(breakdownTimeRange); }, [breakdownTimeRange, loadUserBreakdown]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadRecentlyApprovedListings = async () => {
-      try {
-        setIsLoadingApprovedListings(true);
-        setApprovedListingsError("");
-
-        const response = await landService.getAdminListings({
-          page: 1,
-          limit: 5,
-          recentlyApproved: true,
-        });
-
-        if (!isMounted) return;
-
-        const items = extractListingItems(response);
-        setApprovedListings(items.map(mapListingToCard));
-      } catch (error) {
-        if (!isMounted) return;
-        setApprovedListings([]);
-        setApprovedListingsError(error?.message || "Failed to load recently approved listings.");
-      } finally {
-        if (isMounted) {
-          setIsLoadingApprovedListings(false);
-        }
-      }
-    };
-
-    loadRecentlyApprovedListings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (hasCompletedInitialLoad) {

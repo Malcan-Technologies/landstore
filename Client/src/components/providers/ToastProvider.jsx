@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { dismissToast, getToastSnapshot, subscribeToToasts } from "@/utils/toastStore";
 
 const toastStyles = {
@@ -16,21 +17,52 @@ const toastStyles = {
   info: {
     container: "border border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8]",
   },
+  socket: {
+    container: "border border-[#C4B5FD] bg-[#F5F3FF] text-[#7C3AED] cursor-pointer hover:bg-[#EDE9FE]",
+  },
 };
 
 const ToastItem = ({ toast }) => {
   const styles = toastStyles[toast.type] || toastStyles.info;
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (typeof toast.onClick === "function") {
+      toast.onClick(toast.data);
+    }
+    if (toast.data?.href) {
+      router.push(toast.data.href);
+    }
+    dismissToast(toast.id);
+  };
+
+  const isClickable = toast.type === "socket" || toast.onClick || toast.data?.href;
+
+  const showBoth = toast.title && toast.message;
 
   return (
     <div
-      className={`pointer-events-auto flex min-w-[180px] max-w-[240px] items-center gap-2 rounded-md px-3 py-2 ${styles.container}`}
+      onClick={isClickable ? handleClick : undefined}
+      className={`pointer-events-auto flex min-w-[180px] max-w-[240px] items-start gap-2 rounded-md px-3 py-2 ${styles.container} ${isClickable ? "cursor-pointer" : ""}`}
       role="status"
       aria-live="polite"
     >
-      <p className="min-w-0 flex-1 truncate text-sm font-medium leading-5">{toast.title || toast.message}</p>
+      <div className="min-w-0 flex-1">
+        {showBoth ? (
+          <>
+            <p className="truncate text-sm font-semibold leading-5">{toast.title}</p>
+            <p className="truncate text-xs leading-4 opacity-90">{toast.message}</p>
+          </>
+        ) : (
+          <p className="truncate text-sm font-medium leading-5">{toast.title || toast.message}</p>
+        )}
+      </div>
       <button
         type="button"
-        onClick={() => dismissToast(toast.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          dismissToast(toast.id);
+        }}
         className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-current/70 transition hover:text-current"
         aria-label="Dismiss notification"
       >

@@ -490,6 +490,7 @@ const ExplorePage = () => {
   const [mapViewport, setMapViewport] = useState({
     center: defaultMapCenter,
     radiusKm: defaultRadiusKm,
+    bounds: null,
   });
   const [isLoadingListings, setIsLoadingListings] = useState(false);
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
@@ -528,87 +529,90 @@ const ExplorePage = () => {
   useEffect(() => {
     let isCancelled = false;
 
-    const loadFilterOptions = async () => {
-      const [categoriesResult, utilizationsResult, titleTypesResult, interestTypesResult] = await Promise.allSettled([
+    const loadBootstrapData = async () => {
+      const filterOptionsPromise = Promise.allSettled([
         adminService.getCategories({ page: 1, limit: 200 }),
         adminService.getUtilizations({ page: 1, limit: 200 }),
         adminService.getTitleTypes({ page: 1, limit: 200 }),
         adminService.getInterestTypes({ page: 1, limit: 200 }),
       ]);
 
+      const userStatisticsPromise = isLoggedIn
+        ? userService.getUserStatistics()
+        : Promise.resolve(null);
+
+      const [filterResults, userStatisticsResult] = await Promise.allSettled([
+        filterOptionsPromise,
+        userStatisticsPromise,
+      ]);
+
       if (isCancelled) {
         return;
       }
 
-      const categories = categoriesResult.status === "fulfilled"
-        ? normalizeSelectOptions(extractItemsFromPayload(categoriesResult.value))
-        : [];
+      if (filterResults.status === "fulfilled") {
+        const [categoriesResult, utilizationsResult, titleTypesResult, interestTypesResult] = filterResults.value;
 
-      const utilizations = utilizationsResult.status === "fulfilled"
-        ? normalizeSelectOptions(extractItemsFromPayload(utilizationsResult.value))
-        : [];
+        const categories = categoriesResult.status === "fulfilled"
+          ? normalizeSelectOptions(extractItemsFromPayload(categoriesResult.value))
+          : [];
 
-      const titleTypes = titleTypesResult.status === "fulfilled"
-        ? normalizeSelectOptions(extractItemsFromPayload(titleTypesResult.value))
-        : [];
+        const utilizations = utilizationsResult.status === "fulfilled"
+          ? normalizeSelectOptions(extractItemsFromPayload(utilizationsResult.value))
+          : [];
 
-      const fetchedDealTypes = interestTypesResult.status === "fulfilled"
-        ? extractItemsFromPayload(interestTypesResult.value)
-            .map((item) => {
-              const label = item?.name ?? item?.label;
-              const value = normalizeDealTypeValue(label);
+        const titleTypes = titleTypesResult.status === "fulfilled"
+          ? normalizeSelectOptions(extractItemsFromPayload(titleTypesResult.value))
+          : [];
 
-              if (!value) {
-                return null;
-              }
+        const fetchedDealTypes = interestTypesResult.status === "fulfilled"
+          ? extractItemsFromPayload(interestTypesResult.value)
+              .map((item) => {
+                const label = item?.name ?? item?.label;
+                const value = normalizeDealTypeValue(label);
 
-              return {
-                value,
-                label: dealTagMap[value] || String(label),
-              };
-            })
-            .filter(Boolean)
-        : [];
+                if (!value) {
+                  return null;
+                }
 
-      const mergedDealTypesMap = new Map();
-      [...fetchedDealTypes, ...defaultDealTypeFilterOptions].forEach((item) => {
-        mergedDealTypesMap.set(item.value, item);
-      });
+                return {
+                  value,
+                  label: dealTagMap[value] || String(label),
+                };
+              })
+              .filter(Boolean)
+          : [];
 
-      setFilterOptions((previous) => ({
-        ...previous,
-        categories,
-        utilizations,
-        titleTypes,
-        dealTypes: Array.from(mergedDealTypesMap.values()),
-      }));
+        const mergedDealTypesMap = new Map();
+        [...fetchedDealTypes, ...defaultDealTypeFilterOptions].forEach((item) => {
+          mergedDealTypesMap.set(item.value, item);
+        });
+
+        setFilterOptions((previous) => ({
+          ...previous,
+          categories,
+          utilizations,
+          titleTypes,
+          dealTypes: Array.from(mergedDealTypesMap.values()),
+        }));
+      }
+
+      if (isLoggedIn) {
+        if (userStatisticsResult.status === "fulfilled" && userStatisticsResult.value?.success && userStatisticsResult.value?.data) {
+          setUserStatistics(userStatisticsResult.value.data);
+        } else {
+          setUserStatistics(null);
+        }
+      } else {
+        setUserStatistics(null);
+      }
     };
 
-    loadFilterOptions();
+    loadBootstrapData();
 
     return () => {
       isCancelled = true;
     };
-  }, []);
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setUserStatistics(null);
-      return;
-    }
-
-    const fetchUserStatistics = async () => {
-      try {
-        const response = await userService.getUserStatistics();
-        if (response?.success && response?.data) {
-          setUserStatistics(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user statistics:", error);
-      }
-    };
-
-    fetchUserStatistics();
   }, [isLoggedIn]);
 
   const handleFiltersChange = useCallback((nextFilters) => {
@@ -664,6 +668,7 @@ const ExplorePage = () => {
     const lat = Number(viewport?.center?.lat);
     const lng = Number(viewport?.center?.lng);
     const radiusFromBounds = Number(viewport?.radiusKm);
+    const bounds = viewport?.bounds;
 
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return;
@@ -685,6 +690,14 @@ const ExplorePage = () => {
       return {
         center: { lat, lng },
         radiusKm: safeRadius,
+        bounds: bounds
+          ? {
+              minLat: Number(bounds.minLat),
+              maxLat: Number(bounds.maxLat),
+              minLon: Number(bounds.minLon),
+              maxLon: Number(bounds.maxLon),
+            }
+          : previous.bounds || null,
       };
     });
   }, []);
@@ -712,15 +725,24 @@ const ExplorePage = () => {
   }, []);
 
   useEffect(() => {
+    const bounds = mapViewport.bounds;
     const latitude = Number(mapViewport.center.lat.toFixed(6));
     const longitude = Number(mapViewport.center.lng.toFixed(6));
     const radiusKm = Number(Math.max(0.2, Math.min(mapViewport.radiusKm, 1000)).toFixed(2));
 
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radiusKm)) {
+    const hasValidBounds = bounds
+      && Number.isFinite(bounds.minLat)
+      && Number.isFinite(bounds.maxLat)
+      && Number.isFinite(bounds.minLon)
+      && Number.isFinite(bounds.maxLon);
+
+    if (!hasValidBounds && (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radiusKm))) {
       return;
     }
 
-    const requestKey = `${latitude}:${longitude}:${radiusKm}:${JSON.stringify(activeFilterQuery)}`;
+    const requestKey = hasValidBounds
+      ? `${bounds.minLat}:${bounds.maxLat}:${bounds.minLon}:${bounds.maxLon}:${JSON.stringify(activeFilterQuery)}`
+      : `${latitude}:${longitude}:${radiusKm}:${JSON.stringify(activeFilterQuery)}`;
     if (requestKey === lastRequestKeyRef.current) {
       if (isInitialLoadRef.current) {
         setIsInitialLoading(false);
@@ -743,9 +765,18 @@ const ExplorePage = () => {
 
       try {
         const response = await landService.exploreMap({
-          latitude,
-          longitude,
-          radiusKm,
+          ...(hasValidBounds
+            ? {
+                minLat: bounds.minLat,
+                maxLat: bounds.maxLat,
+                minLon: bounds.minLon,
+                maxLon: bounds.maxLon,
+              }
+            : {
+                latitude,
+                longitude,
+                radiusKm,
+              }),
           filters: activeFilterQuery,
         });
 
@@ -796,7 +827,7 @@ const ExplorePage = () => {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [activeFilterQuery, mapViewport.center.lat, mapViewport.center.lng, mapViewport.radiusKm]);
+  }, [activeFilterQuery, mapViewport.bounds, mapViewport.center.lat, mapViewport.center.lng, mapViewport.radiusKm]);
 
   const listingsNearCenter = useMemo(() => {
     return [...listings].sort((first, second) => {

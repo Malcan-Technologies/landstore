@@ -5,6 +5,8 @@ import { useEffect, useRef, useState, Suspense } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
+
+import { isRecentlyToasted, markAsToasted } from "@/utils/toastDedup";
 import Bell from "@/components/svg/Bell";
 import ArrowDown from "@/components/svg/ArrowDown";
 import DoubleArrows from "@/components/svg/DoubleArrows";
@@ -14,8 +16,10 @@ import Button from "@/components/common/Button";
 import LoginModal from "@/components/auth/LoginModal";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import NotificationPopup from "@/components/userDashboard/notifications/NotificationPopup";
-import { resetSocketConnection } from "@/services/socketService";
+import { resetSocketConnection, SOCKET_EVENTS, onSocketEvent, offSocketEvent } from "@/services/socketService";
 import { logoutUser } from "@/store/authSlice";
+import { getStoredUser } from "@/utils/auth";
+import { showToast } from "@/utils/toastStore";
 
 const ADMIN_AUTH_STORAGE_KEY = "landstore_admin_auth";
 
@@ -74,6 +78,62 @@ const AdminHeader = ({ onMenuClick }) => {
     userId: notificationUserId,
     limit: 5,
   });
+
+  useEffect(() => {
+    if (!isAuth || !user?.id) return;
+
+    console.log("[AdminHeader] Setting up chat message listener");
+
+    const handleNewMessage = (payload) => {
+      const msgId = payload?.id;
+
+      // Deduplication: skip if we already toasted this message
+      if (isRecentlyToasted(msgId)) {
+        console.log("[AdminHeader] Skipping duplicate message:", msgId);
+        return;
+      }
+
+      console.log("[AdminHeader] 📨 Chat message received:", payload);
+
+      const currentUser = getStoredUser();
+      const isOwnMessage = String(payload?.senderId) === String(currentUser?.id);
+
+      if (isOwnMessage) {
+        console.log("[AdminHeader] Skipping own message");
+        return;
+      }
+
+      // Track this message ID
+      markAsToasted(msgId);
+
+      const enquiryId = payload?.enquiryId || payload?.data?.enquiryId;
+      const messageContent = payload?.content || "";
+
+      const href = enquiryId ? `/admin/enquiry-hub/${enquiryId}` : "/admin";
+
+      console.log("[AdminHeader] Showing toast for enquiry:", enquiryId, "href:", href);
+
+      const title = enquiryId ? `Enquiry ${enquiryId.slice(0, 8)}...` : "New message";
+      const description = messageContent.length > 50
+        ? messageContent.slice(0, 50) + "..."
+        : messageContent || "New message received";
+
+      showToast({
+        type: "socket",
+        title,
+        message: description,
+        duration: 6000,
+        data: { href, enquiryId, type: "chat" },
+      });
+    };
+
+    onSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+
+    return () => {
+      console.log("[AdminHeader] Removing chat message listener");
+      offSocketEvent(SOCKET_EVENTS.CHAT.NEW_MESSAGE, handleNewMessage);
+    };
+  }, [isAuth, user?.id]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

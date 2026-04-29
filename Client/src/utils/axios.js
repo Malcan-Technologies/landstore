@@ -6,16 +6,102 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim() || "";
 // const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 const MUTATION_METHODS = new Set(['post', 'put', 'patch', 'delete']);
+const DEDUPABLE_POST_PATHS = new Set(['/list-lands/search/by-radius']);
+const MAX_GET_TIMEOUT_ATTEMPTS = 3;
+
+const inflightRequests = new Map();
+
+const stableStringify = (value) => {
+  if (value === undefined) {
+    return '';
+  }
+
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+
+  const sortedKeys = Object.keys(value).sort();
+  return `{${sortedKeys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+};
+
+const isDedupableRequest = (config) => {
+  const method = String(config?.method || 'get').toLowerCase();
+  const url = String(config?.url || '');
+
+  if (method === 'get' || method === 'head') {
+    return true;
+  }
+
+  return method === 'post' && DEDUPABLE_POST_PATHS.has(url);
+};
+
+const buildRequestKey = (config) => {
+  if (!isDedupableRequest(config)) {
+    return null;
+  }
+
+  if (typeof FormData !== 'undefined' && config?.data instanceof FormData) {
+    return null;
+  }
+
+  return [
+    String(config?.method || 'get').toLowerCase(),
+    String(config?.url || ''),
+    stableStringify(config?.params ?? null),
+    stableStringify(config?.data ?? null),
+  ].join('|');
+};
+
+const isTimeoutError = (error) => {
+  if (!error) {
+    return false;
+  }
+
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    error?.code === 'ECONNABORTED' &&
+    !error?.response &&
+    (message.includes('timeout') || message.includes('exceeded'))
+  );
+};
 
 // Create axios instance with default configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 25000,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+const originalRequest = api.request.bind(api);
+
+api.request = function requestWithDedup(config) {
+  const requestKey = buildRequestKey(config);
+
+  if (!requestKey) {
+    return originalRequest(config);
+  }
+
+  const pendingRequest = inflightRequests.get(requestKey);
+  if (pendingRequest) {
+    return pendingRequest;
+  }
+
+  const requestPromise = originalRequest(config).finally(() => {
+    if (inflightRequests.get(requestKey) === requestPromise) {
+      inflightRequests.delete(requestKey);
+    }
+  });
+
+  inflightRequests.set(requestKey, requestPromise);
+  return requestPromise;
+};
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -64,6 +150,21 @@ api.interceptors.response.use(
   },
   (error) => {
     const requestMethod = String(error?.config?.method || '').toLowerCase();
+
+    if (requestMethod === 'get' && isTimeoutError(error)) {
+      const retryCount = Number(error?.config?.__timeoutRetryCount || 0);
+
+      if (retryCount < MAX_GET_TIMEOUT_ATTEMPTS - 1) {
+        const nextConfig = {
+          ...error.config,
+          __timeoutRetryCount: retryCount + 1,
+          timeout: error.config?.timeout ?? api.defaults.timeout,
+        };
+
+        return api.request(nextConfig);
+      }
+    }
+
     const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
 
     if (MUTATION_METHODS.has(requestMethod)) {

@@ -66,12 +66,28 @@ const getViewportPayload = (mapInstance) => {
     center: { lat: centerLat, lng: centerLng },
     radiusKm,
     bounds: {
+      minLat: south,
+      maxLat: north,
+      minLon: west,
+      maxLon: east,
       north,
       east,
       south,
       west,
     },
   };
+};
+
+const getViewportSignature = (payload) => {
+  if (!payload?.bounds) {
+    return "";
+  }
+
+  const minLat = Number(payload.bounds.minLat).toFixed(5);
+  const maxLat = Number(payload.bounds.maxLat).toFixed(5);
+  const minLon = Number(payload.bounds.minLon).toFixed(5);
+  const maxLon = Number(payload.bounds.maxLon).toFixed(5);
+  return `${minLat}:${maxLat}:${minLon}:${maxLon}`;
 };
 
 const baseMarkerSvg = (color) => `
@@ -121,6 +137,7 @@ const MapView = ({
 }) => {
   const [activeMarker, setActiveMarker] = useState(defaultActiveMarkerId);
   const mapRef = useRef(null);
+  const lastViewportSignatureRef = useRef("");
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
   });
@@ -189,6 +206,13 @@ const MapView = ({
     if (!viewportPayload) {
       return;
     }
+
+    const viewportSignature = getViewportSignature(viewportPayload);
+    if (!viewportSignature || viewportSignature === lastViewportSignatureRef.current) {
+      return;
+    }
+
+    lastViewportSignatureRef.current = viewportSignature;
 
     onViewportChange(viewportPayload);
   }, [onViewportChange]);

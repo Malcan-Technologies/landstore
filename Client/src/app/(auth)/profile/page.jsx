@@ -22,17 +22,17 @@ const lockIcon = (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <g clip-path="url(#clip0_1_21859)">
+    <g clipPath="url(#clip0_1_21859)">
       <path
         d="M1.5 12C1.5 9.87868 1.5 8.81802 2.15901 8.15901C2.81802 7.5 3.87868 7.5 6 7.5H12C14.1213 7.5 15.182 7.5 15.841 8.15901C16.5 8.81802 16.5 9.87868 16.5 12C16.5 14.1213 16.5 15.182 15.841 15.841C15.182 16.5 14.1213 16.5 12 16.5H6C3.87868 16.5 2.81802 16.5 2.15901 15.841C1.5 15.182 1.5 14.1213 1.5 12Z"
         stroke="#838383"
-        stroke-width="1.5"
+        strokeWidth="1.5"
       />
       <path
         d="M4.5 7.5V6C4.5 3.51472 6.51472 1.5 9 1.5C11.4853 1.5 13.5 3.51472 13.5 6V7.5"
         stroke="#838383"
-        stroke-width="1.5"
-        stroke-linecap="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
       />
     </g>
     <defs>
@@ -312,8 +312,7 @@ const ProfilePage = () => {
                     <span className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray2 shadow-md transition hover:bg-gray-50">
                       <Edit
                         size={14}
-                        stroke="currentColor"
-                        accentStroke="currentColor"
+                        color="currentColor"
                       />
                     </span>
                   </label>
@@ -374,8 +373,7 @@ const ProfilePage = () => {
               {!isEditing ? (
                 <Edit
                   size={16}
-                  stroke="currentColor"
-                  accentStroke="currentColor"
+                  color="currentColor"
                 />
               ) : (
                 ""

@@ -41,13 +41,15 @@ export const subscribeToToasts = (listener) => {
 
 export const getToastSnapshot = () => toasts;
 
-export const showToast = ({ id, type = "info", title = "", message = "", duration = 4000 }) => {
+export const showToast = ({ id, type = "info", title = "", message = "", duration = 4000, onClick, data } = {}) => {
   const toast = {
     id: id || createToastId(),
     type,
     title,
     message,
     duration,
+    onClick,
+    data,
   };
 
   toasts = [...toasts, toast];
@@ -69,6 +71,8 @@ export const updateToast = (id, updates = {}) => {
     ...updates,
     id,
     duration: updates.duration ?? existingToast.duration,
+    onClick: updates.onClick ?? existingToast.onClick,
+    data: updates.data ?? existingToast.data,
   };
 
   toasts = toasts.map((toast) => (toast.id === id ? nextToast : toast));

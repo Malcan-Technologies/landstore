@@ -127,8 +127,8 @@ export const landService = {
     }
   },
 
-  // Search properties around a map center using visible map radius
-  exploreMap: async ({ latitude, longitude, radiusKm, page, limit, filters = {} }) => {
+  // Search properties around a map viewport using bounding box when available
+  exploreMap: async ({ latitude, longitude, radiusKm, minLat, maxLat, minLon, maxLon, page, limit, filters = {} }) => {
     try {
       const params = new URLSearchParams();
       if (Number.isFinite(page) && page > 0) {
@@ -154,9 +154,24 @@ export const landService = {
         params.append(key, String(rawValue));
       });
 
+      const hasBoundingBox = [minLat, maxLat, minLon, maxLon].every((value) => Number.isFinite(Number(value)));
+
+      const requestBody = hasBoundingBox
+        ? {
+            minLat: Number(minLat),
+            maxLat: Number(maxLat),
+            minLon: Number(minLon),
+            maxLon: Number(maxLon),
+          }
+        : {
+            latitude,
+            longitude,
+            radiusKm,
+          };
+
       const response = await api.post(
         '/list-lands/search/by-radius',
-        { latitude, longitude, radiusKm },
+        requestBody,
         { params }
       );
       return response.data;
